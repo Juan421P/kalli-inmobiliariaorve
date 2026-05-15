@@ -4,6 +4,8 @@ import Service from '../services/collaborator.js';
 import HttpResponses from '../utils/http_responses.js';
 import { catchAsync } from '../utils/catch_async.js';
 import { config } from '../../config.js';
+import AuthenticationError from '../errors/authentication.js';
+import AuthorizationError from '../errors/authorization.js';
 class CollaboratorController extends Controller {
     constructor() {
         super('collaborator');
@@ -33,9 +35,9 @@ class CollaboratorController extends Controller {
     async verifyEmail(req, res) {
         const { code } = req.body;
         const token = req.cookies.sc_verification;
-        if (!token) return HttpResponses.badRequest(res, 'session expired');
+        if (!token) throw new AuthenticationError('session expired');
         const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        if (code !== decoded.code) return HttpResponses.badRequest(res, 'invalid code');
+        if (code !== decoded.code) throw new AuthorizationError('incorrect code');
         await this.service.completeRegistration(decoded);
         res.clearCookie('sc_verification');
         return HttpResponses.created(res, null, 'registration complete');
@@ -49,9 +51,9 @@ class CollaboratorController extends Controller {
     async verifyRecoveryCode(req, res) {
         const { code } = req.body;
         const token = req.cookies.sc_recovery;
-        if (!token) return HttpResponses.badRequest(res, 'session expired');
+        if (!token) throw new AuthenticationError('session expired');
         const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        if (code !== decoded.code) return HttpResponses.badRequest(res, 'incorrect confirmation code');
+        if (code !== decoded.code) throw new AuthorizationError('incorrect code');
         const newToken = await this.service.completeRecovery(token, code);
         res.cookie('sc_recovery', newToken, { maxAge: 15 * 60 * 1000 });
         return HttpResponses.ok(res, null, 'code verified successfully. You can now change your password');
@@ -60,9 +62,9 @@ class CollaboratorController extends Controller {
         const { newPassword, confirmPassword } = req.body;
         if (newPassword !== confirmPassword) return HttpResponses.badRequest(res, 'passwords do not match');
         const token = req.cookies.sc_recovery;
-        if (!token) return HttpResponses.badRequest(res, 'session expired');
+        if (!token) throw new AuthenticationError('session expired');
         const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        if (!decoded.isVerified) return HttpResponses.forbidden(res, 'account not verified. Try again later');
+        if (code !== decoded.code) throw new AuthorizationError('account not verified, try again later');
         await this.service.resetPassword(decoded.email, newPassword);
         res.clearCookie('sc_recovery');
         return HttpResponses.ok(res, null, 'password changed successfully :)))');

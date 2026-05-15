@@ -8,7 +8,5 @@ export const requireAuth = (req, res, next) => {
 		const decoded = jsonwebtoken.verify(token, config.jwt.secret);
 		req.user = decoded;
 		next();
-	} catch (err) {
-		return HttpResponses.unauthorized(res, 'invalid or expired session');
-	}
+	} catch (err) { return HttpResponses.unauthorized(res, 'invalid or expired session'); }
 };

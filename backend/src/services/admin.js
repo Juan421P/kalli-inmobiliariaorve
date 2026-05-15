@@ -4,8 +4,12 @@ import jsonwebtoken from 'jsonwebtoken';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { config } from '../../config.js';
-import { sendMail } from '../utils/mailer.js';
-import { registration, recovery } from '../utils/email_templates.js';
+import Mail from '../utils/mail.js';
+import { registration } from '../utils/html/registration.js';
+import { recovery } from '../utils/html/recovery.js';
+import AuthorizationError from '../errors/authorization.js';
+import ConflictError from '../errors/conflict.js';
+import NotFoundError from '../errors/not_found.js';
 class AdminService extends Service {
     constructor() {
         super();
@@ -13,9 +17,9 @@ class AdminService extends Service {
     }
     async authenticate(email, password) {
         const admin = await this.model.findOne({ email }).select('+password');
-        if (!admin) throw new Error('admin not found');
+        if (!admin) throw new AuthorizationError('invalid credentials');
         const isMatch = await admin.comparePassword(password);
-        if (!isMatch) throw new Error('invalid credentials');
+        if (!isMatch) throw new AuthorizationError('invalid credentials');
         return jsonwebtoken.sign(
             { id: admin._id },
             config.jwt.secret,
@@ -23,11 +27,17 @@ class AdminService extends Service {
         );
     }
     async prepareRegistration(data) {
-        const exists = await this.model.findOne({ email: data.email });
-        if (exists) throw new Error('admin already exists');
+        const exists = await this.model.findOne({
+            email: data.email
+        });
+        if (exists) throw new ConflictError('admin already exists');
         const code = crypto.randomBytes(3).toString('hex');
-        const token = jsonwebtoken.sign({ ...data, code }, config.jwt.secret, { expiresIn: '15m' });
-        await sendMail(
+        const token = jsonwebtoken.sign(
+            { ...data, code },
+            config.jwt.secret,
+            { expiresIn: '15m' }
+        );
+        await Mail.sendHtml(
             data.email,
             'Confirmación de correo',
             `Dispone usted de 15 minutos para activar su cuenta con este código: ${code}`,
@@ -43,10 +53,14 @@ class AdminService extends Service {
     }
     async prepareRecovery(email) {
         const found = await this.model.findOne({ email });
-        if (!found) throw new Error('admin does not exist');
+        if (!found) throw new AuthorizationError('invalid credentials');
         const code = crypto.randomBytes(3).toString('hex');
-        const token = jsonwebtoken.sign({ email, code, isVerified: false }, config.jwt.secret, { expiresIn: '15m' });
-        await sendMail(
+        const token = jsonwebtoken.sign(
+            { email, code, verified_email: false },
+            config.jwt.secret,
+            { expiresIn: '15m' }
+        );
+        await Mail.sendHtml(
             email,
             'Recuperación de contraseña',
             `Dispone usted de 15 minutos para recuperar su cuenta con este código: ${code}`,
@@ -56,9 +70,9 @@ class AdminService extends Service {
     }
     async completeRecovery(token, inputCode) {
         const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        if (inputCode !== decoded.code) throw new Error('incorrect code');
+        if (inputCode !== decoded.code) throw new AuthorizationError('incorrect code');
         return jsonwebtoken.sign(
-            { email: decoded.email, isVerified: true },
+            { email: decoded.email, verified_email: true },
             config.jwt.secret,
             { expiresIn: '15m' }
         );
@@ -71,7 +85,7 @@ class AdminService extends Service {
             { password: hash },
             { new: true }
         );
-        if (!admin) throw new Error('error updating password');
+        if (!admin) throw new NotFoundError('admin not found');
         return admin;
     }
 }

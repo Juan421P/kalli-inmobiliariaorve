@@ -16,7 +16,8 @@ class PropertyRouter extends Router {
         this._init();
     }
     initializeCustomRoutes() {
-        this.router.patch('/:id/view', this.controller.incrementViews);
+        this.router.get('/public/:public_id');
+        this.router.put('/:id/view', this.controller.incrementViews);
     }
 }
 export default new PropertyRouter().getRouter();

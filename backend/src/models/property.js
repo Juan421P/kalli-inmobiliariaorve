@@ -1,5 +1,5 @@
 import { Schema, model } from 'mongoose';
-const propertySchema = new Schema({
+const schema = new Schema({
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     property_type: { type: String, enum: ['house', 'apartment', 'land'], required: true },
@@ -31,8 +31,9 @@ const propertySchema = new Schema({
     views: { type: Number, default: 0 },
     availability: {
         since: { type: Date, default: Date.now }
-    }
+    },
+    public_id: { type: String, unique: true, required: true, index: true }
 }, { timestamps: true });
-propertySchema.index({ location: '2dsphere' });
-const p = model('property', propertySchema);
+schema.index({ location: '2dsphere' });
+const p = model('property', schema);
 export default p;
