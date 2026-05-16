@@ -8,7 +8,10 @@ import { emitPropertyViewed } from '../events/property/viewed.js';
 import { emitPropertyPriceChanged } from '../events/property/price_changed.js';
 import { generatePropertyId } from '../utils/property_id/generate.js';
 class PropertyService extends Service {
-    constructor() { super(); this.model = model; }
+    constructor() {
+        super();
+        this.model = model;
+    }
     async _resolveAddress(coordinates) {
         const response = await axios.post(`${config.app.address_api}/address`, { coordinates });
         return response.data.data;

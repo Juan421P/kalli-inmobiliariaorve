@@ -30,7 +30,6 @@ class Router {
      */
     _init() {
         if (this.routerMiddleware.length > 0) this.router.use(...this.routerMiddleware);
-
         this.initializeCustomRoutes();
         this.initializeBaseRoutes();
     }

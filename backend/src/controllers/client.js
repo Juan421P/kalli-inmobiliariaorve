@@ -9,8 +9,8 @@ import AuthorizationError from '../errors/authorization.js';
 class ClientController extends Controller {
     constructor() {
         super('client');
-        this.login = catchAsync(this.login.bind(this));
         this.service = Service;
+        this.login = catchAsync(this.login.bind(this));
         this.logout = catchAsync(this.logout.bind(this));
         this.verifyEmail = catchAsync(this.verifyEmail.bind(this));
         this.requestRecoveryCode = catchAsync(this.requestRecoveryCode.bind(this));
