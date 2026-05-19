@@ -1,19 +1,30 @@
 import { z } from 'zod';
+import {
+    name,
+    email,
+    password,
+    phoneNumber,
+    countryCode,
+    boolean,
+    json
+} from '../utils/zod_types.js';
 const c = z.object({
-    name: z.string().min(1, 'name is required'),
-    lastname: z.string().min(1, 'lastname is required'),
-    password: z.string().min(8, 'password must be at least 8 characters long'),
-    email: z.string().email('invalid email format'),
-    document: z.object({
+    name,
+    lastname: name,
+    password,
+    email,
+    document: json(z.object({
         type: z.enum(['dui', 'pasaporte', 'residencia']),
-        number: z.string().min(1, 'document number is required')
-    }),
-    phone: z.object({
-        country_code: z.string().regex(/^\+\d+$/, 'must start with +'),
-        number: z.string().regex(/^\d{4}-\d{4}$/, 'must be 0000-0000 format')
-    }),
-    verified_email: z.boolean(),
-    verified_phone_number: z.boolean()
+        number: z.string()
+            .trim()
+            .min(1, 'document number is required')
+    })),
+    phone: json(z.object({
+        country_code: countryCode,
+        number: phoneNumber
+    })),
+    verified_email: boolean,
+    verified_phone_number: boolean
 });
 export const register = c.omit({
     verified_email: true,
@@ -29,10 +40,12 @@ export const update = c.omit({
     verified_phone_number: true
 }).partial();
 export const changePassword = z.object({
-    newPassword: c.shape.password,
-    confirmPassword: c.shape.password
+    newPassword: password,
+    confirmPassword: password
 }).refine((data) => data.newPassword === data.confirmPassword, {
     message: `passwords don't match`,
-    path: ['confirmPassword'],
+    path: ['confirmPassword']
 });
-export const search = c.omit({ password: true }).partial();
+export const search = c.omit({
+    password: true
+}).partial();

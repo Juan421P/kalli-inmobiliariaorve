@@ -1,18 +1,28 @@
-import { Button } from '@/components/ui/button';
-import LocationPicker from '@/components/location-picker';
-import { useState } from 'react'
-import './App.css'
-function App() {
-	const [count, setCount] = useState(0)
+import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
+import React from 'react'
+import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
+import { Toaster } from '@/components/ui/sonner'
+import Login from '@/pages/Login'
+const RootLayout = () => {
 	return (
-		<div className="min-h-screen bg-background p-8">
-			<div className="max-w-4xl mx-auto">
-				<h1 className="text-3xl font-bold text-center mb-8">
-				</h1>
-				<LocationPicker />
-			</div>
-
-		</div>
-	);
+		<div className='relative min-h-screen w-full isolate'>
+			<div className='fixed inset-0 z-[-1] bg-cover bg-center opacity-45' style={{ backgroundImage: `url(${coolAssDesignForTheBackground})` }} />
+			<Toaster />
+			<Outlet />
+		</div >
+	)
+}
+const router = createBrowserRouter([
+	{
+		element: <RootLayout />,
+		children: [
+			{ path: '/', element: <Login /> }
+		]
+	}
+])
+const App = () => {
+	return (
+		<RouterProvider router={router} />
+	)
 }
 export default App

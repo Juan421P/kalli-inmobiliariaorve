@@ -58,6 +58,14 @@ const schema = new Schema({
     verified_phone_number: {
         type: Boolean,
         default: true
+    },
+    picture: {
+        type: String,
+        trim: true
+    },
+    picture_id: {
+        type: String,
+        trim: true
     }
 }, {
     timestamps: true

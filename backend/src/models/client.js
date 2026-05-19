@@ -60,10 +60,18 @@ const schema = new Schema({
         default: false
     },
     favorites: [{
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'property',
         default: []
-    }]
+    }],
+    picture: {
+        type: String,
+        trim: true
+    },
+    picture_id: {
+        type: String,
+        trim: true
+    }
 }, {
     timestamps: true
 });

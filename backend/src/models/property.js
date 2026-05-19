@@ -32,7 +32,8 @@ const schema = new Schema({
     availability: {
         since: { type: Date, default: Date.now }
     },
-    public_id: { type: String, unique: true, required: true, index: true }
+    public_id: { type: String, unique: true, required: true, index: true },
+    pictures: [{ picture: String, picture_id: String }]
 }, { timestamps: true });
 schema.index({ location: '2dsphere' });
 const p = model('property', schema);

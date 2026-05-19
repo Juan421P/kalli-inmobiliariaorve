@@ -17,8 +17,8 @@
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Montserrat', sans-serif;
+  --heading: 'Montserrat', sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
@@ -121,7 +121,6 @@ body {
 }
 
 #root {
-  width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;
@@ -217,6 +216,11 @@ code {
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --color-orve-teal: #507177;
+  --color-orve-darker-teal: #405C62;
+  --color-orve-green: #41AD6B;
+  --color-orve-red: #D05B5B;
+  --color-orve-black: #2B2B2B;
 }
 
 .dark {
@@ -254,8 +258,6 @@ code {
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;}
   body {
     @apply bg-background text-foreground;}
   html {

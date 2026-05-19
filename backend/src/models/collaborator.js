@@ -61,7 +61,11 @@ const schema = new Schema({
     },
     picture: {
         type: String,
-        default: 'default-collaborator.png'
+        trim: true
+    },
+    picture_id: {
+        type: String,
+        trim: true
     }
 }, {
     timestamps: true

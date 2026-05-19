@@ -3,6 +3,7 @@ import model from '../models/admin.js';
 import jsonwebtoken from 'jsonwebtoken';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
+import { v2 as cloudinary } from 'cloudinary';
 import { config } from '../../config.js';
 import Mail from '../utils/mail.js';
 import { registration } from '../utils/html/registration.js';
@@ -15,9 +16,46 @@ class AdminService extends Service {
         super();
         this.model = model;
     }
+    async beforeCreate(data, context) {
+        const exists = await this.model.findOne({ email: data.email });
+        if (exists) throw new ConflictError('admin already exists');
+        if (!context.file) throw new NotFoundError('image not found');
+        data.picture = context.file.path;
+        data.picture_id = context.file.filename;
+        data.verified_email = false;
+        delete data.password;
+    }
+    async afterCreate(admin) {
+        const code = crypto.randomBytes(3).toString('hex');
+        const token = jsonwebtoken.sign(
+            { id: admin._id, code },
+            config.jwt.secret,
+            { expiresIn: '15m' }
+        );
+        await Mail.sendHtml(
+            admin.email,
+            'Completar cuenta',
+            `Dispone usted de 15 minutos para activar su cuenta con este código: ${code}`,
+            registration(code)
+        );
+        return token;
+    }
+    async completeInvitation(token, code, password) {
+        const decoded = jsonwebtoken.verify(token, config.jwt.secret);
+        if (decoded.code !== code) throw new AuthorizationError('incorrect code');
+        const admin = await this.model.findById(decoded.id);
+        if (!admin) throw new NotFoundError('admin not found');
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(password, salt);
+        admin.password = hash;
+        admin.verified_email = true;
+        await admin.save();
+        return admin;
+    }
     async authenticate(email, password) {
         const admin = await this.model.findOne({ email }).select('+password');
         if (!admin) throw new AuthorizationError('invalid credentials');
+        if (!admin.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
         return jsonwebtoken.sign(
@@ -26,30 +64,15 @@ class AdminService extends Service {
             { expiresIn: '30d' }
         );
     }
-    async prepareRegistration(data) {
-        const exists = await this.model.findOne({
-            email: data.email
-        });
-        if (exists) throw new ConflictError('admin already exists');
-        const code = crypto.randomBytes(3).toString('hex');
-        const token = jsonwebtoken.sign(
-            { ...data, code },
-            config.jwt.secret,
-            { expiresIn: '15m' }
-        );
-        await Mail.sendHtml(
-            data.email,
-            'Confirmación de correo',
-            `Dispone usted de 15 minutos para activar su cuenta con este código: ${code}`,
-            registration(code)
-        );
-        return token;
-    }
-    async completeRegistration(decodedData) {
-        return await this.create({
-            ...decodedData,
-            verified_email: true
-        });
+    async uploadPicture(id, file) {
+        if (!file) throw new NotFoundError('image not found');
+        const admin = await this.model.findById(id);
+        if (!admin) throw new NotFoundError('admin not found');
+        if (admin.picture_id) await cloudinary.uploader.destroy(admin.picture_id);
+        admin.picture = file.path;
+        admin.picture_id = file.filename;
+        await admin.save();
+        return admin;
     }
     async prepareRecovery(email) {
         const found = await this.model.findOne({ email });
@@ -66,11 +89,12 @@ class AdminService extends Service {
             `Dispone usted de 15 minutos para recuperar su cuenta con este código: ${code}`,
             recovery(code)
         );
-        return { token, code };
+        return token;
     }
     async completeRecovery(token, inputCode) {
         const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        if (inputCode !== decoded.code) throw new AuthorizationError('incorrect code');
+        if (inputCode !== decoded.code)
+            throw new AuthorizationError('incorrect code');
         return jsonwebtoken.sign(
             { email: decoded.email, verified_email: true },
             config.jwt.secret,

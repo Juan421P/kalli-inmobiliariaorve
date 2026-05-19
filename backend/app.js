@@ -21,7 +21,7 @@ app.use('/api', rateLimit({
     message: { error: 'too many requests, please try again later' }
 }));
 app.use('/api', AppRouter);
-app.use('*', (req, res) => {
+app.use((req, res) => {
     return HttpResponses.notFound(res, `path ${req.originalUrl} not found on this server`);
 });
 app.use(errorHandler);

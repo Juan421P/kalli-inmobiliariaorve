@@ -1,5 +1,6 @@
 import Router from './router.js';
 import Controller from '../controllers/client.js';
+import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
 import { requireAdmin } from '../middleware/auth/require_admin.js';
 import { requireAdminOrSelf } from '../middleware/auth/require_admin_or_self.js';
@@ -24,9 +25,10 @@ class ClientRouter extends Router {
     initializeCustomRoutes() {
         this.router.post('/login', validate(login), this.controller.login);
         this.router.post('/verify-email', this.controller.verifyEmail);
-        this.router.post('/password-recovery/request', this.controller.requestRecovery);
-        this.router.post('/password-recovery/verify', this.controller.verifyRecovery);
-        this.router.post('/password-recovery/change-password', validate(changePassword), this.controller.changePassword);
+        this.router.post('/password-recovery/request', this.controller.requestRecoveryCode);
+        this.router.post('/password-recovery/verify', this.controller.verifyRecoveryCode);
+        this.router.post('/password-recovery/change-password', validate(changePassword), this.controller.resetPassword);
+        this.router.post('/image', requireAuth, cloudinary.single('picture'), this.controller.uploadPicture);
         this.router.post('/logout', requireAuth, this.controller.logout);
     }
 }
