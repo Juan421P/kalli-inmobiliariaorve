@@ -1,17 +1,20 @@
-import HttpResponses from '../utils/http_responses.js';
-export const validate = (schema) => (req, res, next) => {
-    try {
-        req.body = schema.parse(req.body);
-        next();
-    } catch (error) {
-        const formattedErrors = error.errors.map(err => ({
-            field: err.path.join('.'),
-            message: err.message
-        }));
-        return HttpResponses.badRequest(
-            res,
-            'validation failed',
-            formattedErrors
-        );
-    }
+import { ZodError } from 'zod';
+export const validate = (schema) => {
+    return (req, res, next) => {
+        try {
+            req.body = schema.parse(req.body);
+            next();
+        } catch (error) {
+            if (error instanceof ZodError) {
+                return res.status(400).json({
+                    success: false,
+                    errors: error.issues.map((issue) => ({
+                        field: issue.path.join('.'),
+                        message: issue.message
+                    }))
+                });
+            }
+            next(error);
+        }
+    };
 };

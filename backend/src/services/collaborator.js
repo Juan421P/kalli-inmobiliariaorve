@@ -58,11 +58,12 @@ class CollaboratorService extends Service {
         if (!collaborator.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await collaborator.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
-        return jsonwebtoken.sign(
+        const token = jsonwebtoken.sign(
             { id: collaborator._id },
             config.jwt.secret,
             { expiresIn: '30d' }
         );
+        return { token, collaborator: { id: collaborator._id, name: collaborator.name, lastname: collaborator.lastname, email: collaborator.email, picture: collaborator.picture } }
     }
     async uploadPicture(id, file) {
         if (!file) throw new NotFoundError('image not found');

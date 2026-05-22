@@ -1,11 +1,13 @@
 import { Router } from 'express';
 import admin from './admin.js';
+import auth from './auth.js';
 import client from './client.js';
 import collaborator from './collaborator.js';
 import offer from './offer.js';
 import property from './property.js';
 const AppRouter = Router();
 AppRouter.use('/admin', admin);
+AppRouter.use('/auth', auth);
 AppRouter.use('/client', client);
 AppRouter.use('/collaborator', collaborator);
 AppRouter.use('/offer', collaborator);

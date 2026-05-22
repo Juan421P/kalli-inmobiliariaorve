@@ -58,11 +58,12 @@ class AdminService extends Service {
         if (!admin.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
-        return jsonwebtoken.sign(
+        const token = jsonwebtoken.sign(
             { id: admin._id },
             config.jwt.secret,
             { expiresIn: '30d' }
         );
+        return { token, admin: { id: admin._id, name: admin.name, lastname: admin.lastname, email: admin.email, picture: admin.picture } }
     }
     async uploadPicture(id, file) {
         if (!file) throw new NotFoundError('image not found');

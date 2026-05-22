@@ -19,13 +19,15 @@ class ClientService extends Service {
     async authenticate(email, password) {
         const client = await this.model.findOne({ email }).select('+password');
         if (!client) throw new AuthorizationError('invalid credentials');
+        if (!client.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await client.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
-        return jsonwebtoken.sign(
+        const token = jsonwebtoken.sign(
             { id: client._id },
             config.jwt.secret,
             { expiresIn: '30d' }
         );
+        return { token, client: { id: client._id, name: client.name, lastname: client.lastname, email: client.email, picture: client.picture } }
     }
     async prepareRegistration(data) {
         const exists = await this.model.findOne({ email: data.email });

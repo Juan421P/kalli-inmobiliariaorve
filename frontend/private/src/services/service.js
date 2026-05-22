@@ -1,36 +1,43 @@
 import axios from 'axios';
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
-    headers: { 'Content-Type': 'application/json' }
+    withCredentials: true
 });
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        console.log('AXIOS ERROR');
+        console.log('status:', error.response?.status);
+        console.log('data:', error.response?.data);
+        console.log('url:', error.config?.url);
+        console.log('method:', error.config?.method);
+        console.log('request data:', error.config?.data);
+        return Promise.reject(error);
+    }
+);
 class Service {
     constructor(endpoint) {
         this.endpoint = endpoint;
         this.api = api;
     }
     async get(params = {}) {
-        const response = this.api.get(this.endpoint, { params });
+        const response = await this.api.get(this.endpoint, { params });
         return response.data;
     }
     async getById(id) {
-        const response = this.api.get(`${this.endpoint}/${id}`);
+        const response = await this.api.get(`${this.endpoint}/${id}`);
         return response.data;
     }
     async post(data) {
-        const response = this.api.post(this.endpoint, data);
+        const response = await this.api.post(this.endpoint, data);
         return response.data;
     }
     async put(id, data) {
-        const response = this.api.put(`${this.endpoint}/${id}`, data);
+        const response = await this.api.put(`${this.endpoint}/${id}`, data);
         return response.data;
     }
     async delete(id) {
-        const response = this.api.delete(`${this.endpoint}/${id}`);
+        const response = await this.api.delete(`${this.endpoint}/${id}`);
         return response.data;
     }
 }

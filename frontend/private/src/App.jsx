@@ -3,6 +3,7 @@ import React from 'react'
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
 import { Toaster } from '@/components/ui/sonner'
 import Login from '@/pages/Login'
+import Dashboard from '@/pages/Dashboard'
 const RootLayout = () => {
 	return (
 		<div className='relative min-h-screen w-full isolate'>
@@ -16,7 +17,8 @@ const router = createBrowserRouter([
 	{
 		element: <RootLayout />,
 		children: [
-			{ path: '/', element: <Login /> }
+			{ path: '/', element: <Login /> },
+			{ path: '/dashboard', element: <Dashboard /> },
 		]
 	}
 ])

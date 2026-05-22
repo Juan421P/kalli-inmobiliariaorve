@@ -23,40 +23,13 @@ class CollaboratorRouter extends Router {
         this._init();
     }
     initializeCustomRoutes() {
-        this.router.post(
-            '/login',
-            validate(login),
-            this.controller.login
-        );
-        this.router.post(
-            '/complete-invitation',
-            this.controller.completeInvitation
-        );
-        this.router.post(
-            '/password-recovery/request',
-            this.controller.requestRecoveryCode
-        );
-        this.router.post(
-            '/password-recovery/verify',
-            this.controller.verifyRecoveryCode
-        );
-        this.router.post(
-            '/password-recovery/change-password',
-            validate(changePassword),
-            this.controller.resetPassword
-        );
-        this.router.put(
-            '/:id/image',
-            requireAuth,
-            requireAdmin,
-            cloudinary.single('picture'),
-            this.controller.uploadPicture
-        );
-        this.router.post(
-            '/logout',
-            requireAuth,
-            this.controller.logout
-        );
+        this.router.post('/login', validate(login), this.controller.login);
+        this.router.post('/complete-invitation', this.controller.completeInvitation);
+        this.router.post('/password-recovery/request', this.controller.requestRecoveryCode);
+        this.router.post('/password-recovery/verify', this.controller.verifyRecoveryCode);
+        this.router.post('/password-recovery/change-password', validate(changePassword), this.controller.resetPassword);
+        this.router.put('/:id/image', requireAuth, requireAdmin, cloudinary.single('picture'), this.controller.uploadPicture);
+        this.router.post('/logout', requireAuth, this.controller.logout);
     }
 }
 export default new CollaboratorRouter().getRouter();

@@ -4,32 +4,25 @@ class AdminService extends Service {
         super('/admin');
     }
     async search(searchParams) {
-        const response = await this.api.post(`${this.endpoint}/search`, searchParams);
-        return response.data;
+        return await this.api.post(`${this.endpoint}/search`, searchParams).then((response) => response.data);
     }
     async login(email, password) {
-        const response = await this.api.post(`${this.endpoint}/login`, { email, password });
-        return response.data;
+        return await this.api.post(`${this.endpoint}/login`, { email, password }).then((response) => response.data);
     }
-    async verifyEmail(verificationData) {
-        const response = await this.api.post(`${this.endpoint}/verify-email`, verificationData);
-        return response.data;
+    async verifyEmail(data) {
+        return await this.api.post(`${this.endpoint}/verify-email`, data).then((response) => response.data);
     }
     async requestPasswordRecovery(email) {
-        const response = await this.api.post(`${this.endpoint}/password-recovery/request`, { email });
-        return response.data;
+        return await this.api.post(`${this.endpoint}/password-recovery/request`, { email }).then((response) => response.data);
     }
-    async verifyPasswordRecovery(verificationData) {
-        const response = await this.api.post(`${this.endpoint}/password-recovery/verify`, verificationData);
-        return response.data;
+    async verifyPasswordRecovery(data) {
+        return await this.api.post(`${this.endpoint}/password-recovery/verify`, data).then((response) => response.data);
     }
-    async changePassword(passwordData) {
-        const response = await this.api.post(`${this.endpoint}/password-recovery/change-password`, passwordData);
-        return response.data;
+    async changePassword(data) {
+        return await this.api.post(`${this.endpoint}/password-recovery/change-password`, data).then((response) => response.data);
     }
     async logout() {
-        const response = await this.api.post(`${this.endpoint}/logout`);
-        return response.data;
+        return await this.api.post(`${this.endpoint}/logout`).then((response) => response.data);
     }
 }
 export default new AdminService();

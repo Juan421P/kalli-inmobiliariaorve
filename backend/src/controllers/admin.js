@@ -20,9 +20,9 @@ class AdminController extends Controller {
     }
     async login(req, res) {
         const { email, password } = req.body;
-        const sessionToken = await this.service.authenticate(email, password);
-        res.cookie('auth', sessionToken);
-        return HttpResponses.ok(res, null, 'login successful');
+        const { token, admin } = await this.service.authenticate(email, password);
+        res.cookie('auth', token);
+        return HttpResponses.ok(res, { admin }, 'login successful');
     }
     async logout(req, res) {
         res.clearCookie('auth');
