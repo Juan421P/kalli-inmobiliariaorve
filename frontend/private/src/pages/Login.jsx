@@ -74,7 +74,7 @@ const Login = () => {
                     <form onSubmit={handleSubmit(attemptLogin)} noValidate className='space-y-6'>
                         <div className='space-y-1'>
                             <Label htmlFor='email' className='text-orve-teal font-semibold text-sm pl-2 select-none'>Correo electrónico</Label>
-                            <div className='relative'>
+                            <div className='relative bg-orve-teal/20 rounded-2xl'>
                                 <Mail className='absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orve-teal z-10 pointer-events-none' />
                                 <TooltipProvider>
                                     <Tooltip open={!!errors.email}>
@@ -82,7 +82,7 @@ const Login = () => {
                                             <Input id='email' type='email' placeholder='Ingrese su correo electrónico' {...emailRegister} onChange={(e) => {
                                                 e.target.value = filterInvalidEmailChars(e.target.value)
                                                 emailRegister.onChange(e)
-                                            }} className={cn('pl-12 bg-orve-teal/20 border-transparent h-12 rounded-xl text-orve-teal placeholder:text-orve-teal/75 placeholder:italic drop-shadow-md font-medium transition-colors', errors.email && 'border-orve-red')}
+                                            }} className={cn('pl-12 bg-orve-teal/50 border-transparent h-12 rounded-xl text-orve-teal placeholder:text-orve-teal/75 placeholder:italic drop-shadow-md font-medium transition-colors', errors.email && 'border-orve-red')}
                                             />
                                         </TooltipTrigger>
                                         <TooltipContent side="right" className="bg-orve-red text-white font-semibold border-none shadow-md">
@@ -94,7 +94,7 @@ const Login = () => {
                         </div>
                         <div className='space-y-1'>
                             <Label htmlFor='password' className='text-orve-teal font-semibold text-sm pl-2 select-none'>Contraseña</Label>
-                            <div className='relative'>
+                            <div className='relative bg-orve-teal/20 rounded-2xl'>
                                 <Lock className='absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-orve-teal z-10 pointer-events-none' />
                                 <TooltipProvider>
                                     <Tooltip open={!!errors.password}>

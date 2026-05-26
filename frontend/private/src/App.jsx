@@ -1,6 +1,7 @@
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
 import React from 'react'
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
+import AuthProvider from '@/providers/auth-provider'
 import { Toaster } from '@/components/ui/sonner'
 import Login from '@/pages/Login'
 import Dashboard from '@/pages/Dashboard'
@@ -24,7 +25,9 @@ const router = createBrowserRouter([
 ])
 const App = () => {
 	return (
-		<RouterProvider router={router} />
+		<AuthProvider>
+			<RouterProvider router={router} />
+		</AuthProvider>
 	)
 }
 export default App
