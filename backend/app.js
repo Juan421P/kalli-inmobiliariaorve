@@ -1,14 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './src/middleware/error_handler.js';
-import AppRouter from './src/routers/index.js';
+import router from './src/routers/router.js';
 const app = express();
 app.use(helmet());
-app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
@@ -20,9 +18,9 @@ app.use('/api', rateLimit({
     max: 100,
     message: { error: 'too many requests, please try again later' }
 }));
-app.use('/api', AppRouter);
+app.use('/api', router);
 app.use((req, res) => {
-    return HttpResponses.notFound(res, `path ${req.originalUrl} not found on this server`);
+    return res.status(404).json({ message: `path ${req.originalUrl} not found on this server` });
 });
 app.use(errorHandler);
 export default app;
