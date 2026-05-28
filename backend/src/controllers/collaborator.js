@@ -17,6 +17,11 @@ const controller = {
         const collaborators = await model.find();
         return res.status(200).json({ collaborators });
     }),
+    getById: catchAsync(async (req, res) => {
+        const collaborator = await model.findById(req.params.id);
+        if (!collaborator) throw new NotFoundError('collaborator not found');
+        return res.status(200).json({ collaborator });
+    }),
     post: catchAsync(async (req, res) => {
         const exists = await model.findOne({ email: req.body.email });
         if (exists) throw new ConflictError('collaborator already exists');

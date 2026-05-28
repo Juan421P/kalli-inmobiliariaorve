@@ -17,6 +17,11 @@ const controller = {
         const clients = await model.find();
         return res.status(200).json({ clients });
     }),
+    getById: catchAsync(async (req, res) => {
+        const client = await model.findById(req.params.id);
+        if (!client) throw new NotFoundError('client not found');
+        return res.status(200).json({ client });
+    }),
     post: catchAsync(async (req, res) => {
         const exists = await model.findOne({ email: req.body.email });
         if (exists) throw new ConflictError('client already exists');

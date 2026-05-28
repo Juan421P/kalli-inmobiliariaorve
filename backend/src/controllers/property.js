@@ -18,6 +18,11 @@ const controller = {
         const properties = await model.find();
         return res.status(200).json({ properties });
     }),
+    getById: catchAsync(async (req, res) => {
+        const property = await model.findById(req.params.id);
+        if (!property) throw new NotFoundError('property not found');
+        return res.status(200).json({ property });
+    }),
     post: catchAsync(async (req, res) => {
         const data = { ...req.body };
         const { files, user: actor, session } = req;

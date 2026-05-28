@@ -9,6 +9,11 @@ const controller = {
         const offers = await model.find();
         return res.status(200).json({ offers });
     }),
+    getById: catchAsync(async (req, res) => {
+        const offer = await model.findById(req.params.id);
+        if (!offer) throw new NotFoundError('offer not found');
+        return res.status(200).json({ offer });
+    }),
     post: catchAsync(async (req, res) => {
         const data = { ...req.body };
         data.last_actor = 'buyer';

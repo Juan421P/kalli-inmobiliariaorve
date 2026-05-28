@@ -10,6 +10,6 @@ router.use('/admin', admin);
 router.use('/auth', auth);
 router.use('/client', client);
 router.use('/collaborator', collaborator);
-router.use('/offer', collaborator);
+router.use('/offer', offer);
 router.use('/property', property);
 export default router;

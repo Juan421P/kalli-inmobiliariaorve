@@ -5,6 +5,6 @@ import { requireAuth } from '../middleware/auth/require_auth.js';
 const property = express.Router();
 property.route('/').get(c.get).post(requireAuth, cloudinary.array('pictures', 15), c.post);
 property.route('/public/:public_id').get(c.getByPublicId);
-property.route('/:id').put(requireAuth, cloudinary.array('pictures', 15), c.put).delete(requireAuth, c.delete);
+property.route('/:id').get(c.getById).put(requireAuth, cloudinary.array('pictures', 15), c.put).delete(requireAuth, c.delete);
 property.route('/:id/view').put(c.incrementViews);
 export default property;

@@ -10,7 +10,7 @@ admin.route('/login').post(c.login);
 admin.route('/logout').post(requireAuth, c.logout);
 admin.route('/password-recovery/request').post(c.requestRecoveryCode);
 admin.route('/password-recovery/verify').post(c.verifyRecoveryCode);
-admin.route('/password-recovery/change-password').post(c.resetPassword);
+admin.route('/password-recovery/change-password').post(c.changePassword);
 admin.route('/:id').put(requireAuth, requireAdmin, c.put).delete(requireAuth, requireAdmin, c.delete);
 admin.route('/:id/image').put(requireAuth, requireAdmin, cloudinary.single('picture'), c.uploadPicture);
 export default admin;

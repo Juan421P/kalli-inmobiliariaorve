@@ -1,18 +1,6 @@
-import HttpResponses from '../utils/http_responses.js';
 import AppError from '../errors/app.js';
 export const errorHandler = (err, req, res, next) => {
-    if (err instanceof AppError) return HttpResponses.custom(
-        res,
-        err.status,
-        false,
-        err.message,
-        null,
-        err,
-        err.meta
-    );
+    if (err instanceof AppError) return res.status(400).json({ message: 'bad request' });
     console.error(err);
-    return HttpResponses.serverError(
-        res,
-        'internal server error'
-    );
+    return res.status(500).json({ message: 'internal server error' });
 };
