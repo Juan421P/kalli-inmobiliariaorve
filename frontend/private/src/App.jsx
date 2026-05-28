@@ -1,33 +1,61 @@
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
-import React from 'react'
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
 import AuthProvider from '@/providers/auth-provider'
-import { Toaster } from '@/components/ui/sonner'
-import Login from '@/pages/Login'
+import Toaster from '@/components/Toaster'
+import ProtectedRoute from '@/components/ProtectedRoute'
+import Amenities from '@/pages/Amenities'
+import Appliances from '@/pages/Appliances'
+import Appointments from '@/pages/Appointments'
+import Clients from '@/pages/Clients'
+import Collaborators from '@/pages/Collaborators'
 import Dashboard from '@/pages/Dashboard'
-const RootLayout = () => {
-	return (
-		<div className='relative min-h-screen w-full isolate'>
-			<div className='fixed inset-0 z-[-1] bg-cover bg-center opacity-45' style={{ backgroundImage: `url(${coolAssDesignForTheBackground})` }} />
-			<Toaster />
-			<Outlet />
-		</div >
-	)
-}
+import Features from '@/pages/Features'
+import Login from '@/pages/Login'
+import Offers from '@/pages/Offers'
+import Profile from '@/pages/Profile'
+import Properties from '@/pages/Properties'
+import Schedules from '@/pages/Schedules'
+import Tags from '@/pages/Tags'
+const RootLayout = () => (
+	<div className='relative min-h-screen w-full isolate'>
+		<div className='fixed inset-0 z-[-1] bg-cover bg-center opacity-45' style={{ backgroundImage: `url(${coolAssDesignForTheBackground})` }} />
+		<Toaster />
+		<Outlet />
+	</div>
+)
 const router = createBrowserRouter([
 	{
 		element: <RootLayout />,
 		children: [
 			{ path: '/', element: <Login /> },
-			{ path: '/dashboard', element: <Dashboard /> },
-		]
-	}
+			{
+				element: <ProtectedRoute />,
+				children: [
+					{ path: '/dashboard', element: <Dashboard /> },
+					{ path: '/properties', element: <Properties /> },
+					{ path: '/appointments', element: <Appointments /> },
+					{ path: '/offers', element: <Offers /> },
+					{ path: '/profile', element: <Profile /> },
+					{
+						element: <ProtectedRoute requiredRole='admin' />,
+						children: [
+							{ path: '/clients', element: <Clients /> },
+							{ path: '/collaborators', element: <Collaborators /> },
+							{ path: '/schedules', element: <Schedules /> },
+							{ path: '/catalogs/amenities', element: <Amenities /> },
+							{ path: '/catalogs/tags', element: <Tags /> },
+							{ path: '/catalogs/features', element: <Features /> },
+							{ path: '/catalogs/appliances', element: <Appliances /> },
+						],
+					},
+				],
+			},
+		],
+	},
 ])
-const App = () => {
-	return (
-		<AuthProvider>
-			<RouterProvider router={router} />
-		</AuthProvider>
-	)
-}
+const App = () => (
+	<AuthProvider>
+		<RouterProvider router={router} />
+	</AuthProvider>
+)
 export default App

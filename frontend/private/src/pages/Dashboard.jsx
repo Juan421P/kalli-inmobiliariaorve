@@ -3,7 +3,7 @@ import Sidebar from '@/components/Sidebar'
 import MetricCard from '@/components/dashboard/MetricCard'
 import RecentAppointmentsTable from '@/components/dashboard/RecentAppointmentsTable'
 import RecentOffersTable from '@/components/dashboard/RecentOffersTable'
-import horseImg from '@/assets/horse.png'
+import horseImg from '@/assets/horse.jpg'
 import useAuth from '@/hooks/use-auth'
 // ok mmmm esto debería de hacer una llamada a la api a lo mejor y se puede hacer un endpoint que solo retorne los primeros 10 (los 10 más recientes pues)
 const SAMPLE_APPOINTMENTS = [

@@ -1,32 +1,26 @@
 import { useEffect, useState } from 'react'
 import AuthContext from '@/contexts/auth-context'
+import AuthService from '@/services/auth'
 const AuthProvider = ({ children }) => {
     const [auth, setAuth] = useState(null)
+    const [isRehydrating, setIsRehydrating] = useState(true)
     useEffect(() => {
-        const stored = localStorage.getItem('auth') || sessionStorage.getItem('auth')
-        if (stored) setAuth(JSON.parse(stored))
+        AuthService.me()
+            .then(({ role, user }) => setAuth({ role, user }))
+            .catch(() => setAuth(null))
+            .finally(() => setIsRehydrating(false))
     }, [])
-    const login = (data, rememberMe = false) => {
-        const storage = rememberMe ? localStorage : sessionStorage
-        setAuth(data)
-    }
-    const logout = () => {
-        localStorage.removeItem('auth')
-        sessionStorage.removeItem('auth')
-        setAuth(null)
-    }
+    const login = ({ role, user }) => setAuth({ role, user })
+    const logout = () => setAuth(null)
     return (
-        <AuthContext.Provider
-            value={{
-                ...auth,
-                user: auth?.user,
-                token: auth?.token,
-                role: auth?.role,
-                isAuthenticated: !!auth,
-                login,
-                logout
-            }}
-        >
+        <AuthContext.Provider value={{
+            user: auth?.user ?? null,
+            role: auth?.role ?? null,
+            isAuthenticated: !!auth,
+            isRehydrating,
+            login,
+            logout,
+        }}>
             {children}
         </AuthContext.Provider>
     )
