@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import useAuth from '@/hooks/use-auth'
+import useAuth from '@/hooks/useAuth'
 const ProtectedRoute = ({ requiredRole } = {}) => {
     const { isAuthenticated, isRehydrating, role } = useAuth()
     if (isRehydrating) return null
