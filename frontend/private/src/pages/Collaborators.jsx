@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, UserPlus } from 'lucide-react'
+import { Search, UserPlus, Pencil } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import useAuth from '@/hooks/use-auth'
 import { collaboratorsService } from '@/services/collaborator'
 import CollaboratorsTable from '@/components/users/CollaboratorsTable'
 import UserCreateForm from '@/components/users/UserCreateForm'
+import UserEditForm from '@/components/users/UserEditForm'
 import UsersPagination from '@/components/users/UsersPagination'
 
 const LIMIT = 5
@@ -16,13 +17,19 @@ const LIMIT = 5
 const Collaborators = () => {
     const { user } = useAuth()
 
-    const [tab,             setTab]             = useState('list')
-    const [collaborators,   setCollaborators]   = useState([])
-    const [total,           setTotal]           = useState(0)
-    const [currentPage,     setCurrentPage]     = useState(1)
-    const [search,          setSearch]          = useState('')
-    const [isLoading,       setIsLoading]       = useState(true)
-    const [isSubmitting,    setIsSubmitting]    = useState(false)
+    const [tab,                  setTab]                  = useState('list')
+    const [collaborators,        setCollaborators]        = useState([])
+    const [total,                setTotal]                = useState(0)
+    const [currentPage,          setCurrentPage]          = useState(1)
+    const [search,               setSearch]               = useState('')
+    const [isLoading,            setIsLoading]            = useState(true)
+    const [isSubmitting,         setIsSubmitting]         = useState(false)
+    const [editingCollaborator,  setEditingCollaborator]  = useState(null)
+
+    const handleTabChange = (newTab) => {
+        if (newTab !== 'update') setEditingCollaborator(null)
+        setTab(newTab)
+    }
 
     const totalPages = Math.max(1, Math.ceil(total / LIMIT))
 
@@ -66,9 +73,26 @@ const Collaborators = () => {
         }
     }
 
-    // ── Editar (placeholder — implementar según diseño definitivo) ─────────────
+    // ── Editar ─────────────────────────────────────────────────────────────────
     const handleEdit = (collaborator) => {
-        toast('Próximamente', { description: `Editar a ${collaborator.name} ${collaborator.lastname}` })
+        setEditingCollaborator(collaborator)
+        setTab('update')
+    }
+
+    // ── Actualizar ─────────────────────────────────────────────────────────────
+    const handleUpdate = async (formData) => {
+        setIsSubmitting(true)
+        try {
+            await collaboratorsService.update(editingCollaborator._id, formData)
+            toast.success(`${formData.name} ${formData.lastname} actualizado correctamente.`)
+            setTab('list')
+            setEditingCollaborator(null)
+            fetchCollaborators(currentPage, search)
+        } catch {
+            toast.error('Error', 'No se pudo actualizar el colaborador.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // ── Eliminar ───────────────────────────────────────────────────────────────
@@ -96,7 +120,7 @@ const Collaborators = () => {
                     <p className='text-sm text-orve-teal/70 mt-0.5'>Administre el equipo de colaboradores</p>
                 </header>
 
-                <Tabs value={tab} onValueChange={setTab}>
+                <Tabs value={tab} onValueChange={handleTabChange}>
                     <TabsList className='mb-5 bg-orve-teal/10'>
                         <TabsTrigger value='list'   className='data-active:bg-white data-active:text-orve-teal text-orve-teal/60'>
                             Colaboradores
@@ -105,6 +129,12 @@ const Collaborators = () => {
                             <UserPlus className='w-4 h-4' />
                             Agregar colaborador
                         </TabsTrigger>
+                        {editingCollaborator && (
+                            <TabsTrigger value='update' className='data-active:bg-white data-active:text-orve-teal text-orve-teal/60'>
+                                <Pencil className='w-4 h-4' />
+                                Actualizar colaborador
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     {/* ── Tab lista ── */}
@@ -158,6 +188,27 @@ const Collaborators = () => {
                                 isLoading={isSubmitting}
                             />
                         </div>
+                    </TabsContent>
+
+                    {/* ── Tab actualizar ── */}
+                    <TabsContent value='update'>
+                        {editingCollaborator && (
+                            <div className={panel}>
+                                <div className='mb-6'>
+                                    <h2 className='text-base font-semibold text-orve-teal'>Actualizar colaborador</h2>
+                                    <p className='text-sm text-orve-teal/60 mt-0.5'>
+                                        Modifique la información de {editingCollaborator.name} {editingCollaborator.lastname}
+                                    </p>
+                                </div>
+                                <UserEditForm
+                                    entityLabel='colaborador'
+                                    initialData={editingCollaborator}
+                                    onSubmit={handleUpdate}
+                                    onCancel={() => { setTab('list'); setEditingCollaborator(null) }}
+                                    isLoading={isSubmitting}
+                                />
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>
