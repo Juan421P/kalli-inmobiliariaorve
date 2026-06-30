@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
     MapPin, Eye, Bed, Bath, Car, Maximize2,
     Sofa, PawPrint, Zap, ChevronDown, Calendar, Tag,
@@ -15,7 +15,7 @@ import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import propertyService from '@/services/property'
-import useAuth from '@/hooks/use-auth'
+import useAuth from '@/hooks/useAuth'
 import LoginToOfferModal from '@/components/properties/LoginToOfferModal'
 
 // Fix leaflet icons
@@ -109,8 +109,14 @@ const PropertyForSale = () => {
             .finally(() => setIsLoading(false))
     }, [public_id])
 
+    const navigate = useNavigate()
+
     const handleOfferClick = () => {
-        if (!isAuthenticated) setShowOfferModal(true)
+        if (!isAuthenticated) {
+            setShowOfferModal(true)
+        } else {
+            navigate(`/property/${public_id}/offer`)
+        }
     }
 
     const coords = property?.location?.coordinates

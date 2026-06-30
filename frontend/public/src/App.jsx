@@ -1,6 +1,6 @@
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
 import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
-import AuthProvider from '@/providers/auth-provider'
+import AuthProvider from '@/providers/AuthProvider'
 import Toaster from '@/components/Toaster'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import BuyProperties from '@/pages/BuyProperties'
@@ -12,6 +12,8 @@ import PropertyForSale from '@/pages/PropertyForSale'
 import Register from '@/pages/Register'
 import RentProperties from '@/pages/RentProperties'
 import ScheduleAppointment from '@/pages/ScheduleAppointment'
+import MakeOfferPage from '@/pages/MakeOfferPage'
+
 const RootLayout = () => (
 	<div className='relative min-h-screen w-full isolate'>
 		<div className='fixed inset-0 z-[-1] bg-cover bg-center opacity-45' style={{ backgroundImage: `url(${coolAssDesignForTheBackground})` }} />
@@ -35,6 +37,7 @@ const router = createBrowserRouter([
 				element: <ProtectedRoute />,
 				children: [
 					{ path: '/profile', element: <Profile /> },
+					{ path: '/property/:public_id/offer', element: <MakeOfferPage /> },
 				],
 			},
 		],
