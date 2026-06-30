@@ -1,18 +1,21 @@
-import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Search, ArrowRight, Home as HomeIcon, Building2, Map, Info, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import Navbar from '@/components/Navbar'
 import ScrollArea from '@/components/ScrollArea'
-import propertyService from '@/services/property'
+import useHome from '@/hooks/useHome'
 import horseAgent from '@/assets/horse-agent.png'
 import houseBg from '@/assets/house-bg.png'
 
 
+// Formatea numeros a moneda USD sin decimales, ej: 125000 -> "$125,000".
 const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price)
 
+// Convierte una fecha a un texto relativo corto ("Hace 3h", "Hace 2d")
+// para el badge de "Publicado hace..." de cada tarjeta de propiedad.
 const timeAgo = (date) => {
     const diff = Date.now() - new Date(date).getTime()
     const hours = Math.floor(diff / 3_600_000)
@@ -33,6 +36,8 @@ const PropertyCard = ({ property }) => {
     const pictures = property.pictures ?? []
     const Icon = PROPERTY_ICONS[property.property_type] ?? HomeIcon
 
+    // preventDefault: la tarjeta entera es un <Link>, sin esto el click en las
+    // flechas tambien navegaria a la propiedad en vez de solo cambiar la foto.
     const prev = (e) => { e.preventDefault(); setImgIndex((i) => Math.max(0, i - 1)) }
     const next = (e) => { e.preventDefault(); setImgIndex((i) => Math.min(pictures.length - 1, i + 1)) }
 
@@ -100,7 +105,10 @@ const PropertyCardSkeleton = () => (
 
 // ─── Sección de propiedades con tabs + scroll horizontal ──────────────────────
 const PropertiesSection = ({ properties, isLoading }) => {
+    // "Recientes" confia en el orden que ya devuelve el backend (mas nuevo primero).
     const recent  = properties.slice(0, 10)
+    // "Populares": copiamos el array antes de sort() porque muta in-place,
+    // y no queremos alterar el orden original que usa "Recientes".
     const popular = [...properties].sort((a, b) => (b.views ?? 0) - (a.views ?? 0)).slice(0, 10)
 
     const Row = ({ items }) => {
@@ -206,10 +214,10 @@ const OwnersSection = () => (
                             <p className='text-sm text-orve-teal/70 mt-1'>¡Nosotros le asesoramos!</p>
                         </div>
                         <div className='flex flex-col gap-1.5'>
-                            <Link to='/owners#rent' className='text-xs text-orve-teal/60 hover:text-orve-teal transition-colors flex items-center gap-1'>
+                            <Link to='/owners/rent' className='text-xs text-orve-teal/60 hover:text-orve-teal transition-colors flex items-center gap-1'>
                                 Más información <ArrowRight className='w-3 h-3' />
                             </Link>
-                            <Link to='/owners#rent' className='self-start bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors'>
+                            <Link to='/owners/rent' className='self-start bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors'>
                                 Alquile ya
                             </Link>
                         </div>
@@ -227,10 +235,10 @@ const OwnersSection = () => (
                             <p className='text-sm text-orve-teal/70 mt-1'>¡Nosotros le asesoramos!</p>
                         </div>
                         <div className='flex flex-col gap-1.5 items-end'>
-                            <Link to='/owners#sell' className='text-xs text-orve-teal/60 hover:text-orve-teal transition-colors flex items-center gap-1'>
+                            <Link to='/owners/sell' className='text-xs text-orve-teal/60 hover:text-orve-teal transition-colors flex items-center gap-1'>
                                 Más información <ArrowRight className='w-3 h-3' />
                             </Link>
-                            <Link to='/owners#sell' className='self-end bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors'>
+                            <Link to='/owners/sell' className='self-end bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-semibold px-5 py-2 rounded-lg transition-colors'>
                                 Venda ya
                             </Link>
                         </div>
@@ -269,25 +277,7 @@ const Hero = ({ search, onSearch, onSubmit }) => (
 
 // ─── Página ───────────────────────────────────────────────────────────────────
 const Home = () => {
-    const navigate = useNavigate()
-    const [search,     setSearch]     = useState('')
-    const [properties, setProperties] = useState([])
-    const [isLoading,  setIsLoading]  = useState(true)
-
-    useEffect(() => {
-        propertyService.getAll()
-            .then((data) => {
-                const list = data.properties ?? data.data ?? data ?? []
-                setProperties(Array.isArray(list) ? list : [])
-            })
-            .catch(() => setProperties([]))
-            .finally(() => setIsLoading(false))
-    }, [])
-
-    const handleSearch = () => {
-        if (!search.trim()) return
-        navigate(`/buy?q=${encodeURIComponent(search.trim())}`)
-    }
+    const { search, setSearch, properties, isLoading, handleSearch } = useHome()
 
     return (
         <div className='min-h-screen'>

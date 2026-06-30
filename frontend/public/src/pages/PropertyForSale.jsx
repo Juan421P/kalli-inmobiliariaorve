@@ -1,5 +1,5 @@
-﻿import { useState, useEffect } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
 import {
     MapPin, Eye, Bed, Bath, Car, Maximize2,
     Sofa, PawPrint, Zap, ChevronDown, Calendar, Tag,
@@ -14,17 +14,25 @@ import markerShadow from 'leaflet/dist/images/marker-shadow.png'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import propertyService from '@/services/property'
-import useAuth from '@/hooks/useAuth'
+import useProperty from '@/hooks/useProperty'
+import usePropertyActions from '@/hooks/usePropertyActions'
 import LoginToOfferModal from '@/components/properties/LoginToOfferModal'
 
-// Fix leaflet icons
+// Fix leaflet icons: por default Leaflet busca los iconos en una ruta
+// relativa que Vite no resuelve, asi que se reemplazan a mano una sola vez.
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({ iconUrl: markerIcon, iconRetinaUrl: markerIcon2x, shadowUrl: markerShadow })
 
+// Formatea numeros a moneda USD sin decimales, ej: 125000 -> "$125,000".
 const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price)
 
+/**
+ * Seccion colapsable generica (Amenidades, Etiquetas, etc.).
+ * @param {React.ComponentType} icon - icono de lucide-react a mostrar en el header
+ * @param {string} title - titulo del acordeon
+ * @param {React.ReactNode} children - contenido a mostrar cuando esta abierto
+ */
 const Accordion = ({ icon: Icon, title, children }) => {
     const [open, setOpen] = useState(false)
     return (
@@ -48,12 +56,19 @@ const Accordion = ({ icon: Icon, title, children }) => {
     )
 }
 
+/** Pastilla de texto chica, usada dentro de los Accordion (amenidades, tags, etc). */
 const Chip = ({ label }) => (
     <span className='inline-flex items-center px-3 py-1.5 rounded-full bg-orve-teal/12 text-orve-darker-teal text-xs font-medium border border-orve-teal/15'>
         {label}
     </span>
 )
 
+/**
+ * Galeria principal de la propiedad: una foto grande + miniaturas clickeables
+ * (maximo 4, igual que el resto de la UI de propiedades) para cambiar cual
+ * foto se muestra como principal.
+ * @param {Array<{picture: string}>} pictures - fotos de la propiedad
+ */
 const Gallery = ({ pictures = [] }) => {
     const [active, setActive] = useState(0)
     const main   = pictures[active]
@@ -96,28 +111,12 @@ const Gallery = ({ pictures = [] }) => {
 
 const PropertyForSale = () => {
     const { public_id } = useParams()
-    const [property,  setProperty]  = useState(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [notFound,  setNotFound]  = useState(false)
-    const [showOfferModal, setShowOfferModal] = useState(false)
-    const { isAuthenticated } = useAuth()
-
-    useEffect(() => {
-        propertyService.getByPublicId(public_id)
-            .then((data) => setProperty(data.property ?? data))
-            .catch(() => setNotFound(true))
-            .finally(() => setIsLoading(false))
-    }, [public_id])
-
-    const navigate = useNavigate()
-
-    const handleOfferClick = () => {
-        if (!isAuthenticated) {
-            setShowOfferModal(true)
-        } else {
-            navigate(`/property/${public_id}/offer`)
-        }
-    }
+    // Fetch de la propiedad: compartido con MakeOfferPage y ScheduleAppointment.
+    const { property, isLoading, notFound } = useProperty(public_id)
+    // Navegacion con auth-gate hacia "Hacer una oferta" / "Agendar cita":
+    // ambas rutas estan protegidas (ver App.jsx), este hook solo decide si
+    // mostrar el modal de login o navegar directo segun la sesion actual.
+    const { authPrompt, closeAuthPrompt, handleOfferClick, handleScheduleClick } = usePropertyActions(public_id)
 
     const coords = property?.location?.coordinates
     const hasMap = coords?.length === 2
@@ -199,7 +198,10 @@ const PropertyForSale = () => {
                                 </div>
 
                                 <div className='flex gap-3 mt-2'>
-                                    <button className='flex-1 flex items-center justify-center gap-2 bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'>
+                                    <button
+                                        onClick={handleScheduleClick}
+                                        className='flex-1 flex items-center justify-center gap-2 bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
+                                    >
                                         <Calendar className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                         Agendar cita
                                     </button>
@@ -263,11 +265,15 @@ const PropertyForSale = () => {
                 )}
             </div>
 
-            {showOfferModal && (
+            {authPrompt && (
                 <LoginToOfferModal
                     propertyTitle={property?.title}
                     coverImage={coverImage}
-                    onClose={() => setShowOfferModal(false)}
+                    onClose={closeAuthPrompt}
+                    {...(authPrompt === 'schedule' && {
+                        title: 'Inicie sesión para agendar una cita',
+                        description: 'Para proteger su información y garantizar un proceso seguro, es necesario que inicie sesión',
+                    })}
                 />
             )}
         </div>

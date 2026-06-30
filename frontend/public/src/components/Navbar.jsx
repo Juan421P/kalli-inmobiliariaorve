@@ -25,8 +25,8 @@ const NAV_ITEMS = [
     {
         label: 'Propietarios',
         children: [
-            { label: 'Alquilar mi propiedad', href: '/owners#rent' },
-            { label: 'Vender mi propiedad', href: '/owners#sell' },
+            { label: 'Alquilar mi propiedad', href: '/owners/rent' },
+            { label: 'Vender mi propiedad', href: '/owners/sell' },
         ],
     },
     {
@@ -71,7 +71,7 @@ const Navbar = () => {
     const [mobileOpen, setMobileOpen] = useState(false)
     const navigate = useNavigate()
 
-    const handleLogout = () => { logout(); navigate('/') }
+    const handleLogout = async () => { await logout(); navigate('/') }
 
     return (
         <header className='fixed top-0 left-0 right-0 z-50 backdrop-blur-md bg-orve-teal/70 border-b border-white/20'>

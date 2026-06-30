@@ -11,6 +11,8 @@ import Profile from '@/pages/Profile'
 import PropertyForSale from '@/pages/PropertyForSale'
 import Register from '@/pages/Register'
 import RentProperties from '@/pages/RentProperties'
+import RentProperty from '@/pages/RentProperty'
+import SellProperty from '@/pages/SellProperty'
 import ScheduleAppointment from '@/pages/ScheduleAppointment'
 import MakeOfferPage from '@/pages/MakeOfferPage'
 
@@ -30,14 +32,16 @@ const router = createBrowserRouter([
 			{ path: '/register', element: <Register />        },
 			{ path: '/buy',      element: <BuyProperties />   },
 			{ path: '/rent',     element: <RentProperties />  },
+			{ path: '/owners/sell', element: <SellProperty /> },
+			{ path: '/owners/rent', element: <RentProperty /> },
 			{ path: '/property/:public_id', element: <PropertyForSale />  },
-			{ path: '/property/:public_id/schedule', element: <ScheduleAppointment /> },
 			{ path: '/compare',  element: <CompareProperties /> },
 			{
 				element: <ProtectedRoute />,
 				children: [
 					{ path: '/profile', element: <Profile /> },
 					{ path: '/property/:public_id/offer', element: <MakeOfferPage /> },
+					{ path: '/property/:public_id/schedule', element: <ScheduleAppointment /> },
 				],
 			},
 		],

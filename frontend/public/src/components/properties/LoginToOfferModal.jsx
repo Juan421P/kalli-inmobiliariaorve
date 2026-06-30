@@ -10,8 +10,16 @@ import { useNavigate } from 'react-router-dom'
  *  - propertyTitle  : string  — título de la propiedad (e.g. "Apartamento en Colonia San Benito")
  *  - coverImage     : string  — URL de la imagen principal de la propiedad
  *  - onClose        : () => void — cierra el modal
+ *  - title          : string  — título del modal (opcional, default: oferta)
+ *  - description    : string  — descripción del modal (opcional, default: oferta)
  */
-const LoginToOfferModal = ({ propertyTitle, coverImage, onClose }) => {
+const LoginToOfferModal = ({
+    propertyTitle,
+    coverImage,
+    onClose,
+    title = 'Inicie sesión para hacer una oferta',
+    description = 'Para proteger su información y garantizar un proceso seguro, es necesario que inicie sesión',
+}) => {
     const navigate = useNavigate()
 
     return (
@@ -51,11 +59,10 @@ const LoginToOfferModal = ({ propertyTitle, coverImage, onClose }) => {
                     {/* Textos */}
                     <div className='text-center'>
                         <h2 className='text-xl font-bold text-orve-darker-teal'>
-                            Inicie sesión para hacer una oferta
+                            {title}
                         </h2>
                         <p className='text-sm text-orve-teal/60 mt-1.5 leading-relaxed'>
-                            Para proteger su información y garantizar un proceso seguro, es
-                            necesario que inicie sesión
+                            {description}
                         </p>
                     </div>
 

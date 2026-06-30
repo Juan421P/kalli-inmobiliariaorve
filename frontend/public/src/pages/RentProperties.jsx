@@ -1,5 +1,3 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
 import { Search, SlidersHorizontal, LayoutGrid, List } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
@@ -13,8 +11,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import propertyService from '@/services/property'
-
+import usePropertyListing from '@/hooks/usePropertyListing'
 
 const PROPERTY_TYPES = [
     { value: 'all',       label: 'Todos'          },
@@ -37,53 +34,19 @@ const CardSkeleton = () => (
     </div>
 )
 
-// ─── Página ───────────────────────────────────────────────────────────────────
+/**
+ * Pagina de listado "Alquilar": misma estructura que BuyProperties
+ * (panel de filtros + mapa), comparten toda la logica de datos via
+ * usePropertyListing y solo cambia el listingType que se les pasa.
+ */
 const RentProperties = () => {
-    const [searchParams] = useSearchParams()
-    const [properties,  setProperties]  = useState([])
-    const [filtered,    setFiltered]    = useState([])
-    const [isLoading,   setIsLoading]   = useState(true)
-    const [search,      setSearch]      = useState(searchParams.get('q') ?? '')
-    const [typeFilter,  setTypeFilter]  = useState(searchParams.get('type') ?? 'all')
-    const [sortBy,      setSortBy]      = useState('recommended')
-    const [view,        setView]        = useState('grid') // 'grid' | 'list'
-
-    // ── Fetch ─────────────────────────────────────────────────────────────────
-    useEffect(() => {
-        propertyService.getAll({ listing_type: 'rent' })
-            .then((data) => {
-                const list = data.properties ?? data.data ?? data ?? []
-                const result = Array.isArray(list) ? list.filter((p) => p.listing_type === 'rent') : []
-                setProperties(result)
-            })
-            .catch(() => setProperties([]))
-            .finally(() => setIsLoading(false))
-    }, [])
-
-    // ── Filtros y orden ───────────────────────────────────────────────────────
-    const applyFilters = useCallback(() => {
-        let result = [...properties]
-
-        if (search.trim()) {
-            const q = search.toLowerCase()
-            result = result.filter((p) =>
-                p.title.toLowerCase().includes(q) ||
-                (p.address ?? '').toLowerCase().includes(q)
-            )
-        }
-
-        if (typeFilter !== 'all') {
-            result = result.filter((p) => p.property_type === typeFilter)
-        }
-
-        if (sortBy === 'price_asc')  result.sort((a, b) => a.price - b.price)
-        if (sortBy === 'price_desc') result.sort((a, b) => b.price - a.price)
-        if (sortBy === 'newest')     result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-
-        setFiltered(result)
-    }, [properties, search, typeFilter, sortBy])
-
-    useEffect(() => { applyFilters() }, [applyFilters])
+    const {
+        isLoading, filtered,
+        search, setSearch,
+        typeFilter, setTypeFilter,
+        sortBy, setSortBy,
+        view, setView,
+    } = usePropertyListing('rent')
 
     return (
         <div className='flex flex-col h-screen'>

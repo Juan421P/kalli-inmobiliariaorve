@@ -1,20 +1,14 @@
-﻿import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
+import { Controller } from 'react-hook-form'
 import { ArrowLeft, CalendarIcon, Clock } from 'lucide-react'
 import { Icon } from '@iconify/react'
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
-import { appointmentService, scheduleAvailabilityService } from '@/services/appointment'
-import propertyService from '@/services/property'
-import toast from '@/lib/toast'
+import useProperty from '@/hooks/useProperty'
+import useAppointmentForm from '@/hooks/useAppointmentForm'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
-
-const DAY_MAP = {
-    0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
-    4: 'thursday', 5: 'friday', 6: 'saturday',
-}
 
 const CONTACT_OPTIONS = [
     { value: 'whatsapp', label: 'WhatsApp',          icon: 'logos:whatsapp-icon'  },
@@ -22,74 +16,39 @@ const CONTACT_OPTIONS = [
     { value: 'email',    label: 'Correo electronico', icon: 'solar:letter-bold'    },
 ]
 
+const FUNDS_SOURCE_OPTIONS = [
+    { value: 'own',   label: 'Fondos propios'   },
+    { value: 'loan',  label: 'Prestamo/credito' },
+    { value: 'mixed', label: 'Mixto'            },
+]
+
+/**
+ * Pagina "Agendar cita" para visitar una propiedad. Esta detras de
+ * ProtectedRoute (ver App.jsx), asi que siempre hay un usuario logueado
+ * cuando se renderiza. Toda la logica de horarios/validacion/submit vive
+ * en useAppointmentForm; este componente solo arma la UI y conecta cada
+ * campo con react-hook-form (inputs nativos via `register`, botones tipo
+ * "chip" y el calendario via `Controller`).
+ */
 const ScheduleAppointment = () => {
-    const { public_id }  = useParams()
-    const navigate       = useNavigate()
+    const { public_id } = useParams()
+    const { property, isLoading: isLoadingProperty, notFound } = useProperty(public_id)
 
-    const [property,     setProperty]     = useState(null)
-    const [propertyError, setPropertyError] = useState(false)
-    const [schedules,    setSchedules]    = useState([])
-    const [isLoading,    setIsLoading]    = useState(true)
-    const [isSubmitting, setIsSubmitting] = useState(false)
-    const [noSchedules,  setNoSchedules]  = useState(false)
+    const {
+        isLoadingSchedules,
+        noSchedules,
+        isSubmitting,
+        isValid,
+        register,
+        control,
+        selectedDate,
+        slotsForDate,
+        disabledDays,
+        handleDateChange,
+        handleSubmit,
+    } = useAppointmentForm({ property, publicId: public_id })
 
-    const [selectedDate,    setSelectedDate]    = useState(null)
-    const [selectedSlot,    setSelectedSlot]    = useState(null)
-    const [selectedContact, setSelectedContact] = useState(null)
-
-    useEffect(() => {
-        Promise.all([
-            propertyService.getByPublicId(public_id).catch(() => null),
-            scheduleAvailabilityService.get().catch(() => null),
-        ]).then(([propData, schedData]) => {
-            const prop = propData?.property ?? propData ?? null
-            if (!prop) {
-                setPropertyError(true)
-            } else {
-                setProperty(prop)
-            }
-            const list = schedData?.schedules ?? []
-            if (list.length > 0) {
-                setSchedules(list)
-            } else {
-                setNoSchedules(true)
-            }
-        }).finally(() => setIsLoading(false))
-    }, [public_id])
-
-    const slotsForDate = selectedDate
-        ? (schedules.find((s) => s.day === DAY_MAP[selectedDate.getDay()])?.intervals ?? [])
-        : []
-
-    const disabledDays = (date) => {
-        if (date < new Date(new Date().setHours(0, 0, 0, 0))) return true
-        if (noSchedules) return true
-        const schedule = schedules.find((s) => s.day === DAY_MAP[date.getDay()])
-        return !schedule || schedule.intervals.length === 0
-    }
-
-    const handleSubmit = async () => {
-        if (!selectedDate || !selectedSlot || !selectedContact) {
-            toast.error('Completa todos los campos antes de solicitar la cita.')
-            return
-        }
-        setIsSubmitting(true)
-        try {
-            await appointmentService.create({
-                property:        property?._id,
-                time:            selectedSlot._id,
-                proposed_dates:  [selectedDate.toISOString()],
-                qualification:   { funds_source: 'own', monthly_income: 0, reason: 'Interesado en la propiedad' },
-                current_address: { district: '000000000000000000000000', reference: 'Sin especificar' },
-            })
-            toast.success('Cita solicitada correctamente!')
-            navigate(`/property/${public_id}`)
-        } catch {
-            toast.error('No se pudo solicitar la cita. Intenta de nuevo.')
-        } finally {
-            setIsSubmitting(false)
-        }
-    }
+    const isLoading = isLoadingProperty || isLoadingSchedules
 
     const bgImage = property?.pictures?.[0]?.picture
         ? `url(${property.pictures[0].picture})`
@@ -110,13 +69,13 @@ const ScheduleAppointment = () => {
                         <Skeleton className='w-64 h-96 rounded-2xl shrink-0' />
                         <Skeleton className='flex-1 h-96 rounded-2xl' />
                     </div>
-                ) : propertyError ? (
+                ) : notFound ? (
                     <div className='flex flex-col items-center justify-center py-24 gap-3'>
                         <p className='text-orve-teal/50 text-lg'>Propiedad no encontrada.</p>
                         <Link to='/' className='text-sm text-orve-teal underline'>Volver al inicio</Link>
                     </div>
                 ) : (
-                    <div className='flex flex-col gap-3'>
+                    <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
                         <Link
                             to={`/property/${public_id}`}
                             className='flex items-center gap-1.5 text-sm text-orve-teal/70 hover:text-orve-teal transition-colors'
@@ -156,49 +115,64 @@ const ScheduleAppointment = () => {
                                     <div className='flex flex-col md:flex-row gap-6'>
                                         <div className='flex flex-col gap-2 shrink-0'>
                                             <p className='text-sm font-medium text-orve-teal'>Cuando desea visitar?</p>
-                                            <Calendar
-                                                mode='single'
-                                                selected={selectedDate}
-                                                onSelect={(date) => { setSelectedDate(date); setSelectedSlot(null) }}
-                                                disabled={disabledDays}
-                                                className='rounded-xl border border-orve-teal/10 bg-white/80 p-3'
+                                            <Controller
+                                                control={control}
+                                                name='selectedDate'
+                                                rules={{ required: true }}
+                                                render={({ field }) => (
+                                                    <Calendar
+                                                        mode='single'
+                                                        selected={field.value}
+                                                        onSelect={handleDateChange}
+                                                        disabled={disabledDays}
+                                                        className='rounded-xl border border-orve-teal/10 bg-white/80 p-3'
+                                                    />
+                                                )}
                                             />
                                         </div>
 
                                         <div className='flex flex-col gap-3 flex-1'>
                                             <p className='text-sm font-medium text-orve-teal'>Seleccione una hora</p>
-                                            {!selectedDate ? (
-                                                <p className='text-xs text-orve-teal/40'>Selecciona una fecha primero.</p>
-                                            ) : slotsForDate.length === 0 ? (
-                                                <p className='text-xs text-orve-teal/40'>No hay horarios disponibles para este dia.</p>
-                                            ) : (
-                                                <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
-                                                    {slotsForDate.map((slot) => (
-                                                        <button
-                                                            key={slot._id}
-                                                            onClick={() => setSelectedSlot(slot)}
-                                                            className={cn(
-                                                                'px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
-                                                                selectedSlot?._id === slot._id
-                                                                    ? 'bg-orve-teal text-white border-orve-teal'
-                                                                    : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
-                                                            )}
-                                                        >
-                                                            {slot.start_time}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
+                                            <Controller
+                                                control={control}
+                                                name='selectedSlot'
+                                                rules={{ required: true }}
+                                                render={({ field }) => !selectedDate ? (
+                                                    <p className='text-xs text-orve-teal/40'>Selecciona una fecha primero.</p>
+                                                ) : slotsForDate.length === 0 ? (
+                                                    <p className='text-xs text-orve-teal/40'>No hay horarios disponibles para este dia.</p>
+                                                ) : (
+                                                    <>
+                                                        <div className='grid grid-cols-2 sm:grid-cols-3 gap-2'>
+                                                            {slotsForDate.map((slot) => (
+                                                                <button
+                                                                    type='button'
+                                                                    key={slot._id}
+                                                                    onClick={() => field.onChange(slot)}
+                                                                    className={cn(
+                                                                        'px-3 py-2 rounded-xl text-sm font-medium border transition-colors',
+                                                                        field.value?._id === slot._id
+                                                                            ? 'bg-orve-teal text-white border-orve-teal'
+                                                                            : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
+                                                                    )}
+                                                                >
+                                                                    {slot.start_time}
+                                                                </button>
+                                                            ))}
+                                                        </div>
 
-                                            {selectedSlot && (
-                                                <div className='flex items-center gap-2.5 bg-orve-teal/8 border border-orve-teal/15 rounded-xl px-4 py-3 mt-1'>
-                                                    <Clock className='w-4 h-4 text-orve-teal/60 shrink-0' strokeWidth={1.5} />
-                                                    <div>
-                                                        <p className='text-xs font-medium text-orve-teal'>Duracion aproximada</p>
-                                                        <p className='text-xs text-orve-teal/60'>30 - 45 minutos</p>
-                                                    </div>
-                                                </div>
-                                            )}
+                                                        {field.value && (
+                                                            <div className='flex items-center gap-2.5 bg-orve-teal/8 border border-orve-teal/15 rounded-xl px-4 py-3 mt-1'>
+                                                                <Clock className='w-4 h-4 text-orve-teal/60 shrink-0' strokeWidth={1.5} />
+                                                                <div>
+                                                                    <p className='text-xs font-medium text-orve-teal'>Duracion aproximada</p>
+                                                                    <p className='text-xs text-orve-teal/60'>30 - 45 minutos</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            />
                                         </div>
                                     </div>
 
@@ -206,28 +180,109 @@ const ScheduleAppointment = () => {
 
                                     <div className='flex flex-col gap-3'>
                                         <p className='text-sm font-medium text-orve-teal'>Como desea que lo contactemos?</p>
-                                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-                                            {CONTACT_OPTIONS.map(({ value, label, icon }) => (
-                                                <button
-                                                    key={value}
-                                                    onClick={() => setSelectedContact(value)}
-                                                    className={cn(
-                                                        'flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-colors',
-                                                        selectedContact === value
-                                                            ? 'bg-orve-teal text-white border-orve-teal'
-                                                            : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
-                                                    )}
-                                                >
-                                                    <Icon icon={icon} className='w-5 h-5 shrink-0' />
-                                                    {label}
-                                                </button>
-                                            ))}
+                                        <Controller
+                                            control={control}
+                                            name='contactMethod'
+                                            rules={{ required: 'Selecciona como te contactaremos' }}
+                                            render={({ field }) => (
+                                                <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                                                    {CONTACT_OPTIONS.map(({ value, label, icon }) => (
+                                                        <button
+                                                            type='button'
+                                                            key={value}
+                                                            onClick={() => field.onChange(value)}
+                                                            className={cn(
+                                                                'flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-colors',
+                                                                field.value === value
+                                                                    ? 'bg-orve-teal text-white border-orve-teal'
+                                                                    : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
+                                                            )}
+                                                        >
+                                                            <Icon icon={icon} className='w-5 h-5 shrink-0' />
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className='h-px bg-orve-teal/10' />
+
+                                    <div className='flex flex-col gap-3'>
+                                        <p className='text-sm font-medium text-orve-teal'>Cual es el origen de los fondos?</p>
+                                        <Controller
+                                            control={control}
+                                            name='fundsSource'
+                                            rules={{ required: 'Selecciona el origen de los fondos' }}
+                                            render={({ field }) => (
+                                                <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                                                    {FUNDS_SOURCE_OPTIONS.map(({ value, label }) => (
+                                                        <button
+                                                            type='button'
+                                                            key={value}
+                                                            onClick={() => field.onChange(value)}
+                                                            className={cn(
+                                                                'px-4 py-3 rounded-xl border text-sm font-medium transition-colors',
+                                                                field.value === value
+                                                                    ? 'bg-orve-teal text-white border-orve-teal'
+                                                                    : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
+                                                            )}
+                                                        >
+                                                            {label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        />
+                                    </div>
+
+                                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                                        <div className='flex flex-col gap-1.5'>
+                                            <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
+                                                Ingreso mensual
+                                            </label>
+                                            <div className='flex items-center gap-2 bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5'>
+                                                <span className='text-orve-teal/50 text-sm font-medium'>$</span>
+                                                <input
+                                                    type='number'
+                                                    min='0'
+                                                    placeholder='0'
+                                                    {...register('monthlyIncome', { required: true, min: 0 })}
+                                                    className='flex-1 bg-transparent text-orve-darker-teal text-sm font-medium outline-none placeholder:text-orve-teal/30'
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className='flex flex-col gap-1.5'>
+                                            <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
+                                                Direccion actual
+                                            </label>
+                                            <input
+                                                type='text'
+                                                placeholder='Ej. Colonia Escalon, calle La Reforma #123'
+                                                {...register('addressReference', { required: true })}
+                                                className='bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5 text-sm text-orve-darker-teal outline-none placeholder:text-orve-teal/30'
+                                            />
                                         </div>
                                     </div>
 
+                                    <div className='flex flex-col gap-1.5'>
+                                        <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
+                                            Motivo de la visita
+                                        </label>
+                                        <textarea
+                                            rows={2}
+                                            placeholder='Contanos por que te interesa esta propiedad'
+                                            {...register('reason', { required: true })}
+                                            className='bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5 text-sm text-orve-darker-teal outline-none placeholder:text-orve-teal/30 resize-none'
+                                        />
+                                    </div>
+
+                                    <div className='h-px bg-orve-teal/10' />
+
                                     <button
-                                        onClick={handleSubmit}
-                                        disabled={isSubmitting || !selectedDate || !selectedSlot || !selectedContact}
+                                        type='submit'
+                                        disabled={isSubmitting || !isValid}
                                         className='w-full flex items-center justify-center gap-2.5 bg-orve-teal hover:bg-orve-darker-teal disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition-colors'
                                     >
                                         <CalendarIcon className='w-4 h-4 shrink-0' strokeWidth={1.5} />
@@ -236,7 +291,7 @@ const ScheduleAppointment = () => {
                                 </>
                             )}
                         </div>
-                    </div>
+                    </form>
                 )}
             </div>
         </div>
