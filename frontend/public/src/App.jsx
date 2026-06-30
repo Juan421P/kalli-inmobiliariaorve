@@ -18,7 +18,7 @@ const RootLayout = () => (
 		<Toaster />
 		<Outlet />
 	</div>
-)
+);
 const router = createBrowserRouter([
 	{
 		element: <RootLayout />,
@@ -39,10 +39,10 @@ const router = createBrowserRouter([
 			},
 		],
 	},
-])
+]);
 const App = () => (
 	<AuthProvider>
 		<RouterProvider router={router} />
 	</AuthProvider>
-)
-export default App
+);
+export default App;

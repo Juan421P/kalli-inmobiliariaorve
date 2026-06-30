@@ -3,7 +3,7 @@ import Service from './service.js'
 // Mock 
 // Cuando el backend esté listo, cambiá USE_MOCK a false y listo.
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const MOCK_DATA = {
     '/amenities': [

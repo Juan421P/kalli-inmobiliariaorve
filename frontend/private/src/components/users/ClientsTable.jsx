@@ -1,6 +1,5 @@
 import { Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
     Table,
     TableBody,
@@ -17,6 +16,17 @@ import {
     EmptyDescription,
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import UserAvatar from './UserAvatar'
 
 const DOC_BADGE_CLASS = {
@@ -120,14 +130,36 @@ const ClientsTable = ({ clients = [], isLoading, onEdit, onDelete }) => {
                                 >
                                     <Pencil className='w-3.5 h-3.5' />
                                 </Button>
-                                <Button
-                                    variant='ghost'
-                                    size='icon-sm'
-                                    onClick={() => onDelete(c)}
-                                    className='text-orve-teal/50 hover:text-red-400 hover:bg-red-50'
-                                >
-                                    <Trash2 className='w-3.5 h-3.5' />
-                                </Button>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant='ghost'
+                                            size='icon-sm'
+                                            className='text-orve-teal/50 hover:text-red-400 hover:bg-red-50'
+                                        >
+                                            <Trash2 className='w-3.5 h-3.5' />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent size='sm'>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>¿Eliminar cliente?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Se eliminará permanentemente a <strong>{c.name} {c.lastname}</strong>. Esta acción no se puede deshacer.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel className='border-orve-teal/30 text-orve-teal hover:bg-orve-teal/10 hover:text-orve-teal'>
+                                                Cancelar
+                                            </AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={() => onDelete(c)}
+                                                className='bg-red-500 text-white border-transparent hover:bg-red-600'
+                                            >
+                                                Eliminar
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             </div>
                         </TableCell>
                     </TableRow>

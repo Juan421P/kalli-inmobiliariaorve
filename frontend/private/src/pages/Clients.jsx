@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Search, UserPlus, Users, Home, PhoneCall, ShoppingBag } from 'lucide-react'
+import { Search, UserPlus, Pencil, Users, Home, PhoneCall, ShoppingBag } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
@@ -9,6 +9,7 @@ import useAuth from '@/hooks/use-auth'
 import { clientsService } from '@/services/clients'
 import ClientsTable from '@/components/users/ClientsTable'
 import UserCreateForm from '@/components/users/UserCreateForm'
+import UserEditForm from '@/components/users/UserEditForm'
 import UsersPagination from '@/components/users/UsersPagination'
 
 const LIMIT = 5
@@ -32,14 +33,20 @@ const MetricCard = ({ icon: Icon, label, value, highlight = false }) => (
 const Clients = () => {
     const { user } = useAuth()
 
-    const [tab,          setTab]          = useState('list')
-    const [clients,      setClients]      = useState([])
-    const [metrics,      setMetrics]      = useState({ totalActive: 0, interestedBuy: 0, interestedRent: 0, pendingContact: 0 })
-    const [total,        setTotal]        = useState(0)
-    const [currentPage,  setCurrentPage]  = useState(1)
-    const [search,       setSearch]       = useState('')
-    const [isLoading,    setIsLoading]    = useState(true)
-    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [tab,            setTab]            = useState('list')
+    const [clients,        setClients]        = useState([])
+    const [metrics,        setMetrics]        = useState({ totalActive: 0, interestedBuy: 0, interestedRent: 0, pendingContact: 0 })
+    const [total,          setTotal]          = useState(0)
+    const [currentPage,    setCurrentPage]    = useState(1)
+    const [search,         setSearch]         = useState('')
+    const [isLoading,      setIsLoading]      = useState(true)
+    const [isSubmitting,   setIsSubmitting]   = useState(false)
+    const [editingClient,  setEditingClient]  = useState(null)
+
+    const handleTabChange = (newTab) => {
+        if (newTab !== 'update') setEditingClient(null)
+        setTab(newTab)
+    }
 
     const totalPages = Math.max(1, Math.ceil(total / LIMIT))
 
@@ -85,7 +92,24 @@ const Clients = () => {
 
     // ── Editar ─────────────────────────────────────────────────────────────────
     const handleEdit = (client) => {
-        toast('Próximamente', { description: `Editar a ${client.name} ${client.lastname}` })
+        setEditingClient(client)
+        setTab('update')
+    }
+
+    // ── Actualizar ─────────────────────────────────────────────────────────────
+    const handleUpdate = async (formData) => {
+        setIsSubmitting(true)
+        try {
+            await clientsService.update(editingClient._id, formData)
+            toast.success(`${formData.name} ${formData.lastname} actualizado correctamente.`)
+            setTab('list')
+            setEditingClient(null)
+            fetchClients(currentPage, search)
+        } catch {
+            toast.error('Error', 'No se pudo actualizar el cliente.')
+        } finally {
+            setIsSubmitting(false)
+        }
     }
 
     // ── Eliminar ───────────────────────────────────────────────────────────────
@@ -113,7 +137,7 @@ const Clients = () => {
                     <p className='text-sm text-orve-teal/70 mt-0.5'>Administre todos los clientes registrados en el sistema</p>
                 </header>
 
-                <Tabs value={tab} onValueChange={setTab}>
+                <Tabs value={tab} onValueChange={handleTabChange}>
                     <TabsList className='mb-5 bg-orve-teal/10'>
                         <TabsTrigger value='list'   className='data-active:bg-white data-active:text-orve-teal text-orve-teal/60'>
                             Clientes
@@ -122,6 +146,12 @@ const Clients = () => {
                             <UserPlus className='w-4 h-4' />
                             Nuevo cliente
                         </TabsTrigger>
+                        {editingClient && (
+                            <TabsTrigger value='update' className='data-active:bg-white data-active:text-orve-teal text-orve-teal/60'>
+                                <Pencil className='w-4 h-4' />
+                                Actualizar cliente
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     {/* ── Tab lista ── */}
@@ -184,6 +214,27 @@ const Clients = () => {
                                 isLoading={isSubmitting}
                             />
                         </div>
+                    </TabsContent>
+
+                    {/* ── Tab actualizar ── */}
+                    <TabsContent value='update'>
+                        {editingClient && (
+                            <div className={panel}>
+                                <div className='mb-6'>
+                                    <h2 className='text-base font-semibold text-orve-teal'>Actualizar cliente</h2>
+                                    <p className='text-sm text-orve-teal/60 mt-0.5'>
+                                        Modifique la información de {editingClient.name} {editingClient.lastname}
+                                    </p>
+                                </div>
+                                <UserEditForm
+                                    entityLabel='cliente'
+                                    initialData={editingClient}
+                                    onSubmit={handleUpdate}
+                                    onCancel={() => { setTab('list'); setEditingClient(null) }}
+                                    isLoading={isSubmitting}
+                                />
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>

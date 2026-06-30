@@ -36,16 +36,16 @@ const router = createBrowserRouter([
 					{ path: '/appointments', element: <Appointments /> },
 					{ path: '/offers', element: <Offers /> },
 					{ path: '/profile', element: <Profile /> },
-					{
-						element: <ProtectedRoute requiredRole='admin' />,
-						children: [
-							{ path: '/clients', element: <Clients /> },
-							{ path: '/collaborators', element: <Collaborators /> },
+												{ path: '/collaborators', element: <Collaborators /> },
 							{ path: '/schedules', element: <Schedules /> },
 							{ path: '/catalogs/amenities', element: <Amenities /> },
 							{ path: '/catalogs/tags', element: <Tags /> },
 							{ path: '/catalogs/features', element: <Features /> },
 							{ path: '/catalogs/appliances', element: <Appliances /> },
+					{
+						element: <ProtectedRoute requiredRole='admin' />,
+						children: [
+							{ path: '/clients', element: <Clients /> },
 						],
 					},
 				],
