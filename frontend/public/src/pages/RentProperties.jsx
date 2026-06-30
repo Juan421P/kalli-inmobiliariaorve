@@ -15,15 +15,6 @@ import {
 } from '@/components/ui/select'
 import propertyService from '@/services/property'
 
-// ─── Mock data mientras no hay backend ───────────────────────────────────────
-const MOCK = [
-    { _id: '1', public_id: 'r1', title: 'Casa en Col. Escalón',          property_type: 'house',     listing_type: 'rent', price: 950,  views: 10, createdAt: new Date(Date.now() - 3_600_000).toISOString(),  address: 'Col. Escalón, San Salvador',   location: { type: 'Point', coordinates: [-89.2350, 13.7020] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&q=80' }] },
-    { _id: '2', public_id: 'r2', title: 'Apartamento en Santa Elena',    property_type: 'apartment', listing_type: 'rent', price: 1200, views: 25, createdAt: new Date(Date.now() - 7_200_000).toISOString(),  address: 'Santa Elena, Antiguo Cuscatlán', location: { type: 'Point', coordinates: [-89.2480, 13.6780] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&q=80' }] },
-    { _id: '3', public_id: 'r3', title: 'Apartamento en Zona Rosa',      property_type: 'apartment', listing_type: 'rent', price: 1000, views: 18, createdAt: new Date(Date.now() - 86_400_000).toISOString(), address: 'Zona Rosa, San Salvador',       location: { type: 'Point', coordinates: [-89.2280, 13.6950] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=400&q=80' }] },
-    { _id: '4', public_id: 'r4', title: 'Casa en Merliot',               property_type: 'house',     listing_type: 'rent', price: 1760, views: 8,  createdAt: new Date(Date.now() - 172_800_000).toISOString(), address: 'Ciudad Merliot, La Libertad',   location: { type: 'Point', coordinates: [-89.2900, 13.6700] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=400&q=80' }] },
-    { _id: '5', public_id: 'r5', title: 'Casa en San Benito',            property_type: 'house',     listing_type: 'rent', price: 750,  views: 32, createdAt: new Date(Date.now() - 3_600_000).toISOString(),  address: 'Col. San Benito, San Salvador', location: { type: 'Point', coordinates: [-89.2380, 13.7000] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80' }] },
-    { _id: '6', public_id: 'r6', title: 'Apartamento en Metrocentro',    property_type: 'apartment', listing_type: 'rent', price: 1500, views: 15, createdAt: new Date(Date.now() - 3_600_000).toISOString(),  address: 'Metrocentro, San Salvador',     location: { type: 'Point', coordinates: [-89.2200, 13.6980] }, pictures: [{ picture: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400&q=80' }] },
-]
 
 const PROPERTY_TYPES = [
     { value: 'all',       label: 'Todos'          },
@@ -63,9 +54,9 @@ const RentProperties = () => {
             .then((data) => {
                 const list = data.properties ?? data.data ?? data ?? []
                 const result = Array.isArray(list) ? list.filter((p) => p.listing_type === 'rent') : []
-                setProperties(result.length > 0 ? result : MOCK)
+                setProperties(result)
             })
-            .catch(() => setProperties(MOCK))
+            .catch(() => setProperties([]))
             .finally(() => setIsLoading(false))
     }, [])
 

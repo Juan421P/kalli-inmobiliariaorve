@@ -9,7 +9,7 @@ import propertyService from '@/services/property'
 import horseAgent from '@/assets/horse-agent.png'
 import houseBg from '@/assets/house-bg.png'
 
-const MOCK_PROPERTIES = []
+
 const formatPrice = (price) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(price)
 
