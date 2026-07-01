@@ -15,6 +15,7 @@ import RentProperty from '@/pages/RentProperty'
 import SellProperty from '@/pages/SellProperty'
 import ScheduleAppointment from '@/pages/ScheduleAppointment'
 import MakeOfferPage from '@/pages/MakeOfferPage'
+import Help from '@/pages/Help'
 
 const RootLayout = () => (
 	<div className='relative min-h-screen w-full isolate'>
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
 			{ path: '/owners/rent', element: <RentProperty /> },
 			{ path: '/property/:public_id', element: <PropertyForSale />  },
 			{ path: '/compare',  element: <CompareProperties /> },
+			{ path: '/help', element: <Help /> },
 			{
 				element: <ProtectedRoute />,
 				children: [

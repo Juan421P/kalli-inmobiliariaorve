@@ -7,7 +7,7 @@ import Navbar from '@/components/Navbar'
 import ScrollArea from '@/components/ScrollArea'
 import useHome from '@/hooks/useHome'
 import horseAgent from '@/assets/horse-agent.png'
-import houseBg from '@/assets/house-bg.png'
+import houseBg from '@/assets/beautiful-background-for-the-home-page.png'
 
 
 // Formatea numeros a moneda USD sin decimales, ej: 125000 -> "$125,000".
@@ -282,12 +282,10 @@ const Home = () => {
     return (
         <div className='min-h-screen'>
             <Navbar />
-            <div className='pt-14'>
-                <Hero search={search} onSearch={setSearch} onSubmit={handleSearch} />
-                <PropertiesSection properties={properties} isLoading={isLoading} />
-                <CategoriesSection />
-                <OwnersSection />
-            </div>
+            <Hero search={search} onSearch={setSearch} onSubmit={handleSearch} />
+            <PropertiesSection properties={properties} isLoading={isLoading} />
+            <CategoriesSection />
+            <OwnersSection />
         </div>
     )
 }

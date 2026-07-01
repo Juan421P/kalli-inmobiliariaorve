@@ -86,15 +86,16 @@ const useRegisterForm = () => {
         }
     }
 
-    const submitStep3 = async ({ code }) => {
-        setServerError(null)
-        try {
-            await ClientService.verifyEmail({ code })
-            setStep(4)
-        } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'Código incorrecto o expirado.')
-        }
+const submitStep3 = async ({ code }) => {
+    setServerError(null)
+    try {
+        await ClientService.verifyEmail({ code: code.toLowerCase() })
+        setStep(4)
+    } catch (err) {
+        console.log(err);
+        setServerError(err?.response?.data?.message ?? 'Código incorrecto o expirado.')
     }
+}
 
     // "mm:ss" para mostrar en el countdown del OTP
     const formatCountdown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
