@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { Eye, EyeOff, Lock, Hash, FileText, ArrowLeft, UserPlus, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-const DOCUMENT_TYPES = ['DUI', 'Pasaporte', 'NIT']
-
+const DOCUMENT_TYPES = ['DUI', 'Pasaporte', 'Residencia']
 /**
  * Paso 2 del registro: datos de contacto e identificacion.
  * Al enviar este formulario SI llama al backend (POST /client) para crear la
