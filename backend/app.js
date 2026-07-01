@@ -10,7 +10,10 @@ app.use(helmet());
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: (origin, cb) => {
+        if (!origin || /^http:\/\/localhost(:\d+)?$/.test(origin)) return cb(null, true);
+        cb(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 app.use('/api', rateLimit({
