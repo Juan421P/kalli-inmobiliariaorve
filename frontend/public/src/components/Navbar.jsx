@@ -32,7 +32,13 @@ const NAV_ITEMS = [
             { label: 'Vender mi propiedad', to: '/owners/sell' },
         ],
     },
-    { label: 'Comparar', to: '/compare' },
+    {
+        label: 'Calcular',
+        items: [
+            { label: 'Calcular cuota mensual', to: '/calculate' },
+            { label: 'Comparar propiedades',   to: '/compare' },
+        ],
+    },
     { label: 'Ayuda', to: '/help' },
 ];
 

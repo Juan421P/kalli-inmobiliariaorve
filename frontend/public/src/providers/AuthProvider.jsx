@@ -30,6 +30,9 @@ const AuthProvider = ({ children }) => {
     // la cookie) ya ocurrio en el backend antes de llamar a esto.
     const login = ({ role, user }) => setAuth({ role, user })
 
+    const updateUser = (updates) =>
+        setAuth(prev => prev ? { ...prev, user: { ...prev.user, ...updates } } : prev)
+
     // logout SI necesita avisarle al backend: la cookie de sesion es httpOnly
     // (el JS del navegador no puede borrarla), asi que sin este POST la
     // sesion seguiria activa del lado del servidor aunque la UI muestre
@@ -51,6 +54,7 @@ const AuthProvider = ({ children }) => {
             isRehydrating,
             login,
             logout,
+            updateUser,
         }}>
             {children}
         </AuthContext.Provider>

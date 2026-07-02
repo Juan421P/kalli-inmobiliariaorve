@@ -35,7 +35,13 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
                             <span className='text-[10px] text-orve-teal/50 font-medium'>+503</span>
                         </div>
                         <input
-                            {...register('phone', { required: true })}
+                            {...register('phone', {
+                                required: true,
+                                pattern: {
+                                    value: /^\d{4}-?\d{4}$/,
+                                    message: 'Formato: 0000-0000',
+                                },
+                            })}
                             type='tel'
                             placeholder='0000-0000'
                             className={cn(
@@ -44,6 +50,9 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
                             )}
                         />
                     </div>
+                    {errors.phone && (
+                        <p className='text-[10px] text-orve-red'>{errors.phone.message ?? 'Requerido'}</p>
+                    )}
                 </div>
 
                 {/* Tipo de documento select */}

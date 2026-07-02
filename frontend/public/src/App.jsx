@@ -5,6 +5,7 @@ import Toaster from '@/components/Toaster'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import BuyProperties from '@/pages/BuyProperties'
 import CompareProperties from '@/pages/CompareProperties'
+import CompareSelect from '@/pages/CompareSelect'
 import Home from '@/pages/Home'
 import Login from '@/pages/Login'
 import Profile from '@/pages/Profile'
@@ -16,6 +17,7 @@ import SellProperty from '@/pages/SellProperty'
 import ScheduleAppointment from '@/pages/ScheduleAppointment'
 import MakeOfferPage from '@/pages/MakeOfferPage'
 import Help from '@/pages/Help'
+import Calculate from '@/pages/Calculate'
 
 const RootLayout = () => (
 	<div className='relative min-h-screen w-full isolate'>
@@ -36,8 +38,10 @@ const router = createBrowserRouter([
 			{ path: '/owners/sell', element: <SellProperty /> },
 			{ path: '/owners/rent', element: <RentProperty /> },
 			{ path: '/property/:public_id', element: <PropertyForSale />  },
-			{ path: '/compare',  element: <CompareProperties /> },
-			{ path: '/help', element: <Help /> },
+			{ path: '/compare',        element: <CompareProperties /> },
+			{ path: '/compare/select', element: <CompareSelect /> },
+			{ path: '/calculate', element: <Calculate /> },
+			{ path: '/help',      element: <Help /> },
 			{
 				element: <ProtectedRoute />,
 				children: [

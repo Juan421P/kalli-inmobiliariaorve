@@ -41,8 +41,9 @@ const useLoginForm = () => {
     const onLoginSubmit = async ({ email, password }) => {
         setServerError(null)
         try {
-            const { role, user } = await ClientService.login({ email, password })
-            login({ role, user })
+            const data = await ClientService.login({ email, password })
+            // El backend devuelve { client } pero AuthContext espera { role, user }
+            login({ role: data.role ?? 'client', user: data.user ?? data.client })
             navigate('/')
         } catch (err) {
             setServerError(err?.response?.data?.message ?? 'Credenciales incorrectas. Intente de nuevo.')
@@ -55,7 +56,12 @@ const useLoginForm = () => {
             await ClientService.requestPasswordRecovery({ email: recoveryEmail })
             setForgotSent(true)
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'No se encontró una cuenta con ese correo.')
+            const status = err?.response?.status
+            if (status === 403 || status === 404) {
+                setServerError('No encontramos una cuenta con ese correo electrónico.')
+            } else {
+                setServerError('Ocurrió un error. Intente de nuevo más tarde.')
+            }
         }
     }
 

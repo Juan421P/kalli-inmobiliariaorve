@@ -108,7 +108,7 @@ const useAppointmentForm = ({ property, publicId }) => {
                     reference: values.addressReference.trim(),
                 },
             })
-            toast.success('Cita solicitada correctamente!')
+            toast.success('¡Cita solicitada correctamente!')
             navigate(`/property/${publicId}`)
         } catch {
             toast.error('No se pudo solicitar la cita. Intenta de nuevo.')

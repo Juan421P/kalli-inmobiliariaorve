@@ -18,7 +18,7 @@ const OTPInput = ({ value = '', onChange, separatorAt = 3 }) => {
         const charValue = char
             .replace(/[^a-zA-Z0-9]/g, '')
             .slice(-1)
-            .toUpperCase()
+            .toLowerCase()
 
         const next = Array(BOXES)
             .fill('')
@@ -46,7 +46,7 @@ const OTPInput = ({ value = '', onChange, separatorAt = 3 }) => {
             .getData('text')
             .replace(/[^a-zA-Z0-9]/g, '')
             .slice(0, BOXES)
-            .toUpperCase()
+            .toLowerCase()
 
         const result = Array(BOXES)
             .fill('')

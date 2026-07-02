@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import {
     MapPin, Eye, Bed, Bath, Car, Maximize2,
     Sofa, PawPrint, Zap, ChevronDown, Calendar, Tag,
-    Layers, Star, Images
+    Layers, Star, Images, Heart
 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import useProperty from '@/hooks/useProperty'
 import usePropertyActions from '@/hooks/usePropertyActions'
+import useFavorites from '@/hooks/useFavorites'
 import LoginToOfferModal from '@/components/properties/LoginToOfferModal'
 
 // Fix leaflet icons: por default Leaflet busca los iconos en una ruta
@@ -117,6 +118,8 @@ const PropertyForSale = () => {
     // ambas rutas estan protegidas (ver App.jsx), este hook solo decide si
     // mostrar el modal de login o navegar directo segun la sesion actual.
     const { authPrompt, closeAuthPrompt, handleOfferClick, handleScheduleClick } = usePropertyActions(public_id)
+    const { toggleFavorite, isFavorite } = useFavorites()
+    const isFav = isFavorite(property?._id)
 
     const coords = property?.location?.coordinates
     const hasMap = coords?.length === 2
@@ -211,6 +214,18 @@ const PropertyForSale = () => {
                                     >
                                         <Star className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                         Hacer una oferta
+                                    </button>
+                                    <button
+                                        onClick={() => property && toggleFavorite(property)}
+                                        title={isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                                        className={cn(
+                                            'w-11 shrink-0 flex items-center justify-center rounded-xl border transition-colors',
+                                            isFav
+                                                ? 'bg-red-50 border-red-200 text-red-500 hover:bg-red-100'
+                                                : 'bg-white/60 border-orve-teal/20 text-orve-teal/50 hover:border-orve-teal/40 hover:text-orve-teal'
+                                        )}
+                                    >
+                                        <Heart className={cn('w-4 h-4', isFav && 'fill-current')} />
                                     </button>
                                 </div>
                             </div>

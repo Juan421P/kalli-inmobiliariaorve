@@ -39,7 +39,7 @@ const useOfferForm = ({ property, publicId, userId }) => {
     const onSubmit = async (values) => {
         setIsSubmitting(true)
         try {
-            const payload = {
+                const payload = {
                 buyer:    userId,
                 property: property._id,
                 price:    Number(values.price),
