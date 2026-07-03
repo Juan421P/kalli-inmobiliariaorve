@@ -1,6 +1,4 @@
-/**
- * Convierte "08:00" -> "8:00 AM", "14:30" -> "2:30 PM"
- */
+// Solo para mostrar: convierte formato interno 24h a 12h AM/PM legible
 export const formatTime = (time24) => {
     if (!time24) return ''
     const [hourStr, minutes] = time24.split(':')

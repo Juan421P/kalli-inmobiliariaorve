@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { FieldError } from '@/components/ui/field'
+
 import {
     Select,
     SelectContent,
@@ -11,7 +11,7 @@ import {
 import { panel } from '@/lib/styles'
 import { DAYS_OF_WEEK } from './scheduleUtils'
 
-// Opciones 
+// value es el índice en 24h ("00"–"23"); label es lo que ve el usuario en 12h
 const HOURS = Array.from({ length: 24 }, (_, i) => {
     const h = i % 12 === 0 ? 12 : i % 12
     const suffix = i < 12 ? 'AM' : 'PM'

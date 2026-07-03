@@ -6,9 +6,11 @@ import { catchAsync } from '../utils/catch_async.js';
 const VALID_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const TIME_REGEX = /^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/i;
 
+// Convierte "09:00 AM" / "02:30 PM" a minutos totales para poder comparar intervalos numéricamente
 const toMinutes = (time) => {
     const [timePart, period] = time.toUpperCase().split(' ');
     const [h, m] = timePart.split(':').map(Number);
+    // Las 12 AM son medianoche (0h) y las 12 PM son mediodía (12h)
     const hours = period === 'PM' && h !== 12 ? h + 12 : (period === 'AM' && h === 12 ? 0 : h);
     return hours * 60 + m;
 };
@@ -42,6 +44,7 @@ const controller = {
                 return res.status(400).json({ message: 'start time must be earlier than end time' });
         }
 
+        // El modelo tiene unique en day, pero validamos antes para devolver un error controlado
         const exists = await model.findOne({ day: day.trim() });
         if (exists) throw new ConflictError('a schedule for this day already exists');
 

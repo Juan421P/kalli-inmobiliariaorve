@@ -25,9 +25,11 @@ const controller = {
         if (!qualification?.reason?.trim()) return res.status(400).json({ message: 'qualification.reason is required' });
         if (!current_address?.district) return res.status(400).json({ message: 'current_address.district is required' });
         if (!current_address?.reference?.trim()) return res.status(400).json({ message: 'current_address.reference is required' });
+        // El cliente propone varias fechas; el colaborador asignado confirma una (scheduled_date)
         if (!Array.isArray(proposed_dates) || proposed_dates.length === 0) return res.status(400).json({ message: 'at least one proposed date is required' });
 
         const appointment = new model({
+            // El comprador es quien hace la solicitud, no viene en el body
             buyer: req.user.id,
             property,
             qualification,

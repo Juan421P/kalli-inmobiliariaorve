@@ -6,6 +6,7 @@ import { requireStaff } from '../middleware/auth/require_staff.js';
 
 const appointment = express.Router();
 
+// Listar citas requiere ser staff; cualquier usuario autenticado puede crear una
 appointment
     .route('/')
     .get(requireAuth, requireStaff, c.get)

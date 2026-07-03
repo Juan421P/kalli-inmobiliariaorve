@@ -47,6 +47,7 @@ const schema = new Schema({
         }
     },
 
+    // El cliente propone varias fechas; el colaborador elige una y la guarda en scheduled_date
     proposed_dates: {
         type: [Date],
         required: true
@@ -61,6 +62,7 @@ const schema = new Schema({
         ref: 'collaborator'
     },
 
+    // Flujo: pending -> assigned (se asigna colaborador) -> scheduled (fecha confirmada) -> completed / cancelled
     status: {
         type: String,
         enum: [
@@ -78,6 +80,7 @@ const schema = new Schema({
         trim: true
     },
 
+    // Slot de horario disponible que el cliente seleccionó al agendar
     time: {
         type: Schema.Types.ObjectId,
         ref: 'time',

@@ -1,8 +1,10 @@
 import { Schema, model } from 'mongoose';
 
+// Formato aceptado: hh:mm AM/PM (ej. 09:00 AM, 12:30 PM)
 const timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/i;
 
 const schema = new Schema({
+    // Los días se guardan en inglés; el frontend los mapea a español al mostrarlos
     day: {
         type: String,
         required: true,

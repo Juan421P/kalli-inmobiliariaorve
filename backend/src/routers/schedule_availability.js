@@ -5,6 +5,7 @@ import { requireAdmin } from '../middleware/auth/require_admin.js';
 
 const scheduleAvailability = express.Router();
 
+// GET es público para que el frontend público pueda mostrar horarios disponibles al cliente
 scheduleAvailability
     .route('/')
     .get(c.get)
