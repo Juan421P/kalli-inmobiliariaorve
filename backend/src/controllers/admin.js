@@ -67,7 +67,7 @@ const controller = {
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
         const token = jsonwebtoken.sign(
-            { id: admin._id },
+            { id: admin._id, role: 'admin' },
             config.jwt.secret,
             { expiresIn: '30d' }
         );

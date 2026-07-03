@@ -80,22 +80,22 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
                             <TableCell>
                                 <div className='flex items-center gap-3'>
                                     <UserAvatar
-                                        name={o.buyer.name}
-                                        lastname={o.buyer.lastname}
-                                        avatarUrl={o.buyer.picture}
+                                        name={o.buyer?.name}
+                                        lastname={o.buyer?.lastname}
+                                        avatarUrl={o.buyer?.picture}
                                         className='w-9 h-9'
                                     />
                                     <div className='flex flex-col'>
-                                        <span className='text-sm font-medium text-orve-darker-teal'>{o.buyer.name}</span>
-                                        <span className='text-sm text-orve-teal/60'>{o.buyer.lastname}</span>
+                                        <span className='text-sm font-medium text-orve-darker-teal'>{o.buyer?.name ?? '—'}</span>
+                                        <span className='text-sm text-orve-teal/60'>{o.buyer?.lastname ?? '—'}</span>
                                     </div>
                                 </div>
                             </TableCell>
 
                             <TableCell className='max-w-52'>
                                 <div className='flex flex-col'>
-                                    <span className='text-sm font-medium text-orve-darker-teal truncate max-w-48'>{o.property.title}</span>
-                                    <span className='text-xs text-orve-teal/50'>ID: {o.property.public_id}</span>
+                                    <span className='text-sm font-medium text-orve-darker-teal truncate max-w-48'>{o.property?.title ?? '—'}</span>
+                                    <span className='text-xs text-orve-teal/50'>ID: {o.property?.public_id ?? '—'}</span>
                                 </div>
                             </TableCell>
 
@@ -156,7 +156,7 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle>¿Eliminar oferta?</AlertDialogTitle>
                                                 <AlertDialogDescription>
-                                                    Se eliminará la oferta de <strong>{o.buyer.name} {o.buyer.lastname}</strong> por <strong>{formatCurrency(o.price)}</strong>. Esta acción no se puede deshacer.
+                                                    Se eliminará la oferta de <strong>{o.buyer?.name} {o.buyer?.lastname}</strong> por <strong>{formatCurrency(o.price)}</strong>. Esta acción no se puede deshacer.
                                                 </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>

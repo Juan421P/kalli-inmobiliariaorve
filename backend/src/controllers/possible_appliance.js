@@ -11,32 +11,45 @@ const controller = {
 
     post: catchAsync(async (req, res) => {
         const { name } = req.body;
-        if (!name?.trim()) return res.status(400).json({ message: 'name is required' });
+        const trimmed = name?.trim();
+        if (!trimmed)             return res.status(400).json({ message: 'El nombre es requerido.' });
+        if (trimmed.length < 3)  return res.status(400).json({ message: 'El nombre debe tener al menos 3 caracteres.' });
+        if (trimmed.length > 60) return res.status(400).json({ message: 'El nombre no puede superar los 60 caracteres.' });
 
-        const exists = await model.findOne({ name: name.trim() });
-        if (exists) throw new ConflictError('appliance already exists');
+        const exists = await model.findOne({ name: trimmed });
+        if (exists) throw new ConflictError('El electrodoméstico ya está registrado.');
 
-        const appliance = new model({ name: name.trim() });
+        const appliance = new model({ name: trimmed });
         await appliance.save();
 
-        return res.status(201).json({ message: 'appliance created successfully', appliance });
+        return res.status(201).json({ message: 'Electrodoméstico creado correctamente.', appliance });
     }),
 
     put: catchAsync(async (req, res) => {
         const { name } = req.body;
-        if (name !== undefined && !name?.trim()) return res.status(400).json({ message: 'name cannot be empty' });
+        if (name !== undefined && !name?.trim()) return res.status(400).json({ message: 'El nombre no puede estar vacío.' });
 
         const appliance = await model.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!appliance) throw new NotFoundError('appliance not found');
-        
-        return res.status(200).json({ message: 'appliance updated successfully', appliance });
+        if (!appliance) throw new NotFoundError('Electrodoméstico no encontrado.');
+
+        return res.status(200).json({ message: 'Electrodoméstico actualizado correctamente.', appliance });
     }),
 
     delete: catchAsync(async (req, res) => {
         const appliance = await model.findByIdAndDelete(req.params.id);
-        if (!appliance) throw new NotFoundError('appliance not found');
-        
-        return res.status(200).json({ message: 'appliance deleted successfully' });
-    })
+        if (!appliance) throw new NotFoundError('Electrodoméstico no encontrado.');
+
+        return res.status(200).json({ message: 'Electrodoméstico eliminado correctamente.' });
+    }),
+
+    merge: catchAsync(async (req, res) => {
+        const { principal, references } = req.body;
+        if (!principal || !Array.isArray(references) || references.length === 0) {
+            return res.status(400).json({ message: 'El principal y las referencias son requeridos.' });
+        }
+        await model.deleteMany({ _id: { $in: references } });
+        const appliances = await model.find();
+        return res.status(200).json({ appliances });
+    }),
 };
 export default controller;

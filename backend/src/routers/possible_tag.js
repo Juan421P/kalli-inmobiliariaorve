@@ -6,13 +6,15 @@ const possibleTag = express.Router();
 
 possibleTag
     .route('/')
-    .get(c.get)
-    .post(c.post);
-
+    .get(requireAuth, c.get)
+    .post(requireAuth, requireAdmin, c.post);
+possibleTag
+    .route('/merge')
+    .post(requireAuth, requireAdmin, c.merge);
 possibleTag
     .route('/:id')
-    .put(c.put)
-    .delete(c.delete);
+    .put(requireAuth, requireAdmin, c.put)
+    .delete(requireAuth, requireAdmin, c.delete);
 
 export default possibleTag;
  

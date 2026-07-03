@@ -1,6 +1,6 @@
 import Service from './service.js'
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 const mockDelay = () => new Promise((r) => setTimeout(r, 300))
 

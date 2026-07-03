@@ -117,7 +117,7 @@ class CatalogService extends Service {
 
 //  Instancias exportadas 
 
-export const amenityService   = new CatalogService('/amenities')
-export const tagService       = new CatalogService('/tags')
-export const featureService   = new CatalogService('/features')
-export const applianceService = new CatalogService('/appliances')
+export const amenityService   = new CatalogService('/possibleAmenity')
+export const tagService       = new CatalogService('/possible_tag')
+export const featureService   = new CatalogService('/possibleFeature')
+export const applianceService = new CatalogService('/possible_appliance')

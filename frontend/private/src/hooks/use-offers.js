@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { offersService } from '@/services/offers'
 import toast from '@/lib/toast'
 
 const LIMIT = 5
 
 const useOffers = () => {
+    const isFirstRender = useRef(true)
+
     const [offers,      setOffers]      = useState([])
     const [metrics,     setMetrics]     = useState({ total: 0, pending: 0, confirmed: 0, completed: 0 })
     const [total,       setTotal]       = useState(0)
@@ -32,13 +34,13 @@ const useOffers = () => {
         }
     }, [])
 
-    // carga inicial al entrar a la página
+    // carga inicial inmediata; cambios de búsqueda/filtro se debouncean 400ms
     useEffect(() => {
-        fetchOffers(1, '', 'all')
-    }, [])
-
-    // espera 400ms después de que el usuario deja de escribir antes de buscar
-    useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false
+            fetchOffers(1, '', 'all')
+            return
+        }
         const timer = setTimeout(() => fetchOffers(1, search, typeFilter), 400)
         return () => clearTimeout(timer)
     }, [search, typeFilter])

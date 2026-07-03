@@ -11,6 +11,9 @@ possibleAmenity
     .get(requireAuth, c.get)
     .post(requireAuth, requireAdmin, c.post);
 possibleAmenity
+    .route('/merge')
+    .post(requireAuth, requireAdmin, c.merge);
+possibleAmenity
     .route('/:id')
     .put(requireAuth, requireAdmin, c.put)
     .delete(requireAuth, requireAdmin, c.delete);

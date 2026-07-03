@@ -67,7 +67,7 @@ const controller = {
         const isMatch = await collaborator.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');
         const token = jsonwebtoken.sign(
-            { id: collaborator._id },
+            { id: collaborator._id, role: 'collaborator' },
             config.jwt.secret,
             { expiresIn: '30d' }
         );

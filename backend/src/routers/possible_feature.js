@@ -9,7 +9,9 @@ possibleFeature
     .route('/')
     .get(requireAuth, c.get)
     .post(requireAuth, requireAdmin, c.post);
-
+possibleFeature
+    .route('/merge')
+    .post(requireAuth, requireAdmin, c.merge);
 possibleFeature
     .route('/:id')
     .put(requireAuth, requireAdmin, c.put)

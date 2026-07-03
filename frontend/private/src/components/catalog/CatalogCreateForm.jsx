@@ -4,15 +4,27 @@ import { Field, FieldLabel, FieldTitle, FieldError } from '@/components/ui/field
 import { Input } from '@/components/ui/input'
 import toast from '@/lib/toast'
 
+const MIN_LENGTH = 3
+const MAX_LENGTH = 60
+
 const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
     const [name, setName] = useState('')
     const [error, setError] = useState(null)
     const [isLoading, setIsLoading] = useState(false)
 
+    const validate = (value) => {
+        if (!value) return 'El nombre no puede estar vacío.'
+        if (value.length < MIN_LENGTH) return `Debe tener al menos ${MIN_LENGTH} caracteres.`
+        if (value.length > MAX_LENGTH) return `No puede superar los ${MAX_LENGTH} caracteres.`
+        return null
+    }
+
+
     const handleSubmit = async () => {
         const trimmedName = name.trim()
-        if (!trimmedName) {
-            setError('El nombre no puede estar vacío.')
+        const validationError = validate(trimmedName)
+        if (validationError) {
+            setError(validationError)
             return
         }
 
@@ -23,8 +35,13 @@ const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
             setName('')
             onCreated(data)
             toast.success(`${label} agregado correctamente.`)
-        } catch {
-            toast.error('Ocurrió un error', `No se pudo agregar el ${label.toLowerCase()}.`)
+        } catch (err) {
+            const status = err?.response?.status
+            if (status === 409) {
+                setError(`"${trimmedName}" ya está registrado.`)
+            } else {
+                toast.error('Ocurrió un error', `No se pudo agregar el ${label.toLowerCase()}.`)
+            }
         } finally {
             setIsLoading(false)
         }
@@ -41,7 +58,7 @@ const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
                     <FieldTitle className='text-orve-teal'>{`Nombre de ${label.charAt(0) === 'E' ? 'el' : 'la'} ${label.toLowerCase()}`}</FieldTitle>
                     <Input
                         value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        onChange={(e) => { setName(e.target.value); setError(null) }}
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         disabled={isLoading}

@@ -6,13 +6,15 @@ const possibleAppliance = express.Router();
 
 possibleAppliance
     .route('/')
-    .get(c.get)
-    .post(c.post);
-
+    .get(requireAuth, c.get)
+    .post(requireAuth, requireAdmin, c.post);
+possibleAppliance
+    .route('/merge')
+    .post(requireAuth, requireAdmin, c.merge);
 possibleAppliance
     .route('/:id')
-    .put(c.put)
-    .delete(c.delete);
+    .put(requireAuth, requireAdmin, c.put)
+    .delete(requireAuth, requireAdmin, c.delete);
 
 export default possibleAppliance;
  
