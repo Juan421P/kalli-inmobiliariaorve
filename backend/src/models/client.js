@@ -59,6 +59,10 @@ const schema = new Schema({
         type: Boolean,
         default: false
     },
+    active: {
+        type: Boolean,
+        default: true
+    },
     favorites: [{
         type: Schema.Types.ObjectId,
         ref: 'property',

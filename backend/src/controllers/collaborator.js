@@ -63,6 +63,7 @@ const controller = {
         const { email, password } = req.body;
         const collaborator = await model.findOne({ email }).select('+password');
         if (!collaborator) throw new AuthorizationError('invalid credentials');
+        if (!collaborator.active) throw new AuthorizationError('account deactivated');
         if (!collaborator.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await collaborator.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');

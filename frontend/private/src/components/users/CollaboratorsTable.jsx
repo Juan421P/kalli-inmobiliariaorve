@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from 'lucide-react'
+import { UserCheck, UserX } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
     AlertDialog,
@@ -29,14 +29,7 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import UserAvatar from './UserAvatar'
 
-const DOC_TYPE_LABEL = {
-    dui:        'DUI',
-    pasaporte:  'Pasaporte',
-    residencia: 'Residencia',
-    nit:        'NIT',
-}
-
-const CollaboratorsTable = ({ collaborators = [], isLoading, onEdit, onDelete }) => {
+const CollaboratorsTable = ({ collaborators = [], isLoading, onToggleActive }) => {
     if (isLoading) {
         return (
             <div className='flex justify-center py-16'>
@@ -66,57 +59,61 @@ const CollaboratorsTable = ({ collaborators = [], isLoading, onEdit, onDelete })
                     <TableHead className='text-orve-teal font-semibold'>Colaborador</TableHead>
                     <TableHead className='text-orve-teal font-semibold'>Teléfono</TableHead>
                     <TableHead className='text-orve-teal font-semibold'>Documento</TableHead>
+                    <TableHead className='text-orve-teal font-semibold'>Estado</TableHead>
                     <TableHead className='text-orve-teal font-semibold text-right'>Acciones</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {collaborators.map((c) => (
-                    <TableRow key={c._id} className='border-orve-teal/10 hover:bg-orve-teal/[0.03]'>
-                        <TableCell>
-                            <div className='flex items-center gap-3'>
-                                <UserAvatar
-                                    name={c.name}
-                                    lastname={c.lastname}
-                                    avatarUrl={c.avatarUrl}
-                                    className='w-9 h-9'
-                                />
-                                <div className='flex flex-col'>
-                                    <span className='text-sm font-medium text-orve-darker-teal'>{c.name}</span>
-                                    <span className='text-sm text-orve-teal/60'>{c.lastname}</span>
+                {collaborators.map((c) => {
+                    const active = c.active !== false
+                    return (
+                        <TableRow key={c._id} className='border-orve-teal/10 hover:bg-orve-teal/[0.03]'>
+                            <TableCell>
+                                <div className='flex items-center gap-3'>
+                                    <UserAvatar
+                                        name={c.name}
+                                        lastname={c.lastname}
+                                        avatarUrl={c.picture}
+                                        className='w-9 h-9'
+                                    />
+                                    <div className='flex flex-col'>
+                                        <span className='text-sm font-medium text-orve-darker-teal'>{c.name}</span>
+                                        <span className='text-sm text-orve-teal/60'>{c.lastname}</span>
+                                    </div>
                                 </div>
-                            </div>
-                        </TableCell>
-                        <TableCell className='text-orve-teal/80 text-sm'>
-                            {c.phone.country_code} {c.phone.number}
-                        </TableCell>
-                        <TableCell className='text-orve-teal/80 text-sm'>
-                            {c.document.number}
-                        </TableCell>
-                        <TableCell className='text-right'>
-                            <div className='flex items-center justify-end gap-1'>
-                                <Button
-                                    variant='ghost'
-                                    size='icon-sm'
-                                    onClick={() => onEdit(c)}
-                                    className='text-orve-teal/50 hover:text-orve-teal hover:bg-orve-teal/10'
-                                >
-                                    <Pencil className='w-3.5 h-3.5' />
-                                </Button>
+                            </TableCell>
+                            <TableCell className='text-orve-teal/80 text-sm'>
+                                {c.phone ? `${c.phone.country_code} ${c.phone.number}` : '—'}
+                            </TableCell>
+                            <TableCell className='text-orve-teal/80 text-sm'>
+                                {c.document?.number ?? '—'}
+                            </TableCell>
+                            <TableCell>
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${active ? 'bg-orve-green/10 text-orve-green border-orve-green/20' : 'bg-orve-red/10 text-orve-red border-orve-red/20'}`}>
+                                    {active ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </TableCell>
+                            <TableCell className='text-right'>
                                 <AlertDialog>
                                     <AlertDialogTrigger asChild>
                                         <Button
                                             variant='ghost'
                                             size='icon-sm'
-                                            className='text-orve-teal/50 hover:text-red-400 hover:bg-red-50'
+                                            title={active ? 'Desactivar' : 'Activar'}
+                                            className={active
+                                                ? 'text-orve-teal/50 hover:text-red-400 hover:bg-red-50'
+                                                : 'text-orve-teal/50 hover:text-orve-green hover:bg-orve-green/10'}
                                         >
-                                            <Trash2 className='w-3.5 h-3.5' />
+                                            {active ? <UserX className='w-3.5 h-3.5' /> : <UserCheck className='w-3.5 h-3.5' />}
                                         </Button>
                                     </AlertDialogTrigger>
-                                    <AlertDialogContent size='sm'>
+                                    <AlertDialogContent size='sm' className='bg-white'>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>¿Eliminar colaborador?</AlertDialogTitle>
+                                            <AlertDialogTitle>{active ? '¿Desactivar colaborador?' : '¿Activar colaborador?'}</AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                Se eliminará permanentemente a <strong>{c.name} {c.lastname}</strong>. Esta acción no se puede deshacer.
+                                                {active
+                                                    ? <>Se desactivará a <strong>{c.name} {c.lastname}</strong>. No podrá iniciar sesión hasta que se reactive su cuenta.</>
+                                                    : <>Se reactivará a <strong>{c.name} {c.lastname}</strong>. Podrá volver a iniciar sesión normalmente.</>}
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
@@ -124,18 +121,20 @@ const CollaboratorsTable = ({ collaborators = [], isLoading, onEdit, onDelete })
                                                 Cancelar
                                             </AlertDialogCancel>
                                             <AlertDialogAction
-                                                onClick={() => onDelete(c)}
-                                                className='bg-red-500 text-white border-transparent hover:bg-red-600'
+                                                onClick={() => onToggleActive(c, !active)}
+                                                className={active
+                                                    ? 'bg-red-500 text-white border-transparent hover:bg-red-600'
+                                                    : '!bg-orve-green hover:!bg-orve-green/90 !text-white !border-transparent'}
                                             >
-                                                Eliminar
+                                                {active ? 'Desactivar' : 'Activar'}
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
                                 </AlertDialog>
-                            </div>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
             </TableBody>
         </Table>
     )

@@ -1,22 +1,33 @@
 import model from '../models/appointment.js';
+import Admin from '../models/admin.js';
+import Collaborator from '../models/collaborator.js';
 import NotFoundError from '../errors/not_found.js';
 import { catchAsync } from '../utils/catch_async.js';
 
 const controller = {
 
     get: catchAsync(async (req, res) => {
-        const appointments = await model.find();
+        const filter = {};
+        if (req.query.status) filter.status = req.query.status;
+        const appointments = await model.find(filter)
+            .populate('buyer', 'name lastname email picture')
+            .populate('property', 'title public_id')
+            .populate('collaborator', 'name lastname')
+            .sort({ createdAt: -1 });
         return res.status(200).json({ appointments });
     }),
 
     getById: catchAsync(async (req, res) => {
-        const appointment = await model.findById(req.params.id);
+        const appointment = await model.findById(req.params.id)
+            .populate('buyer', 'name lastname email picture')
+            .populate('property', 'title public_id')
+            .populate('collaborator', 'name lastname');
         if (!appointment) throw new NotFoundError('appointment not found');
         return res.status(200).json({ appointment });
     }),
 
     post: catchAsync(async (req, res) => {
-        const { property, qualification, current_address, proposed_dates, notes, time } = req.body;
+        const { buyer, property, qualification, current_address, proposed_dates, notes, time } = req.body;
 
         if (!property) return res.status(400).json({ message: 'property is required' });
         if (!time) return res.status(400).json({ message: 'time is required' });
@@ -28,9 +39,16 @@ const controller = {
         // El cliente propone varias fechas; el colaborador asignado confirma una (scheduled_date)
         if (!Array.isArray(proposed_dates) || proposed_dates.length === 0) return res.status(400).json({ message: 'at least one proposed date is required' });
 
+        // solo el staff (admin/colaborador) puede agendar una cita en nombre de otro cliente;
+        // si no, la cita siempre pertenece a quien la solicita (autoservicio desde el sitio público)
+        let buyerId = req.user.id;
+        if (buyer) {
+            const isStaff = (await Admin.exists({ _id: req.user.id })) || (await Collaborator.exists({ _id: req.user.id }));
+            if (isStaff) buyerId = buyer;
+        }
+
         const appointment = new model({
-            // El comprador es quien hace la solicitud, no viene en el body
-            buyer: req.user.id,
+            buyer: buyerId,
             property,
             qualification,
             current_address,

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { Eye, EyeOff, Upload, User } from 'lucide-react'
+import { Upload, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -20,34 +20,28 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 
-// ─── Constantes ───────────────────────────────────────────────────────────────
 const DOCUMENT_TYPES = [
     { value: 'dui',        label: 'DUI'        },
     { value: 'pasaporte',  label: 'Pasaporte'  },
     { value: 'residencia', label: 'Residencia' },
-    { value: 'nit',        label: 'NIT'        },
 ]
 
 const EMPTY_FORM = {
-    name:            '',
-    lastname:        '',
-    email:           '',
-    phone:           '',
-    documentType:    'dui',
-    documentNumber:  '',
-    password:        '',
-    confirmPassword: '',
+    name:           '',
+    lastname:       '',
+    email:          '',
+    phone:          '',
+    documentType:   'dui',
+    documentNumber: '',
 }
 
-// ─── Avatar Upload ────────────────────────────────────────────────────────────
-const AvatarUpload = ({ preview, onChange }) => {
+const AvatarUpload = ({ preview, onChange, error }) => {
     const inputRef = useRef(null)
 
     const handleFile = (e) => {
         const file = e.target.files?.[0]
         if (!file) return
-        const url = URL.createObjectURL(file)
-        onChange(file, url)
+        onChange(file, URL.createObjectURL(file))
     }
 
     return (
@@ -58,17 +52,12 @@ const AvatarUpload = ({ preview, onChange }) => {
                 className='relative w-24 h-24 rounded-full border-2 border-dashed border-orve-teal/30 bg-orve-teal/5 hover:border-orve-teal/60 hover:bg-orve-teal/10 transition-all group overflow-hidden'
             >
                 {preview ? (
-                    <img
-                        src={preview}
-                        alt='Vista previa'
-                        className='w-full h-full object-cover'
-                    />
+                    <img src={preview} alt='Vista previa' className='w-full h-full object-cover' />
                 ) : (
                     <div className='flex flex-col items-center justify-center gap-1 text-orve-teal/50 group-hover:text-orve-teal transition-colors'>
                         <User className='w-8 h-8' />
                     </div>
                 )}
-                {/* Overlay en hover cuando ya hay imagen */}
                 {preview && (
                     <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
                         <Upload className='w-5 h-5 text-white' />
@@ -82,6 +71,7 @@ const AvatarUpload = ({ preview, onChange }) => {
             >
                 {preview ? 'Cambiar foto' : 'Subir foto de perfil'}
             </button>
+            {error && <span className='text-xs text-destructive'>{error}</span>}
             <input
                 ref={inputRef}
                 type='file'
@@ -93,21 +83,14 @@ const AvatarUpload = ({ preview, onChange }) => {
     )
 }
 
-// ─── Formulario ───────────────────────────────────────────────────────────────
-const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) => {
-    const [form,         setForm]         = useState(EMPTY_FORM)
-    const [errors,       setErrors]       = useState({})
-    const [avatar,       setAvatar]       = useState({ file: null, preview: null })
-    const [showPassword, setShowPassword] = useState(false)
-    const [showConfirm,  setShowConfirm]  = useState(false)
+const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
+    const [form,   setForm]   = useState(EMPTY_FORM)
+    const [errors, setErrors] = useState({})
+    const [avatar, setAvatar] = useState({ file: null, preview: null })
 
     const setField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }))
         setErrors((prev) => ({ ...prev, [key]: null }))
-    }
-
-    const handleAvatarChange = (file, preview) => {
-        setAvatar({ file, preview })
     }
 
     const validate = () => {
@@ -118,37 +101,37 @@ const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) =>
         else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Correo inválido.'
         if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
         if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
-        if (!form.password)              e.password       = 'La contraseña es requerida.'
-        else if (form.password.length < 8) e.password     = 'Mínimo 8 caracteres.'
-        if (form.password !== form.confirmPassword) e.confirmPassword = 'Las contraseñas no coinciden.'
+        if (!avatar.file)                e.avatar         = 'La foto de perfil es requerida.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!validate()) return
-        onSubmit({
-            name:     form.name.trim(),
-            lastname: form.lastname.trim(),
-            email:    form.email.trim(),
-            phone:    { country_code: '+503', number: form.phone.trim() },
-            document: { type: form.documentType, number: form.documentNumber.trim() },
-            password: form.password,
-            avatar:   avatar.file,
+        const ok = await onSubmit({
+            name:           form.name.trim(),
+            lastname:       form.lastname.trim(),
+            email:          form.email.trim(),
+            phone:          { country_code: '+503', number: form.phone.trim() },
+            documentType:   form.documentType,
+            documentNumber: form.documentNumber.trim(),
+            avatarFile:     avatar.file,
         })
-        setForm(EMPTY_FORM)
-        setErrors({})
-        setAvatar({ file: null, preview: null })
+        if (ok) {
+            setForm(EMPTY_FORM)
+            setAvatar({ file: null, preview: null })
+            setErrors({})
+        }
     }
 
     return (
         <FieldSet>
-
             {/* ── Sección foto ── */}
             <div className='flex justify-center pb-2'>
                 <AvatarUpload
                     preview={avatar.preview}
-                    onChange={handleAvatarChange}
+                    onChange={(file, preview) => { setAvatar({ file, preview }); setErrors((prev) => ({ ...prev, avatar: null })) }}
+                    error={errors.avatar}
                 />
             </div>
 
@@ -165,7 +148,7 @@ const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) =>
                             <Input
                                 value={form.name}
                                 onChange={(e) => setField('name', e.target.value)}
-                                placeholder={`Ingrese el nombre del ${entityLabel}`}
+                                placeholder='Ingrese el nombre del colaborador'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -178,7 +161,7 @@ const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) =>
                             <Input
                                 value={form.lastname}
                                 onChange={(e) => setField('lastname', e.target.value)}
-                                placeholder={`Ingrese el apellido del ${entityLabel}`}
+                                placeholder='Ingrese el apellido del colaborador'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -257,60 +240,9 @@ const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) =>
                 </div>
             </FieldGroup>
 
-            <FieldSeparator />
-
-            {/* ── Sección acceso ── */}
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Acceso al sistema</FieldLegend>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Contraseña</FieldTitle>
-                            <div className='relative'>
-                                <Input
-                                    type={showPassword ? 'text' : 'password'}
-                                    value={form.password}
-                                    onChange={(e) => setField('password', e.target.value)}
-                                    placeholder='Mínimo 8 caracteres'
-                                    className='bg-white/70 pr-9'
-                                />
-                                <button
-                                    type='button'
-                                    onClick={() => setShowPassword((v) => !v)}
-                                    className='absolute right-2.5 top-1/2 -translate-y-1/2 text-orve-teal/40 hover:text-orve-teal transition-colors'
-                                >
-                                    {showPassword ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
-                                </button>
-                            </div>
-                        </FieldLabel>
-                        <FieldError>{errors.password}</FieldError>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Confirmar contraseña</FieldTitle>
-                            <div className='relative'>
-                                <Input
-                                    type={showConfirm ? 'text' : 'password'}
-                                    value={form.confirmPassword}
-                                    onChange={(e) => setField('confirmPassword', e.target.value)}
-                                    placeholder='Repita la contraseña'
-                                    className='bg-white/70 pr-9'
-                                />
-                                <button
-                                    type='button'
-                                    onClick={() => setShowConfirm((v) => !v)}
-                                    className='absolute right-2.5 top-1/2 -translate-y-1/2 text-orve-teal/40 hover:text-orve-teal transition-colors'
-                                >
-                                    {showConfirm ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
-                                </button>
-                            </div>
-                        </FieldLabel>
-                        <FieldError>{errors.confirmPassword}</FieldError>
-                    </Field>
-                </div>
-            </FieldGroup>
+            <p className='text-xs text-orve-teal/50 -mt-2'>
+                Se enviará un correo de invitación para que el colaborador complete su cuenta y defina su propia contraseña.
+            </p>
 
             {/* ── Acciones ── */}
             <div className='flex justify-end pt-2'>
@@ -319,12 +251,11 @@ const UserCreateForm = ({ entityLabel = 'colaborador', onSubmit, isLoading }) =>
                     disabled={isLoading}
                     className='bg-orve-teal hover:bg-orve-darker-teal text-white px-10'
                 >
-                    {isLoading ? 'Guardando...' : 'Guardar'}
+                    {isLoading ? 'Enviando...' : 'Enviar invitación'}
                 </Button>
             </div>
-
         </FieldSet>
     )
 }
 
-export default UserCreateForm
+export default CollaboratorInviteForm

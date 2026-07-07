@@ -55,6 +55,7 @@ const controller = {
         const { email, password } = req.body;
         const client = await model.findOne({ email }).select('+password');
         if (!client) throw new AuthorizationError('invalid credentials');
+        if (!client.active) throw new AuthorizationError('account deactivated');
         if (!client.verified_email) throw new AuthorizationError('email not verified');
         const isMatch = await client.comparePassword(password);
         if (!isMatch) throw new AuthorizationError('invalid credentials');

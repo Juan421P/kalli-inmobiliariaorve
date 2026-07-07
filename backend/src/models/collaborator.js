@@ -13,7 +13,8 @@ const schema = new Schema({
     },
     password: {
         type: String,
-        required: true,
+        // no se establece hasta que el colaborador completa la invitación por correo
+        required: function () { return this.verified_email; },
         minlength: 8,
         select: false
     },
@@ -58,6 +59,10 @@ const schema = new Schema({
     verified_phone_number: {
         type: Boolean,
         default: false
+    },
+    active: {
+        type: Boolean,
+        default: true
     },
     picture: {
         type: String,
