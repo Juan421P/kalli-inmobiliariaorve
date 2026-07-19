@@ -1,7 +1,10 @@
 import axios from 'axios'
 
+// El backend monta todas las rutas bajo /api (ver backend/app.js -> app.use('/api', router)),
+// asi que VITE_API_URL, si se define, debe incluir ese prefijo (ej. https://mi-api.com/api).
+// Si no hay variable de entorno, caemos al backend local con el prefijo ya puesto.
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
     withCredentials: true
 })
 
@@ -40,4 +43,5 @@ class Service {
     }
 }
 
+export { api }
 export default Service
