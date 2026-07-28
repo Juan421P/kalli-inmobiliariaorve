@@ -1,4 +1,4 @@
-import model from '../models/notifications.js';
+import model from '../models/notification.js';
 import { catchAsync } from '../utils/catch_async.js';
 import NotFoundError from '../errors/not_found.js';
 

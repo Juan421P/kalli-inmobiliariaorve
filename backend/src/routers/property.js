@@ -1,10 +1,59 @@
 import express from 'express';
-import c from '../controllers/property.js';
+import controller from '../controllers/property.js';
+import service from '../services/property.js';
 import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
+import { requireRole } from '../middleware/auth/require_role.js';
+import { requireAssignedCollaboratorOrAdmin } from '../middleware/auth/require_assigned_collaborator_or_admin.js';
+import { validatePayload } from '../middleware/validate_payload.js';
+import { schemas } from '../schemas/property.js';
+
 const property = express.Router();
-property.route('/').get(c.get).post(requireAuth, cloudinary.array('pictures', 15), c.post);
-property.route('/public/:public_id').get(c.getByPublicId);
-property.route('/:id').get(c.getById).put(requireAuth, cloudinary.array('pictures', 15), c.put).delete(requireAuth, c.delete);
-property.route('/:id/view').put(c.incrementViews);
+
+const getProperty = (req) => service.getById(req.params.id);
+
+property.route('/')
+    // público porque ajá cualquiera puede ver las propiedades no pasa nada
+    .get(controller.get)
+    .post(
+        requireAuth,
+        requireRole('admin', 'collaborator'),
+        cloudinary.array('pictures', 15),
+        validatePayload({ body: schemas.create }),
+        controller.post
+    );
+
+property.route('/public/:public_id')
+    .get(
+        validatePayload({ params: schemas.queryByPublicId }),
+        controller.getByPublicId
+    );
+
+property.route('/:id')
+    .get(
+        validatePayload({ params: schemas.queryById }),
+        controller.getById
+    )
+    .put(
+        requireAuth,
+        requireRole('admin', 'collaborator'),
+        validatePayload({ params: schemas.queryById, body: schemas.update }),
+        requireAssignedCollaboratorOrAdmin(getProperty),
+        cloudinary.array('pictures', 15),
+        controller.put
+    )
+    .delete(
+        requireAuth,
+        requireRole('admin', 'collaborator'),
+        validatePayload({ params: schemas.queryById }),
+        requireAssignedCollaboratorOrAdmin(getProperty),
+        controller.delete
+    );
+
+property.route('/:id/view')
+    .put(
+        validatePayload({ params: schemas.queryById }),
+        controller.incrementViews
+    );
+
 export default property;

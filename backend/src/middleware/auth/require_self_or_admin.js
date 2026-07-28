@@ -1,3 +1,4 @@
+// Se explica solito
 export const requireSelfOrAdmin = (req, res, next) => {
     const isSelf = req.user.id === req.params.id;
     const isAdmin = req.user.role === 'admin';

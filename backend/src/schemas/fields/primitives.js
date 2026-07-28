@@ -76,3 +76,39 @@ export const document = () => z.object({
 
 // yo me imagino que es algo evidente qué hace este ni lo voy a comentar
 export const positiveNumber = () => number({ positive: true });
+
+// Convierte un string JSON stringifeado a su valor original
+// Útil en multipart/form-data porque los objetos y arreglos llegan como texto y ajá
+export const jsonPreprocess = (schema) => z.preprocess((val) => {
+    if (typeof val === 'string') {
+        try { return JSON.parse(val); } catch { return val; }
+    }
+    return val;
+}, schema);
+
+// Convierte números enviados como string a number antes de validarlos
+// Pensado principalmente para datos recibidos mediante multipart/form-data
+export const coercedNumber = (opts) => z.preprocess(
+    (val) => (typeof val === 'string' && val.trim() !== '' ? Number(val) : val),
+    number(opts)
+);
+
+// Convierte los strings "true" y "false" a boolean
+// Útil cuando multipart/form-data envía todos los valores como texto
+export const coercedBoolean = () => z.preprocess(
+    (val) => (val === 'true' ? true : val === 'false' ? false : val),
+    boolean()
+);
+
+export const coercedDate = () => z.coerce.date();
+
+// Ya la carlitos el bolado este de form-data qué le costaba mandar los datos bien puya fok
+
+// Para los datos geográficos
+export const geojson = () => jsonPreprocess(z.object({
+    type: z.literal('Point').default('Point'),
+    coordinates: z.tuple([
+        z.number().min(-180).max(180),
+        z.number().min(-90).max(90),
+    ])
+}));

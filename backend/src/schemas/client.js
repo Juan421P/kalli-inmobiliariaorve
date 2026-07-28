@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { user, auth, media, database } from './fields'
+import { user, auth, media, database } from './fields/index.js'
 
 export const schemas = {
 
@@ -31,16 +31,11 @@ export const schemas = {
     }).strict(),
 
     update: z.object({
-        updates: z.object({
-            name: user.name.optional(),
-            lastname: user.lastname.optional(),
-            phone: user.phone.optional(),
-            picture: media.picture.optional(),
-            pictureId: media.pictureId.optional()
-        }).strict().refine(
-            data => Object.keys(data).length > 0,
-            { message: 'at least one field must be updated' }
-        )
+        name: user.name.optional(),
+        lastname: user.lastname.optional(),
+        phone: user.phone.optional(),
+        picture: media.picture.optional(),
+        pictureId: media.pictureId.optional()
     }).strict(),
 
     uploadPicture: z.object({

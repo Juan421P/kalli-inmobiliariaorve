@@ -10,4 +10,4 @@ const schema = new Schema({
     timestamps: true
 });
 
-export default model('possible_tag', schema);
+export default model('feature', schema);

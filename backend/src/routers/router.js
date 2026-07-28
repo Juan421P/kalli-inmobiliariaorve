@@ -5,13 +5,14 @@ import client from './client.js';
 import collaborator from './collaborator.js';
 import offer from './offer.js';
 import property from './property.js';
-import possibleAppliance from './possible_appliance.js';
-import possibleTag from './possible_tag.js';
+import resolveAddress from './resolve_address.js';
+import appliance from './appliance.js';
+import tag from './tag.js';
 import appointment from './appointment.js';
-import possibleAmenity from './possible_amenity.js';
+import amenity from './amenity.js';
 import scheduleAvailability from './schedule_availability.js'
-import possibleFeature from './possible_feature.js';
-import notification from './notifications.js';
+import feature from './feature.js';
+import notification from './notification.js';
 
 const router = Router();
 router.use('/admin', admin);
@@ -20,11 +21,12 @@ router.use('/client', client);
 router.use('/collaborator', collaborator);
 router.use('/offer', offer);
 router.use('/property', property);
-router.use('/possible_appliance', possibleAppliance);
-router.use('/possible_tag', possibleTag);
+router.use('/resolve-address', resolveAddress);
+router.use('/possible-appliance', appliance);
+router.use('/possible-tag', tag);
 router.use('/appointment', appointment);
-router.use('/possibleAmenity', possibleAmenity)
-router.use('/scheduleAvailability', scheduleAvailability)
-router.use('/possibleFeature', possibleFeature)
+router.use('/possible-amenity', amenity)
+router.use('/schedule-availability', scheduleAvailability)
+router.use('/possible-feature', feature)
 router.use('/notification', notification)
 export default router;

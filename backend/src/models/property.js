@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose'; // ya
 const schema = new Schema({
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },

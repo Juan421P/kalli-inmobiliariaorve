@@ -57,7 +57,7 @@ const service = {
             config.jwt.secret,
             { expiresIn: '15m' }
         );
-        const inviteLink = `${config.app.frontend_url}/complete-invitation?token=${token}`;
+        const inviteLink = `${config.app.frontend_url}/admin/complete-invitation?token=${token}`;
         await Mail.send(
             admin.email,
             'Completar cuenta',

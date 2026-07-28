@@ -11,11 +11,6 @@ export const checkDocumentUniqueness = async (documentNumber, { excludeId, exclu
         client.findOne({ 'document.number': documentNumber }),
         collaborator.findOne({ 'document.number': documentNumber }),
     ]);
-    const [existingAdmin, existingClient, existingCollaborator] = await Promise.all([
-        admin.findOne({ 'document.number': documentNumber }),
-        client.findOne({ 'document.number': documentNumber }),
-        collaborator.findOne({ 'document.number': documentNumber }),
-    ]);
 
     // Filtra únicamente los registros encontrados.
     // Si se está actualizando un registro, ignora el documento que pertenece

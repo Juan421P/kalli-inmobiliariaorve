@@ -1,5 +1,7 @@
 import { Schema, model } from 'mongoose';
 
+const timeRegex = /^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/i;
+
 const schema = new Schema({
     buyer: {
         type: Schema.Types.ObjectId,
@@ -19,13 +21,11 @@ const schema = new Schema({
             required: true,
             enum: ['own', 'loan', 'mixed']
         },
-
         monthly_income: {
             type: Number,
             required: true,
             min: 0
         },
-
         reason: {
             type: String,
             required: true,
@@ -33,13 +33,14 @@ const schema = new Schema({
         }
     },
 
+    // Mirrors property's own location/address shape instead of pointing at
+    // a district collection that never existed.
     current_address: {
-        district: {
-            type: Schema.Types.ObjectId,
-            ref: 'district',
-            required: true
+        location: {
+            type: { type: String, enum: ['Point'], required: true },
+            coordinates: { type: [Number], required: true }
         },
-
+        address: { type: String }, // resolved server-side from coordinates
         reference: {
             type: String,
             required: true,
@@ -47,7 +48,6 @@ const schema = new Schema({
         }
     },
 
-    // El cliente propone varias fechas; el colaborador elige una y la guarda en scheduled_date
     proposed_dates: {
         type: [Date],
         required: true
@@ -62,16 +62,9 @@ const schema = new Schema({
         ref: 'collaborator'
     },
 
-    // Flujo: pending -> assigned (se asigna colaborador) -> scheduled (fecha confirmada) -> completed / cancelled
     status: {
         type: String,
-        enum: [
-            'pending',
-            'assigned',
-            'scheduled',
-            'completed',
-            'cancelled'
-        ],
+        enum: ['pending', 'assigned', 'scheduled', 'completed', 'cancelled'],
         default: 'pending'
     },
 
@@ -80,11 +73,17 @@ const schema = new Schema({
         trim: true
     },
 
-    // Slot de horario disponible que el cliente seleccionó al agendar
     time: {
-        type: Schema.Types.ObjectId,
-        ref: 'time',
-        required: true
+        start_time: {
+            type: String,
+            required: true,
+            validate: { validator: v => timeRegex.test(v), message: 'start time format is invalid, use hh:mm AM/PM (example: 09:00 AM)' }
+        },
+        end_time: {
+            type: String,
+            required: true,
+            validate: { validator: v => timeRegex.test(v), message: 'end time format is invalid, use hh:mm AM/PM (example: 05:00 PM)' }
+        }
     }
 }, {
     timestamps: true

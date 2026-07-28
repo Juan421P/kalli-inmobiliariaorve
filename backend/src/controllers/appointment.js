@@ -1,7 +1,4 @@
-import model from '../models/appointment.js';
-import Admin from '../models/admin.js';
-import Collaborator from '../models/collaborator.js';
-import NotFoundError from '../errors/not_found.js';
+import service from '../services/appointment.js';
 import { catchAsync } from '../utils/catch_async.js';
 
 const controller = {
@@ -9,76 +6,48 @@ const controller = {
     get: catchAsync(async (req, res) => {
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
-        const appointments = await model.find(filter)
-            .populate('buyer', 'name lastname email picture')
-            .populate('property', 'title public_id')
-            .populate('collaborator', 'name lastname')
-            .sort({ createdAt: -1 });
+        const appointments = await service.getAll(filter);
         return res.status(200).json({ appointments });
     }),
 
     getById: catchAsync(async (req, res) => {
-        const appointment = await model.findById(req.params.id)
-            .populate('buyer', 'name lastname email picture')
-            .populate('property', 'title public_id')
-            .populate('collaborator', 'name lastname');
-        if (!appointment) throw new NotFoundError('appointment not found');
+        const appointment = await service.getById(req.params.id);
         return res.status(200).json({ appointment });
     }),
 
     post: catchAsync(async (req, res) => {
-        const { buyer, property, qualification, current_address, proposed_dates, notes, time } = req.body;
-
-        if (!property) return res.status(400).json({ message: 'property is required' });
-        if (!time) return res.status(400).json({ message: 'time is required' });
-        if (!qualification?.funds_source) return res.status(400).json({ message: 'qualification.funds_source is required' });
-        if (qualification?.monthly_income == null) return res.status(400).json({ message: 'qualification.monthly_income is required' });
-        if (!qualification?.reason?.trim()) return res.status(400).json({ message: 'qualification.reason is required' });
-        if (!current_address?.district) return res.status(400).json({ message: 'current_address.district is required' });
-        if (!current_address?.reference?.trim()) return res.status(400).json({ message: 'current_address.reference is required' });
-        // El cliente propone varias fechas; el colaborador asignado confirma una (scheduled_date)
-        if (!Array.isArray(proposed_dates) || proposed_dates.length === 0) return res.status(400).json({ message: 'at least one proposed date is required' });
-
-        // solo el staff (admin/colaborador) puede agendar una cita en nombre de otro cliente;
-        // si no, la cita siempre pertenece a quien la solicita (autoservicio desde el sitio público)
-        let buyerId = req.user.id;
-        if (buyer) {
-            const isStaff = (await Admin.exists({ _id: req.user.id })) || (await Collaborator.exists({ _id: req.user.id }));
-            if (isStaff) buyerId = buyer;
-        }
-
-        const appointment = new model({
-            buyer: buyerId,
-            property,
-            qualification,
-            current_address,
-            proposed_dates,
-            notes,
-            time
-        });
-        await appointment.save();
+        const appointment = await service.create({ actor: req.user, body: req.body });
         return res.status(201).json({ message: 'appointment created successfully', appointment });
     }),
 
     put: catchAsync(async (req, res) => {
-        const { id } = req.params;
-        const data = { ...req.body };
-
-        const appointment = await model.findByIdAndUpdate(
-            id,
-            data,
-            { new: true, runValidators: true }
-        );
-        if (!appointment) throw new NotFoundError('appointment not found');
+        const appointment = await service.update(req.params.id, req.body);
         return res.status(200).json({ message: 'appointment updated successfully', appointment });
     }),
 
+    assign: catchAsync(async (req, res) => {
+        const appointment = await service.assign(req.params.id, req.body);
+        return res.status(200).json({ message: 'collaborator assigned successfully', appointment });
+    }),
+
+    schedule: catchAsync(async (req, res) => {
+        const appointment = await service.schedule(req.params.id, req.body);
+        return res.status(200).json({ message: 'appointment scheduled successfully', appointment });
+    }),
+
+    complete: catchAsync(async (req, res) => {
+        const appointment = await service.complete(req.params.id);
+        return res.status(200).json({ message: 'appointment marked as completed', appointment });
+    }),
+
+    cancel: catchAsync(async (req, res) => {
+        const appointment = await service.cancel(req.params.id);
+        return res.status(200).json({ message: 'appointment cancelled', appointment });
+    }),
+
     delete: catchAsync(async (req, res) => {
-        const appointment = await model.findByIdAndDelete(req.params.id);
-        if (!appointment) throw new NotFoundError('appointment not found');
+        await service.delete(req.params.id);
         return res.status(200).json({ message: 'appointment deleted successfully' });
-    })
-
+    }),
 };
-
 export default controller;

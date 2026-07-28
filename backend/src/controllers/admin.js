@@ -31,7 +31,7 @@ const controller = {
     }),
 
     put: catchAsync(async (req, res) => {
-        await service.update(req.params.id, { updates: req.body });
+        await service.update(req.params.id, req.body);
         return res.status(200).json({ message: 'profile updated successful' });
     }),
 

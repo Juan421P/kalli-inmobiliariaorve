@@ -2,7 +2,7 @@ import express from 'express';
 import controller from '../controllers/admin.js';
 import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
-import { requireAdmin } from '../middleware/auth/require_admin.js';
+import { requireRole } from '../middleware/auth/require_role.js';
 import { requireSelf } from '../middleware/auth/require_self.js';
 import { validatePayload } from '../middleware/validate_payload.js';
 import { schemas } from '../schemas/admin.js';
@@ -12,14 +12,14 @@ const admin = express.Router();
 admin.route('/')
     .get(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         controller.get
     );
 
 admin.route('/invite')
     .post(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         cloudinary.single('picture'),
         validatePayload({ body: schemas.invite }),
         controller.invite
@@ -64,20 +64,20 @@ admin.route('/password-recovery/change-password')
 admin.route('/:id')
     .get(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         validatePayload({ params: schemas.queryById }),
         controller.getById
     )
     .put(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         requireSelf,
         validatePayload({ params: schemas.queryById, body: schemas.update }),
         controller.put
     )
     .delete(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         validatePayload({ params: schemas.queryById }),
         controller.delete
     );
@@ -85,7 +85,7 @@ admin.route('/:id')
 admin.route('/:id/image')
     .put(
         requireAuth,
-        requireAdmin,
+        requireRole('admin'),
         requireSelf,
         cloudinary.single('picture'),
         validatePayload({ params: schemas.queryById, body: schemas.uploadPicture }),

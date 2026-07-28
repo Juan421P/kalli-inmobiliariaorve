@@ -1,5 +1,5 @@
 import express from 'express';
-import c from '../controllers/notifications.js';
+import c from '../controllers/notification.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
 import { requireAdmin } from '../middleware/auth/require_admin.js';
 

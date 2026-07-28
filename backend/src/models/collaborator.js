@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose'; // ya
 import bcrypt from 'bcryptjs';
 const schema = new Schema({
     name: {

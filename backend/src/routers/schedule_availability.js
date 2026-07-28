@@ -1,20 +1,37 @@
 import express from 'express';
-import c from '../controllers/schedule_availability.js';
+import controller from '../controllers/schedule_availability.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
-import { requireAdmin } from '../middleware/auth/require_admin.js';
+import { requireRole } from '../middleware/auth/require_role.js';
+import { validatePayload } from '../middleware/validate_payload.js';
+import { schemas } from '../schemas/schedule_availability.js';
 
 const scheduleAvailability = express.Router();
 
-// GET es público para que el frontend público pueda mostrar horarios disponibles al cliente
-scheduleAvailability
-    .route('/')
-    .get(c.get)
-    .post(requireAuth, requireAdmin, c.post);
+scheduleAvailability.route('/')
+    .get(controller.get)
+    .post(
+        requireAuth,
+        requireRole('admin'),
+        validatePayload({ body: schemas.create }),
+        controller.post
+    );
 
-scheduleAvailability
-    .route('/:id')
-    .get(c.getById)
-    .put(requireAuth, requireAdmin, c.put)
-    .delete(requireAuth, requireAdmin, c.delete);
+scheduleAvailability.route('/:id')
+    .get(
+        validatePayload({ params: schemas.queryById }),
+        controller.getById
+    )
+    .put(
+        requireAuth,
+        requireRole('admin'),
+        validatePayload({ params: schemas.queryById, body: schemas.update }),
+        controller.put
+    )
+    .delete(
+        requireAuth,
+        requireRole('admin'),
+        validatePayload({ params: schemas.queryById }),
+        controller.delete
+    );
 
 export default scheduleAvailability;
