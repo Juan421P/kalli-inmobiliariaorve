@@ -58,7 +58,7 @@ export const countryCode = () => string({ regex: regexes.countryCode });
 export const phoneNumber = () => string({ regex: regexes.phoneNumber });
 
 // schema compuesto para números de teléfono con su respectivo código de área
-export const phone = () => z.object({ countryCode: countryCode(), number: phoneNumber() });
+export const phone = () => z.object({ country_code: countryCode(), number: phoneNumber() });
 
 // schema compuesto para documento de identidad. Valida de forma condicional: si el tipo de documento seleccionado es 'dui', exige estrictamente el formato 00000000-0
 export const document = () => z.object({

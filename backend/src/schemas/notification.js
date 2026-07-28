@@ -21,15 +21,15 @@ export const schemas = {
     queryById: z.object({ id: database.id }).strict(),
 
     queryFilter: z.object({
-        recipientId: database.id.optional(),
-        recipientType: z.enum(recipient_types).optional(),
+        recipient_id: database.id.optional(),
+        recipient_type: z.enum(recipient_types).optional(),
     }).strict(),
 
     create: z.object({
         recipient,
         title: text(),
         message: longText(),
-        actionLink: actionLink.optional(),
+        action_link: actionLink.optional(),
         category: z.enum(categories),
     }).strict(),
 };

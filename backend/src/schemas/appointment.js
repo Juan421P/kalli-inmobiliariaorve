@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { database } from './fields/index.js';
-import { text, longText, coercedDate } from './fields/primitives.js';
-import { qualification, currentAddress, proposedDates, appointmentStatus } from './fields/appointment.js';
+import { text, longText } from './fields/primitives.js';
+import { qualification, currentAddress, proposedDates, time, appointmentStatus, coercedDate } from './fields/appointment.js';
 
 export const schemas = {
 
@@ -15,16 +15,16 @@ export const schemas = {
         buyer: database.id.optional(),
         property: database.id,
         qualification,
-        currentAddress,
-        proposedDates,
+        current_address: currentAddress,
+        proposed_dates: proposedDates,
         notes: longText().optional(),
-        time: database.id,
+        time,
     }).strict(),
 
     update: z.object({
         qualification: qualification.optional(),
-        currentAddress: currentAddress.optional(),
-        proposedDates: proposedDates.optional(),
+        current_address: currentAddress.optional(),
+        proposed_dates: proposedDates.optional(),
         notes: longText().optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
@@ -36,6 +36,6 @@ export const schemas = {
     }).strict(),
 
     schedule: z.object({
-        scheduledDate: coercedDate(),
+        scheduled_date: coercedDate(),
     }).strict(),
 };

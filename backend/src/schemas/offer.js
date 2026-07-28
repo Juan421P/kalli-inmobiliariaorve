@@ -19,9 +19,9 @@ export const schemas = {
     create: z.object({
         property: database.id,
         price: z.number().positive(),
-        moveInDate: coercedDate().optional(),
-        rentalMonths: z.enum(rental_months).optional(),
-        buyer: database.id.optional(), // staff-on-behalf-of only, see service
+        move_in_date: coercedDate().optional(),
+        rental_months: z.enum(rental_months).optional(),
+        buyer: database.id.optional(),
     }).strict(),
 
     counter: z.object({
@@ -33,8 +33,8 @@ export const schemas = {
     }).strict(),
 
     update: z.object({
-        moveInDate: coercedDate().optional(),
-        rentalMonths: z.enum(rental_months).optional(),
+        move_in_date: coercedDate().optional(),
+        rental_months: z.enum(rental_months).optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
         { message: 'at least one field must be updated' }

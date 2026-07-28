@@ -12,12 +12,12 @@ export const schemas = {
         document: user.document,
         phone: user.phone,
         picture: media.picture,
-        pictureId: media.pictureId,
+        picture_id: media.pictureId,
         password: auth.password,
-        confirmPassword: auth.password
+        confirm_password: auth.password
     }).strict().refine(
-        data => data.password === data.confirmPassword,
-        { path: ['confirmPassword'], message: 'passwords do not match' }
+        data => data.password === data.confirm_password,
+        { path: ['confirm_password'], message: 'passwords do not match' }
     ),
 
     verifyEmail: z.object({
@@ -35,11 +35,11 @@ export const schemas = {
         lastname: user.lastname.optional(),
         phone: user.phone.optional(),
         picture: media.picture.optional(),
-        pictureId: media.pictureId.optional()
+        picture_id: media.pictureId.optional()
     }).strict(),
 
     uploadPicture: z.object({
-        id: database.id, picture: media.picture, pictureId: media.pictureId
+        id: database.id, picture: media.picture, picture_id: media.pictureId
     }).strict(),
 
     requestRecoveryCode: z.object({ email: user.email }).strict(),
@@ -48,10 +48,10 @@ export const schemas = {
 
     changePassword: z.object({
         token: auth.token,
-        newPassword: auth.password,
-        confirmPassword: auth.password
+        new_password: auth.password,
+        confirm_password: auth.password
     }).strict().refine(
-        data => data.newPassword === data.confirmPassword,
-        { path: ['confirmPassword'], message: 'passwords do not match' }
+        data => data.new_password === data.confirm_password,
+        { path: ['confirm_password'], message: 'passwords do not match' }
     ),
 };
