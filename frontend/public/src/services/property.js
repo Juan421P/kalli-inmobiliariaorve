@@ -2,7 +2,8 @@ import Service from './service.js'
 
 class PropertyService extends Service {
     constructor() {
-        super('/properties')
+        // backend/src/routers/property.js monta las rutas en /property (singular), no /properties
+        super('/property')
     }
 
     async getByPublicId(publicId) {
