@@ -6,7 +6,7 @@ const transport = nodemailer.createTransport({
 });
 const send = async (to, subject, text, html = null) => {
     return await transport.sendMail({
-        from: config.email.email,
+        from: config.email.user,
         to,
         subject,
         text,
