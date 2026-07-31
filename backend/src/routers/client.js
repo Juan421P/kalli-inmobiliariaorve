@@ -20,8 +20,6 @@ client.route('/')
 
 client.route('/register')
     .post(
-        cloudinary.single('picture'),
-        parseMultipartJSON,
         validatePayload({ body: schemas.register }),
         controller.register
     );

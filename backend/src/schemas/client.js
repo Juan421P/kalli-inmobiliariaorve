@@ -1,10 +1,14 @@
 import { z } from 'zod';
-import { user, auth, database } from './fields/index.js'
+import { user, auth, media, database } from './fields/index.js'
 
 export const schemas = {
 
     queryById: z.object({ id: database.id }).strict(),
 
+    // picture/picture_id llegan como JSON plano (no multipart) — el
+    // frontend siempre manda una URL, ya sea real o el avatar generado por
+    // defecto, así que se validan como opcionales y el service aplica un
+    // respaldo si por algún motivo no llegan.
     register: z.object({
         name: user.name,
         lastname: user.lastname,

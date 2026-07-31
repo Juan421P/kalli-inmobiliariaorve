@@ -16,13 +16,7 @@ const controller = {
     }),
 
     register: catchAsync(async (req, res) => {
-        if (!req.file) throw new ValidationError(
-            'picture is required',
-            { code: 'PICTURE_REQUIRED', field: 'picture' }
-        );
-        await service.register(
-            { ...req.body, picture: req.file.path, picture_id: req.file.filename }
-        );
+        await service.register(req.body);
         return res.status(201).json({ message: 'verification code sent to email' });
     }),
 

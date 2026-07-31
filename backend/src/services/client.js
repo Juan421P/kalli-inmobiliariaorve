@@ -30,7 +30,7 @@ const service = {
         return client;
     },
 
-    async register({ name, lastname, email, document, phone, picture, picture_id, password }) {
+    async register({ name, lastname, email, document, phone, password }) {
         const exists = await model.findOne({ email });
         if (exists) throw new ConflictError(
             'client already exists',
@@ -44,8 +44,6 @@ const service = {
             email,
             document,
             phone,
-            picture,
-            picture_id,
             password,
             verified_email: false,
         });
@@ -59,6 +57,8 @@ const service = {
                 registration(code)
             );
         } catch (err) {
+            console.error('[client.register] Mail.sendHtml failed:', err);
+            await model.findByIdAndDelete(client._id);
             throw new NodemailerError(
                 'failed to send verification email',
                 { email: client.email }
@@ -170,6 +170,7 @@ const service = {
                 recovery(code)
             );
         } catch (err) {
+            console.error('[client.requestRecoveryCode] Mail.sendHtml failed:', err);
             throw new NodemailerError(
                 'failed to send recovery email',
                 { email }
