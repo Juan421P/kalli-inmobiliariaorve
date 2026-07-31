@@ -10,9 +10,7 @@ export const schemas = {
         lastname: user.lastname,
         email: user.email,
         document: user.document,
-        phone: user.phone,
-        picture: media.picture,
-        picture_id: media.pictureId
+        phone: user.phone
     }).strict(),
 
     completeInvitation: z.object({
@@ -28,14 +26,10 @@ export const schemas = {
     update: z.object({
         name: user.name.optional(),
         lastname: user.lastname.optional(),
-        phone: user.phone.optional(),
-        picture: media.picture.optional(),
-        picture_id: media.pictureId.optional()
+        phone: user.phone.optional()
     }).strict(),
 
-    uploadPicture: z.object({
-        id: database.id, picture: media.picture, picture_id: media.pictureId
-    }).strict(),
+    uploadPicture: z.object({}).strict(),
 
     requestRecoveryCode: z.object({ email: user.email }).strict(),
 

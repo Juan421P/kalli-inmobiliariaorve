@@ -7,6 +7,7 @@ import { requireSelf } from '../middleware/auth/require_self.js';
 import { requireSelfOrAdmin } from '../middleware/auth/require_self_or_admin.js';
 import { validatePayload } from '../middleware/validate_payload.js';
 import { schemas } from '../schemas/client.js';
+import { parseMultipartJSON } from '../middleware/parse_multipart_json.js';
 
 const client = express.Router();
 
@@ -20,6 +21,7 @@ client.route('/')
 client.route('/register')
     .post(
         cloudinary.single('picture'),
+        parseMultipartJSON,
         validatePayload({ body: schemas.register }),
         controller.register
     );
@@ -85,7 +87,7 @@ client.route('/:id/image')
         requireAuth,
         requireSelf,
         cloudinary.single('picture'),
-        validatePayload({ params: schemas.queryById, body: schemas.uploadPicture }),
+        validatePayload({ params: schemas.queryById }),
         controller.uploadPicture
     );
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { user, auth, media, database } from './fields/index.js'
+import { user, auth, database } from './fields/index.js'
 
 export const schemas = {
 
@@ -11,8 +11,6 @@ export const schemas = {
         email: user.email,
         document: user.document,
         phone: user.phone,
-        picture: media.picture,
-        picture_id: media.pictureId,
         password: auth.password,
         confirm_password: auth.password
     }).strict().refine(
@@ -33,14 +31,10 @@ export const schemas = {
     update: z.object({
         name: user.name.optional(),
         lastname: user.lastname.optional(),
-        phone: user.phone.optional(),
-        picture: media.picture.optional(),
-        picture_id: media.pictureId.optional()
+        phone: user.phone.optional()
     }).strict(),
 
-    uploadPicture: z.object({
-        id: database.id, picture: media.picture, picture_id: media.pictureId
-    }).strict(),
+    uploadPicture: z.object({}).strict(),
 
     requestRecoveryCode: z.object({ email: user.email }).strict(),
 

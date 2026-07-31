@@ -1,5 +1,7 @@
 import service from '../services/client.js';
+import { authCookie } from '../utils/auth_cookie.js';
 import { catchAsync } from '../utils/catch_async.js';
+import ValidationError from '../errors/validation.js';
 
 const controller = {
 
@@ -14,16 +16,19 @@ const controller = {
     }),
 
     register: catchAsync(async (req, res) => {
-        await service.register(req.body);
+        if (!req.file) throw new ValidationError(
+            'picture is required',
+            { code: 'PICTURE_REQUIRED', field: 'picture' }
+        );
+        await service.register(
+            { ...req.body, picture: req.file.path, picture_id: req.file.filename }
+        );
         return res.status(201).json({ message: 'verification code sent to email' });
     }),
 
     verifyEmail: catchAsync(async (req, res) => {
         const { token, client } = await service.verifyEmail(req.body);
-        res.cookie('auth', token, {
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        });
+        authCookie.set(res, token);
         return res.status(200).json({ message: 'registration completed successfully, logging in', client });
     }),
 
@@ -38,7 +43,13 @@ const controller = {
     }),
 
     uploadPicture: catchAsync(async (req, res) => {
-        await service.uploadPicture(req.params.id, req.body);
+        if (!req.file) throw new ValidationError(
+            'picture is required',
+            { code: 'PICTURE_REQUIRED', field: 'picture' }
+        );
+        await service.uploadPicture(
+            req.params.id, { picture: req.file.path, picture_id: req.file.filename }
+        );
         return res.status(200).json({ message: 'profile picture updated successfully' });
     }),
 
@@ -64,16 +75,13 @@ const controller = {
     login: catchAsync(async (req, res) => {
         const { email, password } = req.body;
         const { token, client } = await service.login({ email, password });
-        res.cookie('auth', token, {
-            httpOnly: true,
-            maxAge: 30 * 24 * 60 * 60 * 1000
-        });
+        authCookie.set(res, token);
         return res.status(200).json({ message: 'login successful', client });
     }),
 
     logout: catchAsync(async (req, res) => {
         await service.logout();
-        res.clearCookie('auth');
+        authCookie.clear(res);
         return res.status(200).json({ message: 'logout successful' });
     })
 
