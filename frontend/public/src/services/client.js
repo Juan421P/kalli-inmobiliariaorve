@@ -36,11 +36,9 @@ const ClientService = {
             lastname,
             email,
             password,
-            confirmPassword: confirmPassword ?? password,
-            phone: { countryCode: '+503', number: formatPhone(phone) },
+            confirm_password: confirmPassword ?? password,
+            phone: { country_code: '+503', number: formatPhone(phone) },
             document: { type: document_type?.toLowerCase(), number: document_number },
-            picture: picture ?? `https://ui-avatars.com/api/?background=0D6B5E&color=fff&name=${encodeURIComponent(`${name ?? ''} ${lastname ?? ''}`.trim())}`,
-            pictureId: pictureId ?? 'default'
         });
         verificationToken = data?.token ?? null;
         return data;
@@ -48,6 +46,11 @@ const ClientService = {
     async verifyEmail({ code }) {
         const { data } = await api.post('/client/verify-email', { token: verificationToken, code });
         verificationToken = null;
+        return data;
+    },
+    async resendVerification({ email }) {
+        const { data } = await api.post('/client/resend-verification', { email });
+        verificationToken = data?.token ?? null;
         return data;
     },
     async login({ email, password }) {
@@ -71,8 +74,8 @@ const ClientService = {
     async resetPassword({ newPassword, confirmPassword }) {
         const { data } = await api.post('/client/password-recovery/change-password', {
             token: recoveryToken,
-            newPassword,
-            confirmPassword
+            new_password: newPassword,
+            confirm_password: confirmPassword
         });
         recoveryToken = null;
         return data;

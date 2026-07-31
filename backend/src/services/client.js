@@ -30,12 +30,18 @@ const service = {
         return client;
     },
 
-    async register({ name, lastname, email, document, phone, password }) {
+    async register({ name, lastname, email, document, phone, picture, pictureId, password }) {
         const exists = await model.findOne({ email });
-        if (exists) throw new ConflictError(
-            'client already exists',
-            { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
-        );
+        if (exists) {
+            if (!exists.verified_email) {
+                await model.findByIdAndDelete(exists._id);
+            } else {
+                throw new ConflictError(
+                    'client already exists',
+                    { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
+                );
+            }
+        }
         // igual no serviría si se registran varios usuarios con el mismo número de dui al mismo tiempo o algo así pero esperemos que tal cosa no ocurra porque si no habría que hacer otra colección y ajá no creo que haya otra forma y la verdad qué pereza mil disculpas
         await checkDocumentUniqueness(document.number);
         const client = await model.create({
@@ -43,7 +49,9 @@ const service = {
             lastname,
             email,
             document,
-            phone,
+            phone: { country_code: phone.country_code, number: phone.number },
+            picture,
+            picture_id: pictureId,
             password,
             verified_email: false,
         });
@@ -65,6 +73,35 @@ const service = {
             );
         }
         return { client, token };
+    },
+
+    async resendVerification({ email }) {
+        const client = await model.findOne({ email });
+        if (!client) throw new NotFoundError(
+            'client not found',
+            { code: 'CLIENT_NOT_FOUND' }
+        );
+        if (client.verified_email) throw new ConflictError(
+            'account already verified',
+            { code: 'ACCOUNT_ALREADY_VERIFIED' }
+        );
+        const code = crypto.randomBytes(3).toString('hex');
+        const token = jwt.sign({ id: client._id, code }, '15m');
+        try {
+            await Mail.sendHtml(
+                client.email,
+                'Confirmación de correo',
+                `Dispone usted de 15 minutos para activar su cuenta con este código: ${code}`,
+                registration(code)
+            );
+        } catch (err) {
+            console.error('[client.resendVerification] Mail.sendHtml failed:', err);
+            throw new NodemailerError(
+                'failed to send verification email',
+                { email: client.email }
+            );
+        }
+        return { token, expiresIn: 900 };
     },
 
     async verifyEmail({ token, code }) {

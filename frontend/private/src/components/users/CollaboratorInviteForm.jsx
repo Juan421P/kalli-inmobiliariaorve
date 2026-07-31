@@ -7,10 +7,6 @@ import {
     FieldLabel,
     FieldTitle,
     FieldError,
-    FieldGroup,
-    FieldSet,
-    FieldLegend,
-    FieldSeparator,
 } from '@/components/ui/field'
 import {
     Select,
@@ -45,22 +41,22 @@ const AvatarUpload = ({ preview, onChange, error }) => {
     }
 
     return (
-        <div className='flex flex-col items-center gap-3'>
+        <div className='flex flex-col items-center gap-2'>
             <button
                 type='button'
                 onClick={() => inputRef.current?.click()}
-                className='relative w-24 h-24 rounded-full border-2 border-dashed border-orve-teal/30 bg-orve-teal/5 hover:border-orve-teal/60 hover:bg-orve-teal/10 transition-all group overflow-hidden'
+                className='relative w-20 h-20 rounded-full border-2 border-dashed border-orve-teal/30 bg-orve-teal/5 hover:border-orve-teal/60 hover:bg-orve-teal/10 transition-all group overflow-hidden'
             >
                 {preview ? (
                     <img src={preview} alt='Vista previa' className='w-full h-full object-cover' />
                 ) : (
                     <div className='flex flex-col items-center justify-center gap-1 text-orve-teal/50 group-hover:text-orve-teal transition-colors'>
-                        <User className='w-8 h-8' />
+                        <User className='w-7 h-7' />
                     </div>
                 )}
                 {preview && (
                     <div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center'>
-                        <Upload className='w-5 h-5 text-white' />
+                        <Upload className='w-4 h-4 text-white' />
                     </div>
                 )}
             </button>
@@ -69,7 +65,7 @@ const AvatarUpload = ({ preview, onChange, error }) => {
                 onClick={() => inputRef.current?.click()}
                 className='text-xs text-orve-teal/60 hover:text-orve-teal transition-colors'
             >
-                {preview ? 'Cambiar foto' : 'Subir foto de perfil'}
+                {preview ? 'Cambiar foto' : 'Subir foto'}
             </button>
             {error && <span className='text-xs text-destructive'>{error}</span>}
             <input
@@ -84,14 +80,24 @@ const AvatarUpload = ({ preview, onChange, error }) => {
 }
 
 const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
-    const [form,   setForm]   = useState(EMPTY_FORM)
-    const [errors, setErrors] = useState({})
-    const [avatar, setAvatar] = useState({ file: null, preview: null })
+    const [form,    setForm]    = useState(EMPTY_FORM)
+    const [errors,  setErrors]  = useState({})
+    const [touched, setTouched] = useState({})
+    const [avatar,  setAvatar]  = useState({ file: null, preview: null })
 
     const setField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }))
         setErrors((prev) => ({ ...prev, [key]: null }))
     }
+
+    const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
+
+    const isFormReady =
+        form.name.trim() &&
+        form.lastname.trim() &&
+        form.email.trim() && /\S+@\S+\.\S+/.test(form.email) &&
+        form.phone.trim() &&
+        form.documentNumber.trim()
 
     const validate = () => {
         const e = {}
@@ -101,7 +107,6 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
         else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Correo inválido.'
         if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
         if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
-        if (!avatar.file)                e.avatar         = 'La foto de perfil es requerida.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -121,34 +126,41 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
             setForm(EMPTY_FORM)
             setAvatar({ file: null, preview: null })
             setErrors({})
+            setTouched({})
         }
     }
 
     return (
-        <FieldSet>
-            {/* ── Sección foto ── */}
-            <div className='flex justify-center pb-2'>
-                <AvatarUpload
-                    preview={avatar.preview}
-                    onChange={(file, preview) => { setAvatar({ file, preview }); setErrors((prev) => ({ ...prev, avatar: null })) }}
-                    error={errors.avatar}
-                />
-            </div>
+        <div className='flex flex-col gap-5'>
+            {/* ── Avatar + campos lado a lado ── */}
+            <div className='flex gap-6 items-start'>
+                {/* Avatar */}
+                <div className='shrink-0 pt-1'>
+                    <AvatarUpload
+                        preview={avatar.preview}
+                        onChange={(file, preview) => {
+                            setAvatar({ file, preview })
+                            setErrors((prev) => ({ ...prev, avatar: null }))
+                        }}
+                        error={errors.avatar}
+                    />
+                </div>
 
-            <FieldSeparator />
-
-            {/* ── Sección información personal ── */}
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Información personal</FieldLegend>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
+                {/* Campos en cuadrícula 2 columnas */}
+                <div className='flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Nombre</FieldTitle>
+                            <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
+                                Nombre
+                                {touched.name && !form.name.trim() && (
+                                    <span className='text-orve-red text-xs font-semibold'>Requerido</span>
+                                )}
+                            </FieldTitle>
                             <Input
                                 value={form.name}
                                 onChange={(e) => setField('name', e.target.value)}
-                                placeholder='Ingrese el nombre del colaborador'
+                                onBlur={() => touchField('name')}
+                                placeholder='Nombre'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -157,11 +169,17 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
 
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Apellido</FieldTitle>
+                            <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
+                                Apellido
+                                {touched.lastname && !form.lastname.trim() && (
+                                    <span className='text-orve-red text-xs font-semibold'>Requerido</span>
+                                )}
+                            </FieldTitle>
                             <Input
                                 value={form.lastname}
                                 onChange={(e) => setField('lastname', e.target.value)}
-                                placeholder='Ingrese el apellido del colaborador'
+                                onBlur={() => touchField('lastname')}
+                                placeholder='Apellido'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -170,10 +188,16 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
 
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Teléfono</FieldTitle>
+                            <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
+                                Teléfono
+                                {touched.phone && !form.phone.trim() && (
+                                    <span className='text-orve-red text-xs font-semibold'>Requerido</span>
+                                )}
+                            </FieldTitle>
                             <Input
                                 value={form.phone}
                                 onChange={(e) => setField('phone', e.target.value)}
+                                onBlur={() => touchField('phone')}
                                 placeholder='0000-0000'
                                 className='bg-white/70'
                             />
@@ -183,27 +207,27 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
 
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Correo electrónico</FieldTitle>
+                            <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
+                                Correo electrónico
+                                {touched.email && !form.email.trim() && (
+                                    <span className='text-orve-red text-xs font-semibold'>Requerido</span>
+                                )}
+                                {touched.email && form.email.trim() && !/\S+@\S+\.\S+/.test(form.email) && (
+                                    <span className='text-orve-red text-xs font-semibold'>Formato inválido</span>
+                                )}
+                            </FieldTitle>
                             <Input
                                 type='email'
                                 value={form.email}
                                 onChange={(e) => setField('email', e.target.value)}
+                                onBlur={() => touchField('email')}
                                 placeholder='correo@ejemplo.com'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
                         <FieldError>{errors.email}</FieldError>
                     </Field>
-                </div>
-            </FieldGroup>
 
-            <FieldSeparator />
-
-            {/* ── Sección documento ── */}
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Documento de identidad</FieldLegend>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
                     <Field>
                         <FieldLabel>
                             <FieldTitle className='text-orve-teal/70'>Tipo de documento</FieldTitle>
@@ -227,34 +251,39 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
 
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Número de documento</FieldTitle>
+                            <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
+                                Número de documento
+                                {touched.documentNumber && !form.documentNumber.trim() && (
+                                    <span className='text-orve-red text-xs font-semibold'>Requerido</span>
+                                )}
+                            </FieldTitle>
                             <Input
                                 value={form.documentNumber}
                                 onChange={(e) => setField('documentNumber', e.target.value)}
-                                placeholder='Ingrese el número de documento'
+                                onBlur={() => touchField('documentNumber')}
+                                placeholder='Número de documento'
                                 className='bg-white/70'
                             />
                         </FieldLabel>
                         <FieldError>{errors.documentNumber}</FieldError>
                     </Field>
                 </div>
-            </FieldGroup>
+            </div>
 
-            <p className='text-xs text-orve-teal/50 -mt-2'>
-                Se enviará un correo de invitación para que el colaborador complete su cuenta y defina su propia contraseña.
-            </p>
-
-            {/* ── Acciones ── */}
-            <div className='flex justify-end pt-2'>
+            {/* ── Nota + botón ── */}
+            <div className='flex items-center justify-between gap-4 pt-1'>
+                <p className='text-xs text-orve-teal/50'>
+                    Se enviará un correo de invitación para que el colaborador defina su contraseña.
+                </p>
                 <Button
                     onClick={handleSubmit}
-                    disabled={isLoading}
-                    className='bg-orve-teal hover:bg-orve-darker-teal text-white px-10'
+                    disabled={isLoading || !isFormReady}
+                    className='shrink-0 bg-orve-teal hover:bg-orve-darker-teal text-white px-8'
                 >
                     {isLoading ? 'Enviando...' : 'Enviar invitación'}
                 </Button>
             </div>
-        </FieldSet>
+        </div>
     )
 }
 

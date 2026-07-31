@@ -100,6 +100,17 @@ const submitStep3 = async ({ code }) => {
     // "mm:ss" para mostrar en el countdown del OTP
     const formatCountdown = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 
+    const resendCode = async () => {
+        setServerError(null)
+        try {
+            await ClientService.resendVerification({ email: step1Data?.email ?? step1.getValues('email') })
+            setCountdown(OTP_TTL)
+            step3.reset({ code: '' })
+        } catch (err) {
+            setServerError(err?.response?.data?.message ?? 'No se pudo reenviar el código. Intente de nuevo.')
+        }
+    }
+
     const goBack = () => {
         setStep((s) => Math.max(1, s - 1))
         setServerError(null)
@@ -113,6 +124,7 @@ const submitStep3 = async ({ code }) => {
         onStep1Submit: step1.handleSubmit(goToStep2),
         onStep2Submit: step2.handleSubmit(submitStep2),
         onStep3Submit: step3.handleSubmit(submitStep3),
+        onResendCode: resendCode,
         goBack,
         goToLogin: () => navigate('/login'),
     }

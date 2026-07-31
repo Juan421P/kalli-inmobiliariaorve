@@ -10,6 +10,7 @@ import Clients from '@/pages/Clients'
 import Collaborators from '@/pages/Collaborators'
 import Dashboard from '@/pages/Dashboard'
 import Features from '@/pages/Features'
+import ForgotPassword from '@/pages/ForgotPassword'
 import Login from '@/pages/Login'
 import Offers from '@/pages/Offers'
 import Profile from '@/pages/Profile'
@@ -28,6 +29,7 @@ const router = createBrowserRouter([
 		element: <RootLayout />,
 		children: [
 			{ path: '/', element: <Login /> },
+			{ path: '/forgot-password', element: <ForgotPassword /> },
 			{
 				element: <ProtectedRoute />,
 				children: [

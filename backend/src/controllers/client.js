@@ -16,8 +16,11 @@ const controller = {
     }),
 
     register: catchAsync(async (req, res) => {
-        await service.register(req.body);
-        return res.status(201).json({ message: 'verification code sent to email' });
+        const { token } = await service.register({
+            ...req.body,
+            ...(req.file && { picture: req.file.path, pictureId: req.file.filename }),
+        });
+        return res.status(201).json({ message: 'verification code sent to email', token });
     }),
 
     verifyEmail: catchAsync(async (req, res) => {
@@ -47,9 +50,14 @@ const controller = {
         return res.status(200).json({ message: 'profile picture updated successfully' });
     }),
 
+    resendVerification: catchAsync(async (req, res) => {
+        const { token, expiresIn } = await service.resendVerification(req.body);
+        return res.status(200).json({ message: 'verification code resent', token, expiresIn });
+    }),
+
     requestRecoveryCode: catchAsync(async (req, res) => {
-        await service.requestRecoveryCode(req.body);
-        return res.status(200).json({ message: 'recovery code sent to email' });
+        const { token, expiresIn } = await service.requestRecoveryCode(req.body);
+        return res.status(200).json({ message: 'recovery code sent to email', token, expiresIn });
     }),
 
     verifyRecoveryCode: catchAsync(async (req, res) => {

@@ -30,6 +30,12 @@ client.route('/verify-email')
         controller.verifyEmail
     );
 
+client.route('/resend-verification')
+    .post(
+        validatePayload({ body: schemas.resendVerification }),
+        controller.resendVerification
+    );
+
 client.route('/login')
     .post(
         validatePayload({ body: schemas.login }),

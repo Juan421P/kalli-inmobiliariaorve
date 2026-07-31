@@ -55,9 +55,11 @@ const controller = {
     }),
 
     requestRecoveryCode: catchAsync(async (req, res) => {
-        await service.requestRecoveryCode(req.body);
+        const { token, expiresIn } = await service.requestRecoveryCode(req.body);
         return res.status(200).json({
-            message: 'recovery code sent to email'
+            message: 'recovery code sent to email',
+            token,
+            expiresIn
         });
     }),
 

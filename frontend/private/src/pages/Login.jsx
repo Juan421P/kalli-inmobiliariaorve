@@ -26,7 +26,9 @@ const Login = () => {
     useEffect(() => {
         if (isAuthenticated) navigate('/dashboard', { replace: true })
     }, [isAuthenticated, navigate])
-    const { register, handleSubmit, formState: { errors } } = useForm({ resolver: zodResolver(schema) })
+    const { register, handleSubmit, watch, formState: { errors } } = useForm({ resolver: zodResolver(schema), mode: 'onTouched' })
+    const [watchEmail = '', watchPassword = ''] = watch(['email', 'password'])
+    const canSubmit = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchEmail) && watchPassword.length >= 8
     const emailRegister = register('email')
     const passwordRegister = register('password')
     const [isLoading, setIsLoading] = useState(false)
@@ -133,7 +135,7 @@ const Login = () => {
                                 ¿Olvidó su contraseña?
                             </Link>
                         </div>
-                        <Button type='submit' disabled={isLoading} className='relative w-full h-14 bg-orve-teal hover:bg-orve-black text-white transition-colors rounded-xl text-md flex justify-between items-center px-6 drop-shadow-md duration-300 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed'>
+                        <Button type='submit' disabled={isLoading || !canSubmit} className='relative w-full h-14 bg-orve-teal hover:bg-orve-black text-white transition-colors rounded-xl text-md flex justify-between items-center px-6 drop-shadow-md duration-300 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed'>
                             <span className='mx-auto select-none'>{isLoading ? 'Ingresando...' : 'Ingresar'}</span>
                             {isLoading
                                 ? <Spinner className='size-[5.5] absolute right-4' />

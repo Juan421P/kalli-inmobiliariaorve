@@ -17,14 +17,14 @@ import OTPInput from '@/components/auth/register/OTPInput'
  * @param {Function} goBack - retrocede al paso 2
  * @param {string|null} serverError - error del backend (codigo invalido/expirado)
  */
-const RegisterStep3 = ({ form, email, countdown, formatCountdown, onSubmit, goBack, serverError }) => {
+const RegisterStep3 = ({ form, email, countdown, formatCountdown, onSubmit, onResend, goBack, serverError }) => {
     const { control, formState: { isSubmitting, isValid } } = form
 
     return (
         <form onSubmit={onSubmit} className='flex flex-col gap-4'>
             <p className='text-xs text-orve-teal/70 leading-relaxed'>
-                Para confirmar su identidad, le ha sido enviado un correo con un código de confirmación de 6 dígitos.
-                Revise su bandeja de entrada e introduzca el código a continuación para finalizar el proceso de registro.
+                Le hemos enviado un código de 6 dígitos a <span className='font-semibold text-orve-teal'>{email}</span>.
+                Revise su bandeja de entrada e introdúzcalo a continuación.
             </p>
 
             {serverError && (
@@ -44,11 +44,17 @@ const RegisterStep3 = ({ form, email, countdown, formatCountdown, onSubmit, goBa
             {/* Countdown + solicitar nuevo codigo */}
             <div className='flex items-center justify-between text-xs'>
                 <span className='text-orve-teal/50'>
-                    El código seguirá siendo válido por:{' '}
-                    <span className='font-semibold text-orve-teal/80'>{formatCountdown(countdown)}</span>
+                    {countdown > 0
+                        ? <>El código expira en: <span className='font-semibold text-orve-teal/80'>{formatCountdown(countdown)}</span></>
+                        : <span className='text-orve-red/70'>El código ha expirado.</span>
+                    }
                 </span>
-                {/* No hay endpoint de reenvio en el backend, el link es orientativo */}
-                <button type='button' className='text-orve-teal underline hover:text-orve-darker-teal transition-colors'>
+                <button
+                    type='button'
+                    onClick={onResend}
+                    disabled={countdown > 0}
+                    className='text-orve-teal underline hover:text-orve-darker-teal transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline'
+                >
                     Solicitar un nuevo código
                 </button>
             </div>

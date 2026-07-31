@@ -4,23 +4,25 @@ import { cn } from '@/lib/utils'
 
 const inputBase = 'w-full text-sm bg-gray-100/80 border border-gray-200/80 rounded-xl outline-none transition-colors placeholder:text-xs placeholder:text-gray-400 focus:border-orve-teal/50 focus:bg-white/80'
 
-/**
- * Paso 1 del registro: nombre, apellido, correo y contrasena.
- * Sin llamada al backend — el hook guarda los datos y avanza al paso 2.
- *
- * @param {import('react-hook-form').UseFormReturn} form - step1 del hook
- * @param {Function} onSubmit - handleSubmit ya vinculado por useRegisterForm
- */
+const PASSWORD_CHECKS = [
+    { label: 'Mínimo 8 caracteres',      test: (v) => v.length >= 8 },
+    { label: 'Una letra mayúscula',       test: (v) => /[A-Z]/.test(v) },
+    { label: 'Una letra minúscula',       test: (v) => /[a-z]/.test(v) },
+    { label: 'Un número',                 test: (v) => /\d/.test(v) },
+    { label: 'Un símbolo (@$!%*?&)',      test: (v) => /[@$!%*?&]/.test(v) },
+]
+
 const RegisterStep1 = ({ form, onSubmit }) => {
     const [showPass, setShowPass] = useState(false)
-    const { register, formState: { errors, isSubmitting, isValid } } = form
+    const { register, watch, formState: { errors, isSubmitting, isValid } } = form
+    const passwordVal = watch('password', '')
 
     return (
         <form onSubmit={onSubmit} className='flex flex-col gap-4'>
             {/* Fila: Nombre | Apellido */}
             <div className='grid grid-cols-2 gap-3'>
                 {[
-                    { name: 'name',     label: 'Nombre',   placeholder: 'Ingrese su nombre' },
+                    { name: 'name',     label: 'Nombre',   placeholder: 'Ingrese su nombre'   },
                     { name: 'lastname', label: 'Apellido', placeholder: 'Ingrese su apellido' },
                 ].map(({ name, label, placeholder }) => (
                     <div key={name} className='flex flex-col gap-1.5'>
@@ -28,35 +30,55 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                         <div className='relative'>
                             <User className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                             <input
-                                {...register(name, { required: true })}
+                                {...register(name, { required: 'Este campo es requerido.' })}
                                 placeholder={placeholder}
                                 className={cn(inputBase, 'pl-10 pr-3 py-3', errors[name] && 'border-red-300/70')}
                             />
                         </div>
+                        {errors[name] && (
+                            <p className='text-[10px] text-red-400'>{errors[name].message}</p>
+                        )}
                     </div>
                 ))}
             </div>
 
-            {/* Fila: Correo | Contrasena */}
+            {/* Fila: Correo | Contraseña */}
             <div className='grid grid-cols-2 gap-3'>
+                {/* Correo */}
                 <div className='flex flex-col gap-1.5'>
                     <label className='text-xs text-gray-500 font-medium'>Correo electrónico</label>
                     <div className='relative'>
                         <Mail className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                         <input
-                            {...register('email', { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ })}
+                            {...register('email', {
+                                required: 'El correo es requerido.',
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: 'Ingrese un correo válido.',
+                                },
+                            })}
                             type='email'
-                            placeholder='Ingrese su correo electrónico'
+                            placeholder='correo@ejemplo.com'
                             className={cn(inputBase, 'pl-10 pr-3 py-3', errors.email && 'border-red-300/70')}
                         />
                     </div>
+                    {errors.email && (
+                        <p className='text-[10px] text-red-400'>{errors.email.message}</p>
+                    )}
                 </div>
+
+                {/* Contraseña */}
                 <div className='flex flex-col gap-1.5'>
                     <label className='text-xs text-gray-500 font-medium'>Contraseña</label>
                     <div className='relative'>
                         <Lock className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                         <input
-                            {...register('password', { required: true, minLength: 8 })}
+                            {...register('password', {
+                                required: 'La contraseña es requerida.',
+                                validate: (v) =>
+                                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v)
+                                    || 'La contraseña no cumple los requisitos.',
+                            })}
                             type={showPass ? 'text' : 'password'}
                             placeholder='Ingrese su contraseña'
                             className={cn(inputBase, 'pl-10 pr-10 py-3', errors.password && 'border-red-300/70')}
@@ -69,6 +91,27 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                             {showPass ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
                         </button>
                     </div>
+
+                    {/* Checklist de requisitos de contraseña */}
+                    {passwordVal && (
+                        <div className='flex flex-col gap-0.5 pt-0.5'>
+                            {PASSWORD_CHECKS.map(({ label, test }) => {
+                                const ok = test(passwordVal)
+                                return (
+                                    <div
+                                        key={label}
+                                        className={cn(
+                                            'flex items-center gap-1.5 text-[10px] transition-colors',
+                                            ok ? 'text-green-500' : 'text-gray-400'
+                                        )}
+                                    >
+                                        <span className='font-bold'>{ok ? '✓' : '○'}</span>
+                                        {label}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
 

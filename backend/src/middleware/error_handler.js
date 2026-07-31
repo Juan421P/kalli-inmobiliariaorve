@@ -1,3 +1,4 @@
+import { ZodError } from 'zod';
 import AppError from '../errors/app.js';
 import { translateError } from '../utils/error_translator.js';
 
@@ -9,6 +10,14 @@ export const errorHandler = (err, req, res, next) => {
     if (resolved instanceof AppError) return res.status(resolved.status).json(
         { message: resolved.message, meta: resolved.meta }
     );
+
+    // Error de validación de Zod (campos inválidos o faltantes).
+    if (err instanceof ZodError) {
+        return res.status(400).json({
+            message: 'validation error',
+            meta: { errors: err.errors },
+        });
+    }
 
     // Error inesperado.
     console.error(err);

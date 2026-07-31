@@ -21,7 +21,7 @@ const Register = () => {
         step, step1, step2, step3,
         serverError, countdown, formatCountdown,
         onStep1Submit, onStep2Submit, onStep3Submit,
-        goBack, goToLogin,
+        onResendCode, goBack, goToLogin,
     } = useRegisterForm()
 
     useEffect(() => {
@@ -84,6 +84,7 @@ const Register = () => {
                         countdown={countdown}
                         formatCountdown={formatCountdown}
                         onSubmit={onStep3Submit}
+                        onResend={onResendCode}
                         goBack={goBack}
                         serverError={serverError}
                     />

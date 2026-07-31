@@ -69,7 +69,7 @@ const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
             </Field>
             <Button
                 onClick={handleSubmit}
-                disabled={isLoading}
+                disabled={isLoading || name.trim().length < MIN_LENGTH}
                 className='w-full bg-orve-teal hover:bg-orve-darker-teal text-white'
             >
                 {isLoading ? 'Agregando...' : 'Agregar'}

@@ -40,6 +40,8 @@ export const schemas = {
 
     uploadPicture: z.object({}).strict(),
 
+    resendVerification: z.object({ email: user.email }).strict(),
+
     requestRecoveryCode: z.object({ email: user.email }).strict(),
 
     verifyRecoveryCode: z.object({ token: auth.token, code: auth.code }).strict(),
