@@ -18,7 +18,7 @@ import { checkDocumentUniqueness } from '../utils/check_document_uniqueness.js';
 const service = {
 
     async getAll() {
-        return await model.find();
+        return await model.find().lean();
     },
 
     async getById(id) {

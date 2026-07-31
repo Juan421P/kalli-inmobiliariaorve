@@ -18,7 +18,7 @@ import ValidationError from '../errors/validation.js';
 const service = {
 
     async getAll() {
-        return await model.find();
+        return await model.find().lean();
     },
 
     async getById(id) {

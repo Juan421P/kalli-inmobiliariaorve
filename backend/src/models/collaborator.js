@@ -36,7 +36,7 @@ const schema = new Schema({
         country_code: {
             type: String,
             required: true,
-            match: [/^\+\d+$/, 'country code must start with + followed by numbers']
+            match: [/^\+[1-9]\d{0,2}$/, 'country code must start with + followed by 1 to 3 digits']
         },
         number: {
             type: String,

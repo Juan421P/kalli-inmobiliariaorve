@@ -33,14 +33,12 @@ const schema = new Schema({
         }
     },
 
-    // Mirrors property's own location/address shape instead of pointing at
-    // a district collection that never existed.
     current_address: {
         location: {
             type: { type: String, enum: ['Point'], required: true },
             coordinates: { type: [Number], required: true }
         },
-        address: { type: String }, // resolved server-side from coordinates
+        address: { type: String },
         reference: {
             type: String,
             required: true,

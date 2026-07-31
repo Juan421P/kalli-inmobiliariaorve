@@ -12,9 +12,13 @@ import { generatePropertyId } from '../utils/property_id/generate.js';
 function toDbFields(body) {
     const map = {
         propertyType: 'property_type',
+        property_type: 'property_type',
         listingType: 'listing_type',
+        listing_type: 'listing_type',
         parkingSpaces: 'parking_spaces',
+        parking_spaces: 'parking_spaces',
         allowsPets: 'allows_pets',
+        allows_pets: 'allows_pets',
     };
     const data = {};
     for (const [key, value] of Object.entries(body)) {
@@ -27,7 +31,7 @@ function toDbFields(body) {
 const service = {
 
     async getAll() {
-        return await model.find();
+        return await model.find().lean();
     },
 
     async getById(id) {

@@ -7,7 +7,7 @@ import ConflictError from '../errors/conflict.js';
 const service = {
 
     async getAll() {
-        return await model.find();
+        return await model.find().lean();
     },
 
     async create({ name }) {
