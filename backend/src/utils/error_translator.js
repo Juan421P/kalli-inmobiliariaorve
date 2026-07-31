@@ -1,8 +1,8 @@
 import { ZodError } from 'zod';
 import multer from 'multer';
-import ValidationError from './validation.js';
-import ConflictError from './conflict.js';
-import AuthenticationError from './authentication.js';
+import ValidationError from '../errors/validation.js';
+import ConflictError from '../errors/conflict.js';
+import AuthenticationError from '../errors/authentication.js';
 
 // Convierte errores "crudos" (que nunca pasaron por un service/controller,
 // como los de Zod, Mongoose o Multer) en AppError con metadata útil para el
