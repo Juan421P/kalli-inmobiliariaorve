@@ -56,7 +56,7 @@ const NumberStepper = ({ value, onChange, min = 0 }) => (
     <div className='flex items-center gap-2'>
         <button
             type='button'
-            onClick={() => onChange(Math.max(min, parseInt(value || '0') - 1).toString())}
+            onClick={(e) => { e.stopPropagation(); onChange(Math.max(min, parseInt(value || '0') - 1).toString()) }}
             className='w-8 h-8 rounded-lg border border-orve-teal/20 text-orve-teal hover:bg-orve-teal/10 transition-colors flex items-center justify-center text-lg leading-none shrink-0'
         >
             −
@@ -66,11 +66,11 @@ const NumberStepper = ({ value, onChange, min = 0 }) => (
             min={min}
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className='bg-white/70 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
+            className='w-12 bg-white/70 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
         />
         <button
             type='button'
-            onClick={() => onChange((parseInt(value || '0') + 1).toString())}
+            onClick={(e) => { e.stopPropagation(); onChange((parseInt(value || '0') + 1).toString()) }}
             className='w-8 h-8 rounded-lg border border-orve-teal/20 text-orve-teal hover:bg-orve-teal/10 transition-colors flex items-center justify-center text-lg leading-none shrink-0'
         >
             +
@@ -150,7 +150,9 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
             status:         form.status,
             price:          parseFloat(form.price),
             address:        location.address,
-            coordinates:    location.coordinates,
+            ...(location.coordinates && {
+                location: { type: 'Point', coordinates: location.coordinates },
+            }),
             bedrooms:       parseInt(form.bedrooms       || '0'),
             bathrooms:      parseInt(form.bathrooms      || '0'),
             parking_spaces: parseInt(form.parking_spaces || '0'),
@@ -282,24 +284,18 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
                         {showRooms && (
                             <div className='grid grid-cols-3 gap-3'>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Habitaciones</FieldTitle>
-                                        <NumberStepper value={form.bedrooms}       onChange={(v) => setField('bedrooms', v)}       />
-                                    </FieldLabel>
-                                </Field>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Baños</FieldTitle>
-                                        <NumberStepper value={form.bathrooms}      onChange={(v) => setField('bathrooms', v)}      />
-                                    </FieldLabel>
-                                </Field>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Parqueos</FieldTitle>
-                                        <NumberStepper value={form.parking_spaces} onChange={(v) => setField('parking_spaces', v)} />
-                                    </FieldLabel>
-                                </Field>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Habitaciones</span>
+                                    <NumberStepper value={form.bedrooms}       onChange={(v) => setField('bedrooms', v)}       />
+                                </div>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Baños</span>
+                                    <NumberStepper value={form.bathrooms}      onChange={(v) => setField('bathrooms', v)}      />
+                                </div>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Parqueos</span>
+                                    <NumberStepper value={form.parking_spaces} onChange={(v) => setField('parking_spaces', v)} />
+                                </div>
                             </div>
                         )}
                     </FieldGroup>

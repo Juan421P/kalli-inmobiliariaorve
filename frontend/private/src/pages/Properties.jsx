@@ -76,7 +76,7 @@ const Properties = () => {
     }
 
     const handleCreate = async (formData) => {
-        const ok = await createProperty(formData)
+        const ok = await createProperty({ ...formData, owner: user.id })
         if (ok) setTab('list')
     }
 

@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
-import { MapPin, CheckCircle2, RefreshCw, Loader2, AlertCircle } from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
+import { MapPin, CheckCircle2, RefreshCw, Loader2, AlertCircle, Search, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import L from 'leaflet'
 import GeoSVService from '@/services/geosv'
 
@@ -24,6 +25,14 @@ const ClickHandler = ({ onPlace, disabled }) => {
     return null
 }
 
+const MapFlyTo = ({ target }) => {
+    const map = useMap()
+    useEffect(() => {
+        if (target) map.flyTo(target, 16, { duration: 1 })
+    }, [target])
+    return null
+}
+
 // defaultCoordinates: [lng, lat] (GeoJSON order)
 // defaultAddress: string — pre-confirmed address from backend
 // onChange: ({ coordinates: [lng, lat] | null, address: string }) => void
@@ -32,16 +41,34 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
         ? { lat: defaultCoordinates[1], lng: defaultCoordinates[0] }
         : null
 
-    const [pin,         setPin]         = useState(initialPin)
-    const [status,      setStatus]      = useState(defaultCoordinates ? 'confirmed' : 'idle')
-    const [addressData, setAddressData] = useState(null)
-    const [preAddress,  setPreAddress]  = useState(defaultAddress)
-    const [errorMsg,    setErrorMsg]    = useState('')
+    const [pin,           setPin]           = useState(initialPin)
+    const [status,        setStatus]        = useState(defaultCoordinates ? 'confirmed' : 'idle')
+    const [addressData,   setAddressData]   = useState(null)
+    const [preAddress,    setPreAddress]    = useState(defaultAddress)
+    const [errorMsg,      setErrorMsg]      = useState('')
+    const [flyTarget,     setFlyTarget]     = useState(null)
+    const [searchQuery,   setSearchQuery]   = useState('')
+    const [searchResults, setSearchResults] = useState([])
+    const [isSearching,   setIsSearching]   = useState(false)
+
+    const searchRef = useRef(null)
 
     const isConfirmed = status === 'confirmed'
     const isVerifying = status === 'verifying'
 
-    const mapCenter = pin ? [pin.lat, pin.lng] : [13.6929, -89.2182]
+    const initialCenter = initialPin ? [initialPin.lat, initialPin.lng] : [13.6929, -89.2182]
+    const initialZoom   = initialPin ? 15 : 12
+
+    // Cerrar dropdown al hacer click fuera
+    useEffect(() => {
+        const handler = (e) => {
+            if (searchRef.current && !searchRef.current.contains(e.target)) {
+                setSearchResults([])
+            }
+        }
+        document.addEventListener('mousedown', handler)
+        return () => document.removeEventListener('mousedown', handler)
+    }, [])
 
     const handlePlace = (latlng) => {
         setPin(latlng)
@@ -49,6 +76,37 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
         setAddressData(null)
         setPreAddress('')
         setErrorMsg('')
+    }
+
+    const handleSearch = async () => {
+        const q = searchQuery.trim()
+        if (!q) return
+        setIsSearching(true)
+        setSearchResults([])
+        try {
+            const res = await fetch(
+                `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&countrycodes=sv&limit=5`,
+                { headers: { 'Accept-Language': 'es' } }
+            )
+            const data = await res.json()
+            setSearchResults(data)
+        } catch {
+            // fallo silencioso — el usuario puede seguir marcando en el mapa
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const handleSelectResult = (result) => {
+        const latlng = { lat: parseFloat(result.lat), lng: parseFloat(result.lon) }
+        setPin(latlng)
+        setFlyTarget([latlng.lat, latlng.lng])
+        setStatus('idle')
+        setAddressData(null)
+        setPreAddress('')
+        setErrorMsg('')
+        setSearchResults([])
+        setSearchQuery('')
     }
 
     const handleVerify = async () => {
@@ -59,15 +117,12 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
             const data = await GeoSVService.getAddress([pin.lng, pin.lat])
             setAddressData(data)
             setStatus('confirmed')
-            const parts = [
-                data.street?.name,
-                data.settlement?.name,
-                data.municipality?.name,
-                data.department?.name,
-            ].filter(Boolean)
-            const fullAddress = parts.join(', ')
+            const fullAddress = data.address ?? [
+                data.components?.municipality,
+                data.components?.department,
+            ].filter(Boolean).join(', ')
             setPreAddress(fullAddress)
-            onChange({ coordinates: [pin.lng, pin.lat], address: fullAddress })
+            onChange({ coordinates: [pin.lng, pin.lat], address: fullAddress, components: data.components ?? null })
         } catch {
             setStatus('error')
             setErrorMsg('No se encontró dirección para esta ubicación. Intente en otra posición.')
@@ -76,26 +131,90 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
 
     const handleReset = () => {
         setPin(null)
+        setFlyTarget(null)
         setStatus('idle')
         setAddressData(null)
         setPreAddress('')
         setErrorMsg('')
-        onChange({ coordinates: null, address: '' })
+        onChange({ coordinates: null, address: '', components: null })
     }
 
     return (
         <div className='flex flex-col gap-3'>
+
+            {/* Buscador por nombre */}
+            {!isConfirmed && (
+                <div className='relative' ref={searchRef}>
+                    <div className='flex gap-2'>
+                        <div className='relative flex-1'>
+                            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-orve-teal/40 pointer-events-none' />
+                            <Input
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder='Buscar colonia, municipio, dirección...'
+                                className='pl-9 pr-8 bg-white/70 text-sm h-9'
+                            />
+                            {searchQuery && (
+                                <button
+                                    type='button'
+                                    onClick={() => { setSearchQuery(''); setSearchResults([]) }}
+                                    className='absolute right-2.5 top-1/2 -translate-y-1/2 text-orve-teal/30 hover:text-orve-teal transition-colors'
+                                >
+                                    <X className='w-3.5 h-3.5' />
+                                </button>
+                            )}
+                        </div>
+                        <Button
+                            type='button'
+                            size='sm'
+                            onClick={handleSearch}
+                            disabled={isSearching || !searchQuery.trim()}
+                            className='shrink-0 bg-orve-teal hover:bg-orve-darker-teal text-white h-9 px-3'
+                        >
+                            {isSearching
+                                ? <Loader2 className='w-3.5 h-3.5 animate-spin' />
+                                : <Search className='w-3.5 h-3.5' />
+                            }
+                        </Button>
+                    </div>
+
+                    {/* Resultados del buscador */}
+                    {searchResults.length > 0 && (
+                        <div className='absolute top-full left-0 right-0 z-[9999] mt-1 bg-white border border-orve-teal/15 rounded-xl shadow-lg overflow-hidden'>
+                            {searchResults.map((r, i) => (
+                                <button
+                                    key={i}
+                                    type='button'
+                                    onClick={() => handleSelectResult(r)}
+                                    className='w-full text-left px-3 py-2.5 hover:bg-orve-teal/5 border-b border-orve-teal/8 last:border-0 transition-colors'
+                                >
+                                    <span className='text-xs text-orve-teal/80 block truncate'>{r.display_name}</span>
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Sin resultados */}
+                    {!isSearching && searchQuery && searchResults.length === 0 && searchResults !== null && (
+                        <p className='text-xs text-orve-teal/40 mt-1 px-1 select-none'>
+                            Presione Enter o el botón para buscar
+                        </p>
+                    )}
+                </div>
+            )}
+
             <p className='text-xs text-orve-teal/60 select-none'>
                 {isConfirmed
                     ? 'Ubicación confirmada. Haga clic en "Cambiar" para re-seleccionar.'
-                    : 'Haga clic en el mapa para marcar la ubicación exacta de la propiedad.'}
+                    : 'Busque o haga clic en el mapa para marcar la ubicación de la propiedad.'}
             </p>
 
             {/* Mapa */}
             <div className='rounded-xl overflow-hidden border border-orve-teal/15' style={{ height: 280 }}>
                 <MapContainer
-                    center={mapCenter}
-                    zoom={pin ? 15 : 12}
+                    center={initialCenter}
+                    zoom={initialZoom}
                     style={{ height: '100%', width: '100%' }}
                     zoomControl
                 >
@@ -104,6 +223,7 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
                         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
                     />
                     <ClickHandler onPlace={handlePlace} disabled={isConfirmed} />
+                    <MapFlyTo target={flyTarget} />
                     {pin && <Marker position={[pin.lat, pin.lng]} icon={pinIcon} />}
                 </MapContainer>
             </div>
@@ -148,15 +268,15 @@ const LocationPicker = ({ onChange, defaultCoordinates = null, defaultAddress = 
                             <CheckCircle2 className='w-4 h-4 text-orve-green shrink-0 mt-0.5' />
                             <div className='min-w-0'>
                                 <p className='text-xs font-semibold text-orve-teal mb-1'>Dirección verificada</p>
-                                {addressData?.street?.name && (
-                                    <p className='text-sm font-medium text-orve-teal'>{addressData.street.name}</p>
+                                {addressData?.address && (
+                                    <p className='text-sm font-medium text-orve-teal'>{addressData.address}</p>
                                 )}
-                                {addressData ? (
+                                {addressData?.components ? (
                                     <p className='text-xs text-orve-teal/60 mt-0.5'>
                                         {[
-                                            addressData.settlement?.name,
-                                            addressData.municipality?.name,
-                                            addressData.department?.name && `Depto. ${addressData.department.name}`,
+                                            addressData.components.municipality,
+                                            addressData.components.district,
+                                            addressData.components.department && `Depto. ${addressData.components.department}`,
                                         ].filter(Boolean).join(' · ')}
                                     </p>
                                 ) : (

@@ -64,7 +64,7 @@ const service = {
             min: 3
         });
 
-        const { addressComponents, ...rest } = body;
+        const { address_components, ...rest } = body;
         const data = toDbFields(rest);
         data.pictures = files.map(file => ({ picture: file.path, picture_id: file.filename }));
 
@@ -72,7 +72,7 @@ const service = {
         try {
             let property;
             await session.withTransaction(async () => {
-                data.public_id = await generatePropertyId(addressComponents, session);
+                data.public_id = await generatePropertyId(address_components, session);
                 const [created] = await model.create([data], { session });
                 property = created;
             });

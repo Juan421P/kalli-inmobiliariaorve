@@ -152,7 +152,11 @@ const PropertiesTable = ({ properties = [], isLoading, onEdit, onDelete }) => {
 
                             {/* Ubicación */}
                             <TableCell className='text-sm text-orve-teal/70 max-w-44'>
-                                <span className='line-clamp-2 leading-tight'>{p.address}</span>
+                                <span className='line-clamp-2 leading-tight'>
+                                    {typeof p.address === 'string'
+                                        ? p.address
+                                        : (p.address?.reference ?? p.address?.district ?? '—')}
+                                </span>
                             </TableCell>
 
                             {/* Precio */}

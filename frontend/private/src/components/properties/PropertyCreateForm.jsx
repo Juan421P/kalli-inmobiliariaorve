@@ -8,7 +8,6 @@ import {
     Field,
     FieldLabel,
     FieldTitle,
-    FieldError,
     FieldGroup,
     FieldSet,
     FieldLegend,
@@ -137,7 +136,7 @@ const NumberStepper = ({ value, onChange, min = 0 }) => (
     <div className='flex items-center gap-2'>
         <button
             type='button'
-            onClick={() => onChange(Math.max(min, parseInt(value || '0') - 1).toString())}
+            onClick={(e) => { e.stopPropagation(); onChange(Math.max(min, parseInt(value || '0') - 1).toString()) }}
             className='w-8 h-8 rounded-lg border border-orve-teal/20 text-orve-teal hover:bg-orve-teal/10 transition-colors flex items-center justify-center text-lg leading-none shrink-0'
         >
             −
@@ -148,11 +147,11 @@ const NumberStepper = ({ value, onChange, min = 0 }) => (
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder='0'
-            className='bg-white/70 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
+            className='w-12 bg-white/70 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
         />
         <button
             type='button'
-            onClick={() => onChange((parseInt(value || '0') + 1).toString())}
+            onClick={(e) => { e.stopPropagation(); onChange((parseInt(value || '0') + 1).toString()) }}
             className='w-8 h-8 rounded-lg border border-orve-teal/20 text-orve-teal hover:bg-orve-teal/10 transition-colors flex items-center justify-center text-lg leading-none shrink-0'
         >
             +
@@ -184,7 +183,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
     const [form,     setForm]     = useState(EMPTY_FORM)
     const [images,   setImages]   = useState([])
     const [errors,   setErrors]   = useState({})
-    const [location, setLocation] = useState({ coordinates: null, address: '' })
+    const [location, setLocation] = useState({ coordinates: null, address: '', components: null })
 
     const setField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }))
@@ -202,6 +201,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
         if (form.property_type !== 'land') {
             if (!form.area_number || parseFloat(form.area_number) <= 0) e.area_number = 'El área es requerida.'
         }
+        if (images.length < 3) e.images = 'Se requieren al menos 3 imágenes.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -209,26 +209,27 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
     const handleSubmit = () => {
         if (!validate()) return
         onSubmit({
-            title:          form.title.trim(),
-            description:    form.description.trim(),
-            property_type:  form.property_type,
-            listing_type:   form.listing_type,
-            status:         form.status,
-            price:          parseFloat(form.price),
-            address:        location.address,
-            coordinates:    location.coordinates,
-            bedrooms:       parseInt(form.bedrooms       || '0'),
-            bathrooms:      parseInt(form.bathrooms      || '0'),
-            parking_spaces: parseInt(form.parking_spaces || '0'),
-            area:           { number: parseFloat(form.area_number || '0'), unit: form.area_unit },
-            allows_pets:    form.allows_pets,
-            furnished:      form.furnished,
-            images:         images.map((i) => i.file),
+            title:              form.title.trim(),
+            description:        form.description.trim(),
+            property_type:      form.property_type,
+            listing_type:       form.listing_type,
+            status:             form.status,
+            price:              parseFloat(form.price),
+            address:            location.address,
+            location:           { type: 'Point', coordinates: location.coordinates },
+            address_components: location.components,
+            bedrooms:           parseInt(form.bedrooms       || '0'),
+            bathrooms:          parseInt(form.bathrooms      || '0'),
+            parking_spaces:     parseInt(form.parking_spaces || '0'),
+            area:               { number: parseFloat(form.area_number || '0'), unit: form.area_unit },
+            allows_pets:        form.allows_pets,
+            furnished:          form.furnished,
+            images:             images.map((i) => i.file),
         })
         setForm(EMPTY_FORM)
         setImages([])
         setErrors({})
-        setLocation({ coordinates: null, address: '' })
+        setLocation({ coordinates: null, address: '', components: null })
     }
 
     const showRooms = form.property_type !== 'land'
@@ -251,10 +252,10 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                                     value={form.title}
                                     onChange={(e) => setField('title', e.target.value)}
                                     placeholder='Ej. Casa en Urbanización Las Flores'
-                                    className='bg-white/70'
+                                    className={`bg-white/70 ${errors.title ? 'border-orve-red' : ''}`}
                                 />
                             </FieldLabel>
-                            <FieldError>{errors.title}</FieldError>
+                            {errors.title && <p className='text-xs text-orve-red mt-0.5'>{errors.title}</p>}
                         </Field>
 
                         <div className='grid grid-cols-3 gap-3'>
@@ -300,10 +301,10 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                                     value={form.description}
                                     onChange={(e) => setField('description', e.target.value)}
                                     placeholder='Describa las características principales de la propiedad...'
-                                    className='bg-white/70 min-h-24 resize-none'
+                                    className={`bg-white/70 min-h-24 resize-none ${errors.description ? 'border-orve-red' : ''}`}
                                 />
                             </FieldLabel>
-                            <FieldError>{errors.description}</FieldError>
+                            {errors.description && <p className='text-xs text-orve-red mt-0.5'>{errors.description}</p>}
                         </Field>
                     </FieldGroup>
 
@@ -325,11 +326,11 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                                             value={form.price}
                                             onChange={(e) => setField('price', e.target.value)}
                                             placeholder='0.00'
-                                            className='bg-white/70 pl-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
+                                            className={`bg-white/70 pl-7 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${errors.price ? 'border-orve-red' : ''}`}
                                         />
                                     </div>
                                 </FieldLabel>
-                                <FieldError>{errors.price}</FieldError>
+                                {errors.price && <p className='text-xs text-orve-red mt-0.5'>{errors.price}</p>}
                             </Field>
 
                             <Field>
@@ -342,7 +343,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                                             value={form.area_number}
                                             onChange={(e) => setField('area_number', e.target.value)}
                                             placeholder='0'
-                                            className='bg-white/70 flex-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
+                                            className={`bg-white/70 flex-1 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none ${errors.area_number ? 'border-orve-red' : ''}`}
                                         />
                                         <Select value={form.area_unit} onValueChange={(v) => setField('area_unit', v)}>
                                             <SelectTrigger className='w-18 bg-white/70 shrink-0'><SelectValue /></SelectTrigger>
@@ -352,30 +353,24 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                                         </Select>
                                     </div>
                                 </FieldLabel>
-                                <FieldError>{errors.area_number}</FieldError>
+                                {errors.area_number && <p className='text-xs text-orve-red mt-0.5'>{errors.area_number}</p>}
                             </Field>
                         </div>
 
                         {showRooms && (
                             <div className='grid grid-cols-3 gap-3'>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Habitaciones</FieldTitle>
-                                        <NumberStepper value={form.bedrooms}       onChange={(v) => setField('bedrooms', v)}       />
-                                    </FieldLabel>
-                                </Field>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Baños</FieldTitle>
-                                        <NumberStepper value={form.bathrooms}      onChange={(v) => setField('bathrooms', v)}      />
-                                    </FieldLabel>
-                                </Field>
-                                <Field>
-                                    <FieldLabel>
-                                        <FieldTitle className='text-orve-teal/70'>Parqueos</FieldTitle>
-                                        <NumberStepper value={form.parking_spaces} onChange={(v) => setField('parking_spaces', v)} />
-                                    </FieldLabel>
-                                </Field>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Habitaciones</span>
+                                    <NumberStepper value={form.bedrooms}       onChange={(v) => setField('bedrooms', v)}       />
+                                </div>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Baños</span>
+                                    <NumberStepper value={form.bathrooms}      onChange={(v) => setField('bathrooms', v)}      />
+                                </div>
+                                <div className='flex flex-col gap-1.5'>
+                                    <span className='text-sm font-medium text-orve-teal/70'>Parqueos</span>
+                                    <NumberStepper value={form.parking_spaces} onChange={(v) => setField('parking_spaces', v)} />
+                                </div>
                             </div>
                         )}
                     </FieldGroup>
@@ -406,12 +401,8 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                 <FieldSet>
                     {/* Ubicación */}
                     <FieldGroup>
-                        <FieldLegend className='text-orve-teal'>
-                            Ubicación
-                            {errors.address && (
-                                <span className='ml-2 text-xs font-normal text-red-500'>{errors.address}</span>
-                            )}
-                        </FieldLegend>
+                        <FieldLegend className='text-orve-teal'>Ubicación</FieldLegend>
+                        {errors.address && <p className='text-xs text-orve-red -mt-2'>{errors.address}</p>}
                         <LocationPicker
                             onChange={(loc) => {
                                 setLocation(loc)
@@ -423,7 +414,9 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                     {/* Imágenes */}
                     <FieldGroup>
                         <FieldLegend className='text-orve-teal'>Imágenes</FieldLegend>
-                        <ImageUploader images={images} onChange={setImages} />
+                        {errors.images && <p className='text-xs text-orve-red -mt-2'>{errors.images}</p>}
+                        <ImageUploader images={images} onChange={(imgs) => { setImages(imgs); if (imgs.length >= 3) setErrors((prev) => ({ ...prev, images: null })) }} />
+                        <p className='text-xs text-orve-teal/40 -mt-1'>Mínimo 3 imágenes requeridas</p>
                     </FieldGroup>
                 </FieldSet>
             </div>
