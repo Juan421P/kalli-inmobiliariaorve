@@ -8,7 +8,14 @@ export const validatePayload = ({ body, params, query }) => (req, res, next) => 
         if (params) req.params = params.parse(req.params);
 
         // Valida los parámetros de consulta.
-        if (query) req.query = query.parse(req.query);
+        // En Express 5, req.query es un getter sin setter en el prototipo,
+        // por lo que se redefine como propiedad propia del request para poder reemplazarla.
+        if (query) Object.defineProperty(req, 'query', {
+            value: query.parse(req.query),
+            writable: true,
+            configurable: true,
+            enumerable: true
+        });
 
         next();
     } catch (error) {

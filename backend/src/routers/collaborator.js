@@ -4,6 +4,7 @@ import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
 import { requireRole } from '../middleware/auth/require_role.js';
 import { requireSelf } from '../middleware/auth/require_self.js';
+import { requireSelfOrAdmin } from '../middleware/auth/require_self_or_admin.js';
 import { validatePayload } from '../middleware/validate_payload.js';
 import { schemas } from '../schemas/collaborator.js';
 
@@ -70,8 +71,7 @@ collaborator.route('/:id')
     )
     .put(
         requireAuth,
-        requireRole('collaborator'),
-        requireSelf,
+        requireSelfOrAdmin,
         validatePayload({ params: schemas.queryById, body: schemas.update }),
         controller.put
     )

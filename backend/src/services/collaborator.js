@@ -103,7 +103,7 @@ const service = {
         };
     },
 
-    async update(id, { updates }) {
+    async update(id, updates) {
         const collaborator = await model.findByIdAndUpdate(id, updates, { new: true });
         if (!collaborator) throw new NotFoundError(
             'collaborator not found',

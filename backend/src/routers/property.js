@@ -37,9 +37,10 @@ property.route('/:id')
     .put(
         requireAuth,
         requireRole('admin', 'collaborator'),
-        validatePayload({ params: schemas.queryById, body: schemas.update }),
+        validatePayload({ params: schemas.queryById }),
         requireAssignedCollaboratorOrAdmin(getProperty),
         cloudinary.array('pictures', 15),
+        validatePayload({ body: schemas.update }),
         controller.put
     )
     .delete(

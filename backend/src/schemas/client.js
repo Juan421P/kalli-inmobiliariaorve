@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { user, auth, media, database } from './fields/index.js'
+import { boolean } from './fields/primitives.js'
 
 export const schemas = {
 
@@ -35,7 +36,8 @@ export const schemas = {
     update: z.object({
         name: user.name.optional(),
         lastname: user.lastname.optional(),
-        phone: user.phone.optional()
+        phone: user.phone.optional(),
+        active: boolean().optional()
     }).strict(),
 
     uploadPicture: z.object({}).strict(),

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { user, auth, media, database } from './fields/index.js'
+import { boolean } from './fields/primitives.js'
 
 export const schemas = {
 
@@ -30,7 +31,8 @@ export const schemas = {
         lastname: user.lastname.optional(),
         phone: user.phone.optional(),
         picture: media.picture.optional(),
-        picture_id: media.pictureId.optional()
+        picture_id: media.pictureId.optional(),
+        active: boolean().optional()
     }).strict(),
 
     uploadPicture: z.object({

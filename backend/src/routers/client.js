@@ -75,7 +75,7 @@ client.route('/:id')
     )
     .put(
         requireAuth,
-        requireSelf,
+        requireSelfOrAdmin,
         validatePayload({ params: schemas.queryById, body: schemas.update }),
         controller.put
     )

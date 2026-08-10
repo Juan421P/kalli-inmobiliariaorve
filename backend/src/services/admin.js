@@ -103,7 +103,7 @@ const service = {
         };
     },
 
-    async update(id, { updates }) {
+    async update(id, updates) {
         const admin = await model.findByIdAndUpdate(id, updates, { new: true });
         if (!admin) throw new NotFoundError(
             'admin not found',
