@@ -27,7 +27,7 @@ import {
     EmptyDescription,
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
-import UserAvatar from './UserAvatar'
+import UserAvatar from './userAvatar'
 
 const CollaboratorsTable = ({ collaborators = [], isLoading, onToggleActive }) => {
     if (isLoading) {

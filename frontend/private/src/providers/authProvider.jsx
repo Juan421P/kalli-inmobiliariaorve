@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import AuthContext from '@/contexts/auth-context'
-import AuthService from '@/services/auth'
+import AuthContext from '@/contexts/authContext'
+import AuthService from '@/services/AuthService'
 const AuthProvider = ({ children }) => {
     const [auth, setAuth] = useState(null)
     const [isRehydrating, setIsRehydrating] = useState(true)

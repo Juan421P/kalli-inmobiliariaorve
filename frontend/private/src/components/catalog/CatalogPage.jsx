@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '@/components/Sidebar'
-import CatalogItemGrid from '@/components/catalog/CatalogItemGrid'
-import CatalogCreateForm from '@/components/catalog/CatalogCreateForm'
-import CatalogMergeForm from '@/components/catalog/CatalogMergeForm'
+import Sidebar from '@/components/sidebar'
+import CatalogItemGrid from '@/components/catalog/catalogItemGrid'
+import CatalogCreateForm from '@/components/catalog/catalogCreateForm'
+import CatalogMergeForm from '@/components/catalog/catalogMergeForm'
 import { Spinner } from '@/components/ui/spinner'
 import { panel } from '@/lib/styles'
 import toast from '@/lib/toast'
-import useAuth from '@/hooks/use-auth'
+import useAuth from '@/hooks/useAuth'
 
 const CatalogPage = ({ title, subtitle, itemLabel, inputPlaceholder, service }) => {
     const { user } = useAuth()

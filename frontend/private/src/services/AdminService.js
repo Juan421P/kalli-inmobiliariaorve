@@ -1,4 +1,4 @@
-import Service from './service.js';
+import Service from './Service.js';
 class AdminService extends Service {
     constructor() {
         super('/admin');
@@ -23,6 +23,11 @@ class AdminService extends Service {
     }
     async logout() {
         return await this.api.post(`${this.endpoint}/logout`).then((response) => response.data);
+    }
+    async uploadPicture(id, file) {
+        const formData = new FormData();
+        formData.append('picture', file);
+        return await this.api.put(`${this.endpoint}/${id}/image`, formData).then((response) => response.data);
     }
 }
 export default new AdminService();

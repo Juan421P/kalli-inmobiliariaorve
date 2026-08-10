@@ -13,10 +13,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import bgImage from '@/assets/login-bg.jpg'
 import orveLogo from '@/assets/orve-logo.svg'
 import { cn } from '@/lib/utils'
-import AdminService from '@/services/admin'
-import CollaboratorService from '@/services/collaborator'
+import AdminService from '@/services/AdminService'
+import { collaboratorsService } from '@/services/CollaboratorsService'
 import { login as schema } from '@/schemas/admin'
-import useAuth from '@/hooks/use-auth'
+import useAuth from '@/hooks/useAuth'
 import toast from '@/lib/toast'
 const filterInvalidEmailChars = (v) => v.replace(/[^a-zA-Z0-9@.\-_\+]/g, '')
 const filterInvalidPasswordChars = (v) => v.replace(/\s/g, '')
@@ -41,7 +41,7 @@ const Login = () => {
                 login({ role: 'admin', user: admin })
             } catch (adminError) {
                 try {
-                    const { collaborator } = await CollaboratorService.login(data.email, data.password)
+                    const { collaborator } = await collaboratorsService.login(data.email, data.password)
                     login({ role: 'collaborator', user: collaborator })
                 } catch (collaboratorError) {
                     const message =
@@ -59,7 +59,7 @@ const Login = () => {
         }
     }
     return (
-        <div className='min-h-screen w-full relative flex items-end justify-end p-4 md:p-12 lg:p-18 overflow-hidden'>
+        <div className='min-h-screen w-full relative flex items-center justify-end p-4 md:p-12 lg:p-18 overflow-hidden'>
             <div
                 className='absolute inset-0 z-0 bg-cover bg-left md:bg-center pointer-events-none select-none'
                 style={{

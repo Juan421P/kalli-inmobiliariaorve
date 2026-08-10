@@ -1,7 +1,7 @@
 import { toast as sonner } from 'sonner';
 import { createElement } from 'react';
-import ToastCard from '@/components/ToastCard';
-import { TOAST_DURATION } from '@/components/ToastCard';
+import ToastCard from '@/components/toastCard';
+import { TOAST_DURATION } from '@/components/toastCard';
 const show = (title, description, variant, options = {}) =>
     sonner.custom((id) => createElement(ToastCard, { id, title, description, variant }), { duration: TOAST_DURATION, ...options });
 const toast = (title, options) => show(title, options?.description, 'default', options);

@@ -17,8 +17,8 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import UserAvatar from '@/components/users/UserAvatar'
-import AppointmentDetailsDialog from './AppointmentDetailsDialog'
+import UserAvatar from '@/components/users/userAvatar'
+import AppointmentDetailsDialog from './appointmentDetailsDialog'
 import { cn } from '@/lib/utils'
 import { getStatus, formatDate } from './constants'
 

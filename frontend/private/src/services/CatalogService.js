@@ -1,4 +1,4 @@
-import Service from './service.js'
+import Service from './Service.js'
 
 // Mock 
 // Cuando el backend esté listo, cambiá USE_MOCK a false y listo.
@@ -117,7 +117,7 @@ class CatalogService extends Service {
 
 //  Instancias exportadas 
 
-export const amenityService   = new CatalogService('/possibleAmenity')
-export const tagService       = new CatalogService('/possible_tag')
-export const featureService   = new CatalogService('/possibleFeature')
-export const applianceService = new CatalogService('/possible_appliance')
+export const amenityService   = new CatalogService('/possible-amenity')
+export const tagService       = new CatalogService('/possible-tag')
+export const featureService   = new CatalogService('/possible-feature')
+export const applianceService = new CatalogService('/possible-appliance')

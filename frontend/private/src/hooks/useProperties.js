@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { propertyService } from '@/services/property'
+import { propertyService } from '@/services/PropertyService'
 import toast from '@/lib/toast'
 
 const LIMIT = 5

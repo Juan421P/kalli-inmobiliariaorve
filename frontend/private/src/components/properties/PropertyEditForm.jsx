@@ -29,7 +29,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import LocationPicker from '@/components/properties/LocationPicker'
+import LocationPicker from '@/components/properties/locationPicker'
 
 const PROPERTY_TYPES = [
     { value: 'house',     label: 'Casa'        },
@@ -98,7 +98,11 @@ const FeatureToggle = ({ checked, onCheckedChange, label, description }) => (
 
 const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const initCoords = initialData?.location?.coordinates ?? null
-    const initAddress = initialData?.address ?? ''
+    // El campo address puede venir en un formato legado (objeto con reference/district)
+    // en vez del string plano que espera el formulario actual.
+    const initAddress = typeof initialData?.address === 'string'
+        ? initialData.address
+        : (initialData?.address?.reference ?? initialData?.address?.district ?? '')
 
     const [form, setForm] = useState({
         title:          initialData?.title                      ?? '',

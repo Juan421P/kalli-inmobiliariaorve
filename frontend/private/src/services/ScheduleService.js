@@ -1,4 +1,4 @@
-import Service from './service.js'
+import Service from './Service.js'
 
 const USE_MOCK = false
 
@@ -60,7 +60,7 @@ const mockId    = () => `mock_${Date.now()}_${Math.random().toString(36).slice(2
 // ─── Servicio ─────────────────────────────────────────────────────────────────
 class ScheduleService extends Service {
     constructor() {
-        super('/scheduleAvailability')
+        super('/schedule-availability')
         // Guardamos los docs originales del backend en caché para poder hacer PUT/DELETE
         // sin necesidad de refetch en cada mutación de slot
         this._cache = []
@@ -86,7 +86,7 @@ class ScheduleService extends Service {
         }
 
         const englishDay   = toEnglish(day)
-        const newInterval  = { start_time: to12h(from), end_time: to12h(to) }
+        const newInterval  = { startTime: to12h(from), endTime: to12h(to) }
         const existing     = this._cache.find((d) => d.day === englishDay)
 
         let updatedDoc
@@ -94,7 +94,7 @@ class ScheduleService extends Service {
             // El día ya tiene documento: agregamos el intervalo con PUT
             const oldIds    = existing.intervals.map((iv) => String(iv._id))
             const intervals = [
-                ...existing.intervals.map((iv) => ({ start_time: iv.start_time, end_time: iv.end_time })),
+                ...existing.intervals.map((iv) => ({ startTime: iv.start_time, endTime: iv.end_time })),
                 newInterval,
             ]
             const res    = await this.api.put(`${this.endpoint}/${existing._id}`, { intervals })
@@ -128,8 +128,8 @@ class ScheduleService extends Service {
 
         const intervals = dayDoc.intervals.map((iv) =>
             String(iv._id) === String(slotId)
-                ? { start_time: to12h(from), end_time: to12h(to) }
-                : { start_time: iv.start_time, end_time: iv.end_time }
+                ? { startTime: to12h(from), endTime: to12h(to) }
+                : { startTime: iv.start_time, endTime: iv.end_time }
         )
 
         const res     = await this.api.put(`${this.endpoint}/${dayDoc._id}`, { intervals })
@@ -154,7 +154,7 @@ class ScheduleService extends Service {
 
         const intervals = dayDoc.intervals
             .filter((iv) => String(iv._id) !== String(slotId))
-            .map((iv) => ({ start_time: iv.start_time, end_time: iv.end_time }))
+            .map((iv) => ({ startTime: iv.start_time, endTime: iv.end_time }))
 
         if (intervals.length === 0) {
             // Si no quedan intervalos eliminamos el documento del día completo

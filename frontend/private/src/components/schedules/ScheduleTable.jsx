@@ -22,7 +22,7 @@ const ScheduleTable = ({ schedules = [], onEdit, onDelete, onDeleteSlot, loading
 
                 return (
                     <div
-                        key={dayEntry._id}
+                        key={dayEntry.day}
                         className='group flex items-stretch border-b border-orve-teal/8 last:border-b-0 hover:bg-orve-teal/[0.03] transition-colors'
                     >
                         {/* Barra lateral de color */}

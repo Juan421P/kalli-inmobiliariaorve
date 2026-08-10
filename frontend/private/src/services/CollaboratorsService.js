@@ -1,4 +1,4 @@
-import Service from './service.js'
+import Service from './Service.js'
 
 class CollaboratorsService extends Service {
     constructor() {
@@ -32,7 +32,23 @@ class CollaboratorsService extends Service {
         const response = await this.api.put(`${this.endpoint}/${id}`, { active })
         return response.data
     }
+
+    async login(email, password) {
+        const response = await this.api.post(`${this.endpoint}/login`, { email, password })
+        return response.data
+    }
+
+    async logout() {
+        const response = await this.api.post(`${this.endpoint}/logout`)
+        return response.data
+    }
+
+    async uploadPicture(id, file) {
+        const formData = new FormData()
+        formData.append('picture', file)
+        const response = await this.api.put(`${this.endpoint}/${id}/image`, formData)
+        return response.data
+    }
 }
 
 export const collaboratorsService = new CollaboratorsService()
-export default new CollaboratorsService()

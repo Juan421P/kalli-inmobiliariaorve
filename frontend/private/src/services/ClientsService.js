@@ -1,4 +1,4 @@
-import Service from './service.js'
+import Service from './Service.js'
 
 class ClientsService extends Service {
     constructor() {

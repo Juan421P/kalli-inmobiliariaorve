@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { cn } from '@/lib/utils'
 import bgImage from '@/assets/login-bg.jpg'
 import orveLogo from '@/assets/orve-logo.svg'
-import AdminService from '@/services/admin'
+import AdminService from '@/services/AdminService'
 import toast from '@/lib/toast'
 
 const filterEmail = (v) => v.replace(/[^a-zA-Z0-9@.\-_+]/g, '')

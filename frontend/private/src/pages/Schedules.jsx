@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import Sidebar from '@/components/Sidebar'
-import ScheduleForm from '@/components/schedules/ScheduleForm'
-import ScheduleTable from '@/components/schedules/ScheduleTable'
+import Sidebar from '@/components/sidebar'
+import ScheduleForm from '@/components/schedules/scheduleForm'
+import ScheduleTable from '@/components/schedules/scheduleTable'
 import { Spinner } from '@/components/ui/spinner'
-import { scheduleService } from '@/services/schedule'
+import { scheduleService } from '@/services/ScheduleService'
 import toast from '@/lib/toast'
-import useAuth from '@/hooks/use-auth'
+import useAuth from '@/hooks/useAuth'
 
 const Schedules = () => {
     const { user } = useAuth()

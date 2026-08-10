@@ -1,14 +1,14 @@
 import { Search, Briefcase, Clock, CheckCircle, CheckCheck } from 'lucide-react'
-import Sidebar from '@/components/Sidebar'
+import Sidebar from '@/components/sidebar'
 import { Input } from '@/components/ui/input'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { panel } from '@/lib/styles'
-import useAuth from '@/hooks/use-auth'
-import useOffers from '@/hooks/use-offers'
-import OffersTable from '@/components/offers/OffersTable'
-import UsersPagination from '@/components/users/UsersPagination'
+import useAuth from '@/hooks/useAuth'
+import useOffers from '@/hooks/useOffers'
+import OffersTable from '@/components/offers/offersTable'
+import UsersPagination from '@/components/users/usersPagination'
 
 // tarjeta pequeña que muestra un número resumido (total, pendientes, etc.)
 const MetricCard = ({ icon: Icon, label, value, sub, highlight = false }) => (
@@ -98,7 +98,7 @@ const Offers = () => {
                                 totalPages={totalPages}
                                 total={total}
                                 limit={LIMIT}
-                                entityLabel='propiedades'
+                                entityLabel='ofertas'
                                 onPageChange={(page) => fetchOffers(page, search, typeFilter)}
                             />
                         )}

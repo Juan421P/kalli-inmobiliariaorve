@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { offersService } from '@/services/offers'
+import { offersService } from '@/services/OffersService'
 import toast from '@/lib/toast'
 
 const LIMIT = 5

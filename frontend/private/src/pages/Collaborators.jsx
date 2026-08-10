@@ -1,12 +1,12 @@
 import { Search, UserPlus } from 'lucide-react'
-import Sidebar from '@/components/Sidebar'
+import Sidebar from '@/components/sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { panel } from '@/lib/styles'
-import useCollaborators from '@/hooks/use-collaborators'
-import CollaboratorsTable from '@/components/users/CollaboratorsTable'
-import CollaboratorInviteForm from '@/components/users/CollaboratorInviteForm'
-import UsersPagination from '@/components/users/UsersPagination'
+import useCollaborators from '@/hooks/useCollaborators'
+import CollaboratorsTable from '@/components/users/collaboratorsTable'
+import CollaboratorInviteForm from '@/components/users/collaboratorInviteForm'
+import UsersPagination from '@/components/users/usersPagination'
 
 const Collaborators = () => {
     const {

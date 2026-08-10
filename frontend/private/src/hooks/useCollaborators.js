@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { collaboratorsService } from '@/services/collaborator'
+import { collaboratorsService } from '@/services/CollaboratorsService'
 import toast from '@/lib/toast'
 
 const LIMIT = 5

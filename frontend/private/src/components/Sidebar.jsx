@@ -4,9 +4,9 @@ import { Home, Building2, Calendar, Briefcase, Users, User, Clock, SlidersHorizo
 import { cn } from '@/lib/utils'
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
 import orveLogoWhite from '@/assets/orve-logo-white.svg'
-import useAuth from '@/hooks/use-auth'
-import AdminService from '@/services/admin'
-import CollaboratorService from '@/services/collaborator'
+import useAuth from '@/hooks/useAuth'
+import AdminService from '@/services/AdminService'
+import { collaboratorsService } from '@/services/CollaboratorsService'
 import toast from '@/lib/toast'
 const NAV_SECTIONS = [
     {
@@ -106,13 +106,12 @@ const SectionLabel = ({ label }) => (
 )
 const Sidebar = () => {
     const { user, role, logout } = useAuth()
-    console.log(user, role, logout);
     const navigate = useNavigate()
     const initials = (user?.name ?? 'U').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
     const handleLogout = async () => {
         try {
             if (role === 'admin') await AdminService.logout()
-            else await CollaboratorService.logout()
+            else await collaboratorsService.logout()
         } catch {
         } finally {
             logout()
@@ -152,8 +151,8 @@ const Sidebar = () => {
                     )}
                 >
                     <div className='w-9 h-9 rounded-full bg-orve-darker-teal overflow-hidden shrink-0 ring-2 ring-white/20 flex items-center justify-center'>
-                        {user?.avatarUrl
-                            ? <img src={user.avatarUrl} alt={user.name} className='w-full h-full object-cover' />
+                        {user?.picture
+                            ? <img src={user.picture} alt={user.name} className='w-full h-full object-cover' />
                             : <span className='text-xs font-bold text-white/80 select-none'>{initials}</span>
                         }
                     </div>

@@ -29,7 +29,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { appointmentOptionsService } from '@/services/appointments'
+import { appointmentOptionsService } from '@/services/AppointmentsService'
 import toast from '@/lib/toast'
 
 const FUNDS_SOURCES = [

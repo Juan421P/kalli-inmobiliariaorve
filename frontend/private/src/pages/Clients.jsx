@@ -1,10 +1,10 @@
 import { Search, Users, UserCheck, UserX } from 'lucide-react'
-import Sidebar from '@/components/Sidebar'
+import Sidebar from '@/components/sidebar'
 import { Input } from '@/components/ui/input'
 import { panel } from '@/lib/styles'
-import useClients from '@/hooks/use-clients'
-import ClientsTable from '@/components/users/ClientsTable'
-import UsersPagination from '@/components/users/UsersPagination'
+import useClients from '@/hooks/useClients'
+import ClientsTable from '@/components/users/clientsTable'
+import UsersPagination from '@/components/users/usersPagination'
 
 // ─── Tarjeta de métrica ───────────────────────────────────────────────────────
 const MetricCard = ({ icon: Icon, label, value, highlight = false }) => (

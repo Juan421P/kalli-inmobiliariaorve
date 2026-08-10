@@ -27,7 +27,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import UserAvatar from './UserAvatar'
+import UserAvatar from './userAvatar'
 
 const DOC_BADGE_CLASS = {
     dui:        'bg-orve-teal/15 text-orve-darker-teal border-orve-teal/20',

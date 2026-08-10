@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import LocationPicker from '@/components/properties/LocationPicker'
+import LocationPicker from '@/components/properties/locationPicker'
 
 const PROPERTY_TYPES = [
     { value: 'house',     label: 'Casa'        },
