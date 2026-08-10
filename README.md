@@ -1,4 +1,4 @@
-# Kalli Inmobiliaria Orve
+# Kalli - Inmobiliaria Orve
 
 Plataforma web para la gestión y publicación de propiedades inmobiliarias (venta y alquiler), con manejo de clientes, colaboradores, administradores y ofertas sobre propiedades.
 
@@ -172,7 +172,3 @@ Los endpoints protegidos requieren una cookie de sesión válida y, según el ca
 | `collaborator` | Personal asociado a la gestión de propiedades.                                                        |
 | `admin`        | Administradores de la plataforma.                                                                     |
 | `offer`        | Ofertas sobre una propiedad, con contraofertas y resolución.                                          |
-
-## Licencia
-
-Este proyecto se desarrolla con fines académicos y/o institucionales. La información correspondiente a la licencia deberá definirse de acuerdo con las condiciones establecidas para el proyecto.
