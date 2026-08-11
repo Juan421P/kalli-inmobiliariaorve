@@ -38,6 +38,11 @@ class CollaboratorsService extends Service {
         return response.data
     }
 
+    async completeInvitation(data) {
+        const response = await this.api.post(`${this.endpoint}/complete-invitation`, data)
+        return response.data
+    }
+
     async logout() {
         const response = await this.api.post(`${this.endpoint}/logout`)
         return response.data

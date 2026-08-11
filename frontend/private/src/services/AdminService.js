@@ -12,6 +12,9 @@ class AdminService extends Service {
     async verifyEmail(data) {
         return await this.api.post(`${this.endpoint}/verify-email`, data).then((response) => response.data);
     }
+    async completeInvitation(data) {
+        return await this.api.post(`${this.endpoint}/complete-invitation`, data).then((response) => response.data);
+    }
     async requestPasswordRecovery(email) {
         return await this.api.post(`${this.endpoint}/password-recovery/request`, { email }).then((response) => response.data);
     }

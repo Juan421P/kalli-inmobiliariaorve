@@ -8,6 +8,7 @@ import Appliances from '@/pages/appliances'
 import Appointments from '@/pages/appointments'
 import Clients from '@/pages/clients'
 import Collaborators from '@/pages/collaborators'
+import CompleteInvitation from '@/pages/completeInvitation'
 import Dashboard from '@/pages/dashboard'
 import Features from '@/pages/features'
 import ForgotPassword from '@/pages/forgotPassword'
@@ -30,6 +31,8 @@ const router = createBrowserRouter([
 		children: [
 			{ path: '/', element: <Login /> },
 			{ path: '/forgot-password', element: <ForgotPassword /> },
+			{ path: '/admin/complete-invitation', element: <CompleteInvitation role='admin' /> },
+			{ path: '/collaborator/complete-invitation', element: <CompleteInvitation role='collaborator' /> },
 			{
 				element: <ProtectedRoute />,
 				children: [
