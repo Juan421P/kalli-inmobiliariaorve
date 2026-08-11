@@ -72,14 +72,20 @@ const LoginForm = () => {
                                 <Mail className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                                 <input
                                     {...emailForm.register('recoveryEmail', {
-                                        required: true,
-                                        pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                        required: 'El correo es requerido.',
+                                        pattern: {
+                                            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                            message: 'Ingrese un correo válido.',
+                                        },
                                     })}
                                     type='email'
                                     placeholder='Ingrese su correo electrónico'
-                                    className={cn(inputBase, 'pl-10 pr-4 py-3')}
+                                    className={cn(inputBase, 'pl-10 pr-4 py-3', emailForm.formState.errors.recoveryEmail && 'border-red-300/70')}
                                 />
                             </div>
+                            {emailForm.formState.errors.recoveryEmail && (
+                                <p className='text-[10px] text-red-400'>{emailForm.formState.errors.recoveryEmail.message}</p>
+                            )}
                         </div>
                         <button
                             type='submit'
@@ -243,12 +249,21 @@ const LoginForm = () => {
                     <div className='relative'>
                         <Mail className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                         <input
-                            {...register('email', { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ })}
+                            {...register('email', {
+                                required: 'El correo es requerido.',
+                                pattern: {
+                                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                                    message: 'Ingrese un correo válido.',
+                                },
+                            })}
                             type='email'
                             placeholder='Ingrese su correo electrónico'
                             className={cn(inputBase, 'pl-10 pr-4 py-3', errors.email && 'border-red-300/70')}
                         />
                     </div>
+                    {errors.email && (
+                        <p className='text-[10px] text-red-400'>{errors.email.message}</p>
+                    )}
                 </div>
 
                 <div className='flex flex-col gap-1.5'>
@@ -256,7 +271,13 @@ const LoginForm = () => {
                     <div className='relative'>
                         <Lock className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                         <input
-                            {...register('password', { required: true, minLength: 6 })}
+                            {...register('password', {
+                                required: 'La contraseña es requerida.',
+                                minLength: {
+                                    value: 6,
+                                    message: 'La contraseña debe tener al menos 6 caracteres.',
+                                },
+                            })}
                             type={showPassword ? 'text' : 'password'}
                             placeholder='Ingrese su contraseña'
                             className={cn(inputBase, 'pl-10 pr-10 py-3', errors.password && 'border-red-300/70')}
@@ -269,6 +290,9 @@ const LoginForm = () => {
                             {showPassword ? <EyeOff className='w-4 h-4' /> : <Eye className='w-4 h-4' />}
                         </button>
                     </div>
+                    {errors.password && (
+                        <p className='text-[10px] text-red-400'>{errors.password.message}</p>
+                    )}
                 </div>
 
                 <div className='flex items-center justify-between'>

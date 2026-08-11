@@ -88,11 +88,14 @@ const ClientService = {
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (lastname !== undefined) updates.lastname = lastname;
-        if (phone !== undefined) updates.phone = { countryCode: '+503', number: formatPhone(phone) };
+        if (phone !== undefined) updates.phone = { country_code: '+503', number: formatPhone(phone) };
         if (picture !== undefined) updates.picture = picture;
-        if (pictureId !== undefined) updates.pictureId = pictureId;
+        if (pictureId !== undefined) updates.picture_id = pictureId;
         void email; void document_type; void document_number; // el backend los ignora/rechaza en update
-        const { data } = await api.put(`/client/${id}`, { updates });
+        // El backend espera el objeto de cambios directo en el body, no envuelto
+        // en { updates }: PUT /client/:id -> controller.put pasa req.body tal cual
+        // a service.update(id, updates).
+        const { data } = await api.put(`/client/${id}`, updates);
         return data;
     },
     async uploadPicture(file) {
