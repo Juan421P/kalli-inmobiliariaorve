@@ -15,7 +15,6 @@ export const schemas = {
 
     completeInvitation: z.object({
         token: auth.token,
-        code: auth.code,
         password: auth.password,
         confirm_password: auth.password
     }).strict().refine(

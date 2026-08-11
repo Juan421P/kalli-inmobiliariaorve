@@ -18,11 +18,10 @@ export const schemas = {
 
     completeInvitation: z.object({
         token: auth.token,
-        code: auth.code,
         password: auth.password,
         confirm_password: auth.password
     }).strict().refine(
-        data => data.password === data.confirmPassword,
+        data => data.password === data.confirm_password,
         { path: ['confirm_password'], message: 'passwords do not match' }
     ),
 
