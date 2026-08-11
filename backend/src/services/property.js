@@ -4,9 +4,6 @@ import model from '../models/property.js';
 import NotFoundError from '../errors/not_found.js';
 import ValidationError from '../errors/validation.js';
 import CloudinaryError from '../errors/cloudinary.js';
-import { emitPropertyCreated } from '../events/property/created.js';
-import { emitPropertyViewed } from '../events/property/viewed.js';
-import { emitPropertyPriceChanged } from '../events/property/price_changed.js';
 import { generatePropertyId } from '../utils/property_id/generate.js';
 
 // El schema ya emite las llaves en snake_case (property_type, listing_type,
@@ -87,7 +84,6 @@ const service = {
                 const [created] = await model.create([data], { session });
                 property = created;
             });
-            await emitPropertyCreated({ actor, property });
             return property;
         } finally {
             await session.endSession();
@@ -134,10 +130,6 @@ const service = {
 
         const property = await model.findByIdAndUpdate(id, update, { new: true });
 
-        if (priceChanged) {
-            await emitPropertyPriceChanged({ actor, property, old_price: oldPrice, new_price: property.price });
-        }
-
         return property;
     },
 
@@ -151,7 +143,6 @@ const service = {
             'property not found',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
-        await emitPropertyViewed({ property });
         return property;
     },
 

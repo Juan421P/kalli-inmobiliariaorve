@@ -5,7 +5,7 @@ import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import { errorHandler } from './src/middleware/error_handler.js';
 import swaggerUI from 'swagger-ui-express';
-import swaggerDocs from '../docs/swagger.json' with {type: 'json'};
+import swaggerDocs from './src/docs/swagger.json' with {type: 'json'};
 import router from './src/routers/router.js';
 const allowedOrigins = ['http://localhost:5173', process.env.FRONTEND_URL].filter(Boolean);
 const requestLimit = {

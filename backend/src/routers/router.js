@@ -12,7 +12,6 @@ import appointment from './appointment.js';
 import amenity from './amenity.js';
 import scheduleAvailability from './schedule_availability.js'
 import feature from './feature.js';
-import notification from './notification.js';
 
 const router = Router();
 router.use('/admin', admin);
@@ -28,5 +27,4 @@ router.use('/appointment', appointment);
 router.use('/possible-amenity', amenity)
 router.use('/schedule-availability', scheduleAvailability)
 router.use('/possible-feature', feature)
-router.use('/notification', notification)
 export default router;
