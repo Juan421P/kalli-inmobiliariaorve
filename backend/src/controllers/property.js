@@ -18,6 +18,16 @@ const controller = {
         return res.status(200).json({ property });
     }),
 
+    getNearby: catchAsync(async (req, res) => {
+        const properties = await service.getNearby(req.query);
+        return res.status(200).json({ properties });
+    }),
+
+    getByRegion: catchAsync(async (req, res) => {
+        const properties = await service.getByRegion(req.query);
+        return res.status(200).json({ properties });
+    }),
+
     post: catchAsync(async (req, res) => {
         const property = await service.create({
             actor: req.user,

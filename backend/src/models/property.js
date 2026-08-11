@@ -8,6 +8,11 @@ const schema = new Schema({
     price_history: [{ type: Number }],
     status: { type: String, enum: ['available', 'occupied'], default: 'available' },
     address: { type: String },
+    address_components: {
+        department: { type: String, required: true, trim: true },
+        municipality: { type: String, required: true, trim: true },
+        district: { type: String, required: true, trim: true },
+    },
     location: {
         type: { type: String, enum: ['Point'], required: true },
         coordinates: { type: [Number], required: true }
@@ -36,5 +41,6 @@ const schema = new Schema({
     pictures: [{ picture: String, picture_id: String }]
 }, { timestamps: true });
 schema.index({ location: '2dsphere' });
+schema.index({ 'address_components.department': 1, 'address_components.municipality': 1, 'address_components.district': 1 });
 const p = model('property', schema);
 export default p;

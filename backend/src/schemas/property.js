@@ -11,6 +11,21 @@ export const schemas = {
     queryById: z.object({ id: database.id }).strict(),
     queryByPublicId: z.object({ public_id: text() }).strict(),
 
+    nearby: z.object({
+        lat: z.coerce.number().min(-90).max(90),
+        lng: z.coerce.number().min(-180).max(180),
+        radius: z.coerce.number().positive().max(50000).default(5000), // metros, tope 50km
+    }).strict(),
+
+    byRegion: z.object({
+        department: text().optional(),
+        municipality: text().optional(),
+        district: text().optional(),
+    }).strict().refine(
+        data => Object.keys(data).length > 0,
+        { message: 'at least one region field is required' }
+    ),
+
     create: z.object({
         title: text(),
         description: longText(),

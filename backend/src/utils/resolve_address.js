@@ -8,8 +8,8 @@ export async function resolveAddress(coordinates) {
         return response.data.data;
     } catch (err) {
         throw new InternalServerError(
-            'failed to resolve address from coordinates', {
-            code: 'ADDRESS_RESOLUTION_FAILED'
-        });
+            'failed to resolve address from coordinates',
+            { code: 'ADDRESS_RESOLUTION_FAILED' }
+        );
     }
 }

@@ -35,6 +35,11 @@ export const schemas = {
         active: boolean().optional()
     }).strict(),
 
+    login: z.object({
+        email: user.email,
+        password: auth.password
+    }).strict(),
+
     uploadPicture: z.object({
         id: database.id, picture: media.picture, picture_id: media.pictureId
     }).strict(),

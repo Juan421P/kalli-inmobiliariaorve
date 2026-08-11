@@ -29,6 +29,11 @@ export const schemas = {
         phone: user.phone.optional()
     }).strict(),
 
+    login: z.object({
+        email: user.email,
+        password: auth.password
+    }).strict(),
+
     uploadPicture: z.object({}).strict(),
 
     requestRecoveryCode: z.object({ email: user.email }).strict(),

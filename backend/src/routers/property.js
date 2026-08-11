@@ -29,6 +29,21 @@ property.route('/public/:public_id')
         controller.getByPublicId
     );
 
+// Búsquedas públicas — no requieren estar loggeado, igual que el listado
+// general. Declaradas antes de '/:id' para que Express no las confunda con
+// un id de propiedad.
+property.route('/nearby')
+    .get(
+        validatePayload({ query: schemas.nearby }),
+        controller.getNearby
+    );
+
+property.route('/search/region')
+    .get(
+        validatePayload({ query: schemas.byRegion }),
+        controller.getByRegion
+    );
+
 property.route('/:id')
     .get(
         validatePayload({ params: schemas.queryById }),
