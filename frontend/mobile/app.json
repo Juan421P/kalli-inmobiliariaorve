@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "ORVE",
+    "slug": "orve-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#507177",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.orve.inmobiliaria"
+    },
+    "android": {
+      "package": "com.orve.inmobiliaria",
+      "adaptiveIcon": {
+        "backgroundColor": "#FFFFFF",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      ["expo-splash-screen", {
+        "image": "./assets/splash-icon.png",
+        "imageWidth": 220,
+        "resizeMode": "contain",
+        "backgroundColor": "#507177"
+      }]
+    ]
+  }
+}
