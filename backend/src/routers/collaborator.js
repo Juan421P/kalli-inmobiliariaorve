@@ -6,6 +6,8 @@ import { requireRole } from '../middleware/auth/require_role.js';
 import { requireSelf } from '../middleware/auth/require_self.js';
 import { requireSelfOrAdmin } from '../middleware/auth/require_self_or_admin.js';
 import { validatePayload } from '../middleware/validate_payload.js';
+import { parseMultipartJSON } from '../middleware/parse_multipart_json.js';
+import { injectUploadedFile } from '../middleware/inject_uploaded_file.js';
 import { schemas } from '../schemas/collaborator.js';
 
 const collaborator = express.Router();
@@ -22,6 +24,8 @@ collaborator.route('/invite')
         requireAuth,
         requireRole('admin'),
         cloudinary.single('picture'),
+        injectUploadedFile,
+        parseMultipartJSON,
         validatePayload({ body: schemas.invite }),
         controller.invite
     );

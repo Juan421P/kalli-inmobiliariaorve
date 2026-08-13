@@ -13,7 +13,8 @@ const schema = new Schema({
     },
     password: {
         type: String,
-        required: true,
+        // no se establece hasta que el administrador completa la invitación por correo
+        required: function () { return this.verified_email; },
         minlength: 8,
         select: false
     },

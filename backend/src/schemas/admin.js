@@ -10,7 +10,9 @@ export const schemas = {
         lastname: user.lastname,
         email: user.email,
         document: user.document,
-        phone: user.phone
+        phone: user.phone,
+        picture: media.picture,
+        picture_id: media.pictureId
     }).strict(),
 
     completeInvitation: z.object({

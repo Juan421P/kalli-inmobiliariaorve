@@ -17,13 +17,7 @@ const controller = {
     }),
 
     invite: catchAsync(async (req, res) => {
-        if (!req.file) throw new ValidationError(
-            'picture is required',
-            { code: 'PICTURE_REQUIRED', field: 'picture' }
-        );
-        await service.invite(
-            { ...req.body, picture: req.file.path, picture_id: req.file.filename }
-        );
+        await service.invite(req.body);
         return res.status(201).json({ message: 'invitation sent successfully' });
     }),
 

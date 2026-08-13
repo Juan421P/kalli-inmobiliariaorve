@@ -17,14 +17,12 @@ class CollaboratorsService extends Service {
         formData.append('name', name)
         formData.append('lastname', lastname)
         formData.append('email', email)
-        // Mongoose interpreta las claves con punto como rutas anidadas al construir el documento
-        formData.append('phone.country_code', phone.country_code)
-        formData.append('phone.number', phone.number)
-        formData.append('document.type', documentType)
-        formData.append('document.number', documentNumber)
+        // El backend reconvierte a objeto los campos anidados que llegan como JSON.stringify
+        formData.append('phone', JSON.stringify(phone))
+        formData.append('document', JSON.stringify({ type: documentType, number: documentNumber }))
         formData.append('picture', avatarFile)
 
-        const response = await this.api.post(this.endpoint, formData)
+        const response = await this.api.post(`${this.endpoint}/invite`, formData)
         return response.data
     }
 
