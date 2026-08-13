@@ -7,6 +7,7 @@ import { jwt } from '../utils/jwt.js';
 import Mail from '../utils/mail.js';
 import { registration } from '../utils/html/registration.js';
 import { recovery } from '../utils/html/recovery.js';
+import { invitation } from '../utils/html/invitation.js';
 import AuthenticationError from '../errors/authentication.js';
 import AuthorizationError from '../errors/authorization.js';
 import ConflictError from '../errors/conflict.js';
@@ -53,10 +54,11 @@ const service = {
         const token = jwt.sign({ id: admin._id }, '15m');
         const inviteLink = `${config.app.frontend_url}/admin/complete-invitation?token=${token}`;
         try {
-            await Mail.send(
+            await Mail.sendHtml(
                 admin.email,
                 'Completar cuenta',
                 `Haga click aquí para completar su registro: ${inviteLink}`,
+                invitation({ name: admin.name, link: inviteLink, role: 'administrador' })
             );
         } catch (error) {
             console.log('Mail.send() failed', error);
