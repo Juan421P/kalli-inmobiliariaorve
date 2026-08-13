@@ -55,7 +55,12 @@ const service = {
     },
 
     async create({ actor, body }) {
-        const { buyer, property, qualification, currentAddress, proposedDates, notes, time } = body;
+        const {
+            buyer, property, qualification,
+            current_address: currentAddress,
+            proposed_dates: proposedDates,
+            notes, time
+        } = body;
 
         const isStaff = actor.role === 'admin' || actor.role === 'collaborator';
         const buyerId = (buyer && isStaff) ? buyer : actor.id;
@@ -86,7 +91,12 @@ const service = {
         return appointment;
     },
 
-    async update(id, { qualification, currentAddress, proposedDates, notes }) {
+    async update(id, {
+        qualification,
+        current_address: currentAddress,
+        proposed_dates: proposedDates,
+        notes
+    }) {
         const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
             'appointment not found', {
@@ -150,8 +160,8 @@ const service = {
         return appointment;
     },
 
-    async schedule(id, { scheduledDate }) {
-        const appointment = await model.findById(id);
+    async schedule(id, { scheduled_date: scheduledDate }) {     
+          const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
             'appointment not found', {
             code: 'APPOINTMENT_NOT_FOUND',

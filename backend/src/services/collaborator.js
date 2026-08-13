@@ -89,7 +89,7 @@ const service = {
             'invitation already completed',
             { code: 'INVITATION_ALREADY_COMPLETED', resource: 'collaborator', id: collaborator._id }
         );
-        collaborator.password = await bcrypt.hash(password, 10);
+        collaborator.password = password;
         collaborator.verified_email = true;
         await collaborator.save();
         const authToken = jwt.sign({ id: collaborator._id, role: 'collaborator' }, '30d');
