@@ -18,6 +18,7 @@ import ScheduleAppointment from '@/pages/ScheduleAppointment'
 import MakeOfferPage from '@/pages/MakeOfferPage'
 import Help from '@/pages/Help'
 import Calculate from '@/pages/Calculate'
+import NotFound from '@/pages/NotFound'
 
 const RootLayout = () => (
 	<div className='relative min-h-screen w-full isolate'>
@@ -29,6 +30,7 @@ const RootLayout = () => (
 const router = createBrowserRouter([
 	{
 		element: <RootLayout />,
+		errorElement: <NotFound />,
 		children: [
 			{ path: '/',         element: <Home />            },
 			{ path: '/login',    element: <Login />           },
@@ -42,6 +44,7 @@ const router = createBrowserRouter([
 			{ path: '/compare/select', element: <CompareSelect /> },
 			{ path: '/calculate', element: <Calculate /> },
 			{ path: '/help',      element: <Help /> },
+			{ path: '*',          element: <NotFound /> },
 			{
 				element: <ProtectedRoute />,
 				children: [
