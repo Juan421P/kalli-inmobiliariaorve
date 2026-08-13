@@ -3,6 +3,22 @@ class AdminService extends Service {
     constructor() {
         super('/admin');
     }
+    async getAll() {
+        return await this.api.get(this.endpoint).then((response) => response.data);
+    }
+    // el backend espera multipart/form-data (requiere foto) y crea la cuenta
+    // como una invitación: el administrador define su propia contraseña después
+    async create({ name, lastname, email, phone, documentType, documentNumber, avatarFile }) {
+        const formData = new FormData()
+        formData.append('name', name)
+        formData.append('lastname', lastname)
+        formData.append('email', email)
+        // El backend reconvierte a objeto los campos anidados que llegan como JSON.stringify
+        formData.append('phone', JSON.stringify(phone))
+        formData.append('document', JSON.stringify({ type: documentType, number: documentNumber }))
+        formData.append('picture', avatarFile)
+        return await this.api.post(`${this.endpoint}/invite`, formData).then((response) => response.data);
+    }
     async search(searchParams) {
         return await this.api.post(`${this.endpoint}/search`, searchParams).then((response) => response.data);
     }

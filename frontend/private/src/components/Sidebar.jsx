@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Building2, Calendar, Briefcase, Users, User, Clock, SlidersHorizontal, ChevronDown, Star, Tag, Layers, Zap, LogOut } from 'lucide-react'
+import { Home, Building2, Calendar, Briefcase, Users, User, ShieldUser, Clock, SlidersHorizontal, ChevronDown, Star, Tag, Layers, Zap, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
 import orveLogoWhite from '@/assets/orve-logo-white.svg'
@@ -24,6 +24,7 @@ const NAV_SECTIONS = [
         items: [
             { icon: Users, label: 'Clientes', to: '/clients' },
             { icon: User, label: 'Colaboradores', to: '/collaborators' },
+            { icon: ShieldUser, label: 'Administradores', to: '/admins' },
         ],
     },
     {

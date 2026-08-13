@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Outlet } from 'react-router-dom'
 import AuthProvider from '@/providers/authProvider'
 import Toaster from '@/components/toaster'
 import ProtectedRoute from '@/components/protectedRoute'
+import Admins from '@/pages/admins'
 import Amenities from '@/pages/amenities'
 import Appliances from '@/pages/appliances'
 import Appointments from '@/pages/appointments'
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
 						element: <ProtectedRoute requiredRole='admin' />,
 						children: [
 							{ path: '/clients', element: <Clients /> },
+								{ path: '/admins', element: <Admins /> },
 						],
 					},
 				],
