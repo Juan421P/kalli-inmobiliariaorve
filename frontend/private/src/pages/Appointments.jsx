@@ -16,6 +16,7 @@ import AppointmentsTable from '@/components/appointments/appointmentsTable'
 import AppointmentCreateForm from '@/components/appointments/appointmentCreateForm'
 import UsersPagination from '@/components/users/usersPagination'
 import useAppointments from '@/hooks/useAppointments'
+import useAuth from '@/hooks/useAuth'
 import { panel } from '@/lib/styles'
 
 const STATUS_FILTERS = [
@@ -28,6 +29,9 @@ const STATUS_FILTERS = [
 ]
 
 const Appointments = () => {
+    const { role } = useAuth()
+    const isAdmin = role === 'admin'
+
     const [tab, setTab] = useState('list')
     const [editingAppointment, setEditingAppointment] = useState(null)
 
@@ -36,6 +40,7 @@ const Appointments = () => {
         search, statusFilter, isLoading, isSubmitting, LIMIT,
         setSearch, setStatusFilter, setCurrentPage,
         updateStatus, createAppointment, editAppointment,
+        assignCollaborator, scheduleAppointment,
     } = useAppointments()
 
     const handleTabChange = (newTab) => {
@@ -45,6 +50,8 @@ const Appointments = () => {
 
     const handleComplete = (apt) => updateStatus(apt._id, 'completed')
     const handleCancel = (apt) => updateStatus(apt._id, 'cancelled')
+    const handleAssign = (id, collaboratorId) => assignCollaborator(id, collaboratorId)
+    const handleSchedule = (id, scheduledDate) => scheduleAppointment(id, scheduledDate)
 
     const handleEdit = (apt) => {
         setEditingAppointment(apt)
@@ -139,9 +146,13 @@ const Appointments = () => {
                                 <AppointmentsTable
                                     appointments={appointments}
                                     isLoading={isLoading}
+                                    isSubmitting={isSubmitting}
+                                    isAdmin={isAdmin}
                                     onEdit={handleEdit}
                                     onComplete={handleComplete}
                                     onCancel={handleCancel}
+                                    onAssign={handleAssign}
+                                    onSchedule={handleSchedule}
                                 />
 
                                 {!isLoading && (

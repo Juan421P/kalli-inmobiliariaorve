@@ -66,6 +66,18 @@ class AppointmentsService extends Service {
         const response = await this.api.put(`${this.endpoint}/${id}/${action}`)
         return response.data
     }
+
+    // Solo un admin puede asignar (el backend lo valida con requireRole)
+    async assign(id, collaboratorId) {
+        const response = await this.api.put(`${this.endpoint}/${id}/assign`, { collaborator: collaboratorId })
+        return response.data
+    }
+
+    // scheduled_date debe coincidir exactamente con una de las proposed_dates de la cita
+    async schedule(id, scheduledDate) {
+        const response = await this.api.put(`${this.endpoint}/${id}/schedule`, { scheduled_date: scheduledDate })
+        return response.data
+    }
 }
 
 // listas reales (no simuladas) para los selectores del formulario de nueva cita;
@@ -84,6 +96,11 @@ class AppointmentOptionsService extends Service {
     async listSchedules() {
         const response = await this.api.get('/schedule-availability')
         return response.data.schedules ?? []
+    }
+
+    async listCollaborators() {
+        const response = await this.api.get('/collaborator')
+        return (response.data.collaborators ?? []).filter((c) => c.active !== false)
     }
 }
 

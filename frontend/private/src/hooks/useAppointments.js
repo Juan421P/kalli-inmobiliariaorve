@@ -116,6 +116,40 @@ const useAppointments = () => {
         }
     }
 
+    const assignCollaborator = async (id, collaboratorId) => {
+        setIsSubmitting(true)
+        setError(null)
+        try {
+            await appointmentsService.assign(id, collaboratorId)
+            toast.success('Colaborador asignado correctamente.')
+            await fetchAppointments()
+            return true
+        } catch (err) {
+            setError(err.message)
+            toast.error('Error', 'No se pudo asignar el colaborador.')
+            return false
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
+    const scheduleAppointment = async (id, scheduledDate) => {
+        setIsSubmitting(true)
+        setError(null)
+        try {
+            await appointmentsService.schedule(id, scheduledDate)
+            toast.success('Cita confirmada correctamente.')
+            await fetchAppointments()
+            return true
+        } catch (err) {
+            setError(err.message)
+            toast.error('Error', 'No se pudo confirmar la fecha de la cita.')
+            return false
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     return {
         appointments: paginatedAppointments,
         metrics,
@@ -135,6 +169,8 @@ const useAppointments = () => {
         updateStatus,
         createAppointment,
         editAppointment,
+        assignCollaborator,
+        scheduleAppointment,
     }
 }
 
