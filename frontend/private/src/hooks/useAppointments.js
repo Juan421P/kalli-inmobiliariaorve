@@ -56,6 +56,8 @@ const useAppointments = () => {
         setCurrentPage(1)
     }, [search, statusFilter])
 
+    // "confirmed" es solo el nombre que usa la tarjeta del dashboard; en el
+    // backend ese estado se llama "scheduled"
     const metrics = useMemo(() => ({
         total: appointments.length,
         pending: appointments.filter((a) => a.status === 'pending').length,

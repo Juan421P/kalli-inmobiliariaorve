@@ -60,6 +60,8 @@ const AppointmentsTable = ({ appointments = [], isLoading, onEdit, onComplete, o
             <TableBody>
                 {appointments.map((apt) => {
                     const status = getStatus(apt.status)
+                    // completed y cancelled son estados finales, ya no tiene sentido
+                    // ofrecer editar/completar/cancelar sobre una cita cerrada
                     const canAct = apt.status === 'pending' || apt.status === 'assigned' || apt.status === 'scheduled'
                     const date = apt.scheduled_date ?? apt.proposed_dates?.[0]
 
@@ -119,6 +121,9 @@ const AppointmentsTable = ({ appointments = [], isLoading, onEdit, onComplete, o
                                                 >
                                                     <Pencil className='w-3.5 h-3.5' /> Editar
                                                 </button>
+                                                {/* El backend solo deja completar una cita que ya está
+                                                    "scheduled" (409 si sigue pending/assigned) — el botón se
+                                                    ve siempre que canAct, el mensaje de error avisa el resto */}
                                                 <button
                                                     onClick={() => onComplete?.(apt)}
                                                     className='flex w-full items-center gap-2 px-2 py-1.5 rounded-md text-sm text-orve-darker-teal hover:bg-orve-teal/10 transition-colors'

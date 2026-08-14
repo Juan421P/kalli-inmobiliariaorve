@@ -1,5 +1,8 @@
 import Service from './Service.js'
 
+// Quedó de cuando se armó esta pantalla antes de que el backend tuviera todo
+// listo. Se deja el interruptor por si hace falta demostrar la UI sin backend
+// (o sin internet), pero en desarrollo normal esto va en false
 const USE_MOCK = false
 
 const mockDelay = () => new Promise((r) => setTimeout(r, 300))
@@ -185,6 +188,8 @@ class PropertyService extends Service {
 
         const form = new FormData()
         const { images = [], ...fields } = data
+        // form-data no entiende objetos anidados (location, area, address_components...),
+        // así que van como texto y el backend los vuelve a parsear del otro lado
         for (const [key, value] of Object.entries(fields)) {
             if (value !== null && value !== undefined) {
                 form.append(key, typeof value === 'object' ? JSON.stringify(value) : value)

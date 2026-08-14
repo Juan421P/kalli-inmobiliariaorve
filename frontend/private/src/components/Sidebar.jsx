@@ -8,6 +8,10 @@ import useAuth from '@/hooks/useAuth'
 import AdminService from '@/services/AdminService'
 import { collaboratorsService } from '@/services/CollaboratorsService'
 import toast from '@/lib/toast'
+// roles decide qué secciones ve cada quien: esto es solo para que el sidebar no
+// muestre links a los que un colaborador no debería ni enterarse que existen, la
+// protección de verdad está en ProtectedRoute (frontend) y en cada ruta del
+// backend — quitar algo de aquí no bloquea nada por sí solo
 const NAV_SECTIONS = [
     {
         label: 'Operaciones',
@@ -70,6 +74,8 @@ const SubNavItem = ({ icon: Icon, label, to }) => (
 )
 const ExpandableNavItem = ({ icon: Icon, label, submenu }) => {
     const { pathname } = useLocation()
+    // abre solo al entrar directo a una de sus rutas hijas (ej. recargar en
+    // /catalogs/tags); después el usuario controla el acordeón a mano
     const isAnyChildActive = submenu.some((s) => pathname.startsWith(s.to))
     const [open, setOpen] = useState(isAnyChildActive)
     return (
@@ -111,9 +117,13 @@ const Sidebar = () => {
     const initials = (user?.name ?? 'U').split(' ').slice(0, 2).map((n) => n[0]).join('').toUpperCase()
     const handleLogout = async () => {
         try {
+            // admin y colaborador son colecciones/endpoints separados en el backend,
+            // no hay un logout único — hay que pegarle al service correcto según el rol
             if (role === 'admin') await AdminService.logout()
             else await collaboratorsService.logout()
         } catch {
+            // si el logout del backend falla igual limpiamos la sesión local; peor
+            // es dejar a alguien "atrapado" logueado en el navegador
         } finally {
             logout()
             toast('Sesión cerrada')

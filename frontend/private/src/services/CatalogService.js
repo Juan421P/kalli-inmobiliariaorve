@@ -75,6 +75,9 @@ const mockId    = () => `mock_${Date.now()}_${Math.random().toString(36).slice(2
 
 //  Clase 
 
+// Amenidades, etiquetas, características y electrodomésticos son básicamente el
+// mismo CRUD (nombre + merge de duplicados) repetido cuatro veces, así que en vez
+// de cuatro clases casi idénticas hay una sola que recibe el endpoint por fuera
 class CatalogService extends Service {
     constructor(endpoint) {
         super(endpoint)

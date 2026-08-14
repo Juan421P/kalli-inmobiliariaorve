@@ -21,6 +21,9 @@ import {
 } from '@/components/ui/select'
 import LocationPicker from '@/components/properties/locationPicker'
 
+// Los `value` de estas cuatro listas tienen que calzar exacto con los enums del
+// schema de property en el backend — si allá agregan un tipo nuevo hay que
+// reflejarlo aquí también, no se leen dinámicamente de ningún lado
 const PROPERTY_TYPES = [
     { value: 'house',     label: 'Casa'        },
     { value: 'apartment', label: 'Apartamento' },

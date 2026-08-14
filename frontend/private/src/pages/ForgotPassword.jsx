@@ -64,6 +64,9 @@ const StepDots = ({ current }) => (
     </div>
 )
 
+// Ojo: a diferencia del login (que prueba admin y colaborador), esta pantalla
+// solo pega a AdminService — hoy por hoy un colaborador no tiene por dónde
+// recuperar su contraseña desde el panel
 const ForgotPassword = () => {
     const navigate = useNavigate()
     const [step, setStep] = useState(STEP.EMAIL)

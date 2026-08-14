@@ -154,6 +154,9 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
             status:         form.status,
             price:          parseFloat(form.price),
             address:        location.address,
+            // Si nadie tocó el mapa no hay coordenadas nuevas que mandar — se omite
+            // la llave por completo en vez de mandar null, así el backend deja la
+            // ubicación original intacta en lugar de borrarla
             ...(location.coordinates && {
                 location: { type: 'Point', coordinates: location.coordinates },
             }),

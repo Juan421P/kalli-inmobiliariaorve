@@ -15,8 +15,13 @@ import { collaboratorsService } from '@/services/CollaboratorsService'
 import useAuth from '@/hooks/useAuth'
 import toast from '@/lib/toast'
 
+// espacios no cuentan como "carácter especial" ni para nada — se descartan al
+// tipear en vez de dejar que la persona se confunda por qué no pasa la regla
 const filterPassword = (v) => v.replace(/\s/g, '')
 
+// Tiene que reflejar exactamente el regex de auth.password en el backend
+// (backend/src/schemas/fields/primitives.js); si allá cambian los requisitos de
+// la contraseña y acá no, el checklist va a mentir
 const PASSWORD_RULES = [
     { key: 'length',  label: 'Al menos 8 caracteres',          test: (p) => p.length >= 8 },
     { key: 'upper',   label: 'Al menos una letra mayúscula',   test: (p) => /[A-Z]/.test(p) },
@@ -55,6 +60,8 @@ const AuthShell = ({ children }) => (
     </div>
 )
 
+// Una sola pantalla sirve para admin y colaborador — App.jsx la monta dos veces
+// en rutas distintas pasándole el rol, en vez de duplicar este componente
 const CompleteInvitation = ({ role }) => {
     const [searchParams] = useSearchParams()
     const token = searchParams.get('token')

@@ -1,5 +1,7 @@
 import Service from './Service.js'
 
+// mismo interruptor de datos falsos que en PropertyService, por si hace falta
+// mostrar la pantalla sin backend
 const USE_MOCK = false
 
 const mockDelay = () => new Promise((r) => setTimeout(r, 300))
@@ -85,6 +87,8 @@ class OffersService extends Service {
         return super.get({ search, page, limit, type })
     }
 
+    // PATCH .../resolve, no el PUT genérico del resto del CRUD — aceptar o
+    // rechazar es una acción puntual, no un reemplazo del recurso completo
     async updateStatus(id, status) {
         if (USE_MOCK) {
             await mockDelay()
