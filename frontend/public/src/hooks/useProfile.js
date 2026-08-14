@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import useAuth from '@/hooks/useAuth'
-import ClientService from '@/services/client'
+import clientService from '@/services/Client'
 
 const tabs = [
     { key: 'profile',   label: 'Perfil' },
@@ -19,9 +19,8 @@ const useProfile = () => {
     const [isLoading, setIsLoading] = useState(true)
 
     const [editingPersonal, setEditingPersonal] = useState(false)
-    const [editingId, setEditingId] = useState(false)
     const [savingPersonal, setSavingPersonal] = useState(false)
-    const [savingId, setSavingId] = useState(false)
+    const [personalError, setPersonalError] = useState(null)
 
     const [personal, setPersonal] = useState({
         name: '', lastname: '', email: '', phone: '',
@@ -34,7 +33,7 @@ const useProfile = () => {
     useEffect(() => {
         if (!user?.id) return
         setIsLoading(true)
-        ClientService.get(user.id)
+        clientService.get(user.id)
             .then((res) => {
                 const c = res.client ?? res
                 setPersonal({
@@ -61,37 +60,27 @@ const useProfile = () => {
             .finally(() => setIsLoading(false))
     }, [user?.id])
 
+    // Solo name, lastname y phone son editables: PUT /client/:id los limita
+    // (schemas.update es .strict()). El correo y el documento se muestran pero
+    // no se envian, el backend los rechaza.
     const savePersonal = useCallback(async () => {
         setSavingPersonal(true)
+        setPersonalError(null)
         try {
-            await ClientService.update(user.id, {
+            await clientService.update(user.id, {
                 name:     personal.name,
                 lastname: personal.lastname,
-                email:    personal.email,
                 phone:    personal.phone,
             })
             setEditingPersonal(false)
-        } catch {
-            // manejo de error pendiente
+        } catch (err) {
+            setPersonalError(
+                err?.response?.data?.message ?? 'No se pudieron guardar los cambios.'
+            )
         } finally {
             setSavingPersonal(false)
         }
     }, [personal, user?.id])
-
-    const saveId = useCallback(async () => {
-        setSavingId(true)
-        try {
-            await ClientService.update(user.id, {
-                document_type:   identification.document_type,
-                document_number: identification.document_number,
-            })
-            setEditingId(false)
-        } catch {
-            // manejo de error pendiente
-        } finally {
-            setSavingId(false)
-        }
-    }, [identification, user?.id])
 
     return {
         user, role,
@@ -99,8 +88,8 @@ const useProfile = () => {
         isLoading,
         personal, setPersonal,
         editingPersonal, setEditingPersonal, savingPersonal, savePersonal,
-        identification, setIdentification,
-        editingId, setEditingId, savingId, saveId,
+        personalError,
+        identification,
     }
 }
 

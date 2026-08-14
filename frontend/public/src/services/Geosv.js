@@ -1,8 +1,8 @@
-import { api } from './service.js'
+import { api } from './Service.js'
 
-const GeoSVService = {
+const geoSVService = {
     getAddress: (coordinates) =>
         api.post('/resolve-address', { coordinates }).then((r) => r.data),
 }
 
-export default GeoSVService
+export default geoSVService

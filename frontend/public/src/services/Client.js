@@ -1,4 +1,4 @@
-import { api } from './service.js';
+import { api } from './Service.js';
 
 // Convierte "55779878" o "5577-9878" a "5577-9878" (formato que exige el backend: dddd-dddd)
 const formatPhone = (raw) => {
@@ -6,31 +6,17 @@ const formatPhone = (raw) => {
     return digits.length === 8 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : raw;
 };
 
-// El backend ya no usa cookies para los flujos de verificación de correo y
-// recuperación de contraseña: /client/register y /client/password-recovery/request
-// devuelven un token en el cuerpo de la respuesta, y ese mismo token hay que
-// reenviarlo en el siguiente paso del flujo (verify-email, verify-recovery-code,
-// change-password). Como los componentes/hooks del frontend público no manejan
-// ese token (llaman a los métodos de este service sin pasarlo), lo guardamos
-// aquí en memoria y lo encadenamos automáticamente entre pasos.
+// Los flujos de verificación de correo y recuperación de contraseña usan token
+// en el cuerpo de la respuesta, no cookie: /client/register y
+// /client/password-recovery/request devuelven un token que hay que reenviar en
+// el siguiente paso (verify-email, verify-recovery-code, change-password).
+// Los hooks del frontend no manejan ese token, así que lo guardamos aquí en
+// memoria y lo encadenamos automáticamente entre pasos.
 let verificationToken = null; // usado por register -> verifyEmail
 let recoveryToken = null;     // usado por requestPasswordRecovery -> verifyRecoveryCode -> resetPassword
 
-const ClientService = {
+const clientService = {
     async register({ name, lastname, email, password, confirmPassword, phone, document_type, document_number, picture, pictureId }) {
-        // NOTA (backend): backend/src/controllers/client.js -> register descarta el
-        // token que arma el service, así que hoy esta respuesta NO trae token y el
-        // paso de verifyEmail no puede completarse hasta que se corrija ese controller.
-        //
-        // NOTA (backend, SIN solución posible desde el frontend): el schema de Zod
-        // valida `phone.countryCode` / `pictureId` (camelCase), pero el modelo de
-        // Mongoose exige `phone.country_code` / `picture_id` (snake_case), y
-        // country_code es `required`. Como el objeto `phone` de Zod no tiene
-        // `.strict()`, cualquier campo que no sea `countryCode` se descarta
-        // silenciosamente ANTES de llegar a Mongoose — no existe ningún payload
-        // que evite el `ValidationError: phone.country_code is required` desde
-        // acá. Hay que mapear los nombres en backend/src/services/client.js antes
-        // del model.create, o renombrar los campos del modelo.
         const { data } = await api.post('/client/register', {
             name,
             lastname,
@@ -84,14 +70,21 @@ const ClientService = {
         const { data } = await api.get(`/client/${id}`);
         return data;
     },
-    async update(id, { name, lastname, email, phone, document_type, document_number, picture, pictureId }) {
+    // PUT /client/:id solo acepta name, lastname, phone y active (schemas.update
+    // es .strict()). Email y documento no son editables desde el perfil: si se
+    // mandan, Zod rechaza el request completo con 400.
+    async update(id, { name, lastname, phone, picture, pictureId }) {
         const updates = {};
         if (name !== undefined) updates.name = name;
         if (lastname !== undefined) updates.lastname = lastname;
         if (phone !== undefined) updates.phone = { country_code: '+503', number: formatPhone(phone) };
         if (picture !== undefined) updates.picture = picture;
         if (pictureId !== undefined) updates.picture_id = pictureId;
-        void email; void document_type; void document_number; // el backend los ignora/rechaza en update
+
+        if (Object.keys(updates).length === 0) {
+            throw new Error('no hay cambios que guardar');
+        }
+
         // El backend espera el objeto de cambios directo en el body, no envuelto
         // en { updates }: PUT /client/:id -> controller.put pasa req.body tal cual
         // a service.update(id, updates).
@@ -110,4 +103,4 @@ const ClientService = {
         return data;
     }
 };
-export default ClientService;
+export default clientService;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import propertyService from '@/services/property'
+import propertyService from '@/services/Property'
 
 /**
  * Trae una propiedad por su public_id y expone el estado de carga/error.

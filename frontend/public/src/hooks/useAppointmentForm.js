@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import { appointmentService, scheduleAvailabilityService } from '@/services/appointment'
+import { appointmentService, scheduleAvailabilityService } from '@/services/Appointment'
 import toast from '@/lib/toast'
 
 // Mapea el indice de dia que devuelve Date.getDay() (0 = domingo) al nombre

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import propertyService from '@/services/property'
+import propertyService from '@/services/Property'
 
 /**
  * Logica de la pagina de inicio: trae todas las propiedades (para las

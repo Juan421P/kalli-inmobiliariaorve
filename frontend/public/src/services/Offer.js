@@ -1,4 +1,4 @@
-import { api } from './service.js'
+import { api } from './Service.js'
 
 const offerService = {
     create: async (data) => {

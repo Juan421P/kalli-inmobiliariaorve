@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Camera, Mail, Phone } from 'lucide-react' // Phone se usa en el header
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
-import ClientService from '@/services/client'
+import ClientService from '@/services/Client'
 import useAuth from '@/hooks/useAuth'
 import useProfile from '@/hooks/useProfile'
 import ProfileField from '@/components/profile/ProfileField'
@@ -52,8 +52,8 @@ const Profile = () => {
         isLoading,
         personal, setPersonal,
         editingPersonal, setEditingPersonal, savingPersonal, savePersonal,
-        identification, setIdentification,
-        editingId, setEditingId, savingId, saveId,
+        identification,
+        personalError,
     } = useProfile()
 
     const initials = user
@@ -61,7 +61,6 @@ const Profile = () => {
         : '?'
 
     const setField   = (key) => (val) => setPersonal(p => ({ ...p, [key]: val }))
-    const setIdField = (key) => (val) => setIdentification(p => ({ ...p, [key]: val }))
 
     return (
         <div className='min-h-screen relative overflow-x-hidden' style={{ background: 'linear-gradient(135deg, #deeef0 0%, #eaf4f5 40%, #f2f8f9 100%)' }}>
@@ -189,28 +188,23 @@ const Profile = () => {
                                     onCancel={() => setEditingPersonal(false)}
                                     saving={savingPersonal}
                                 />
+                                {personalError && (
+                                    <p className='mb-3 text-sm text-orve-red'>{personalError}</p>
+                                )}
                                 <div className='grid grid-cols-2 gap-4'>
                                     <ProfileField label='Nombre'            value={personal.name}     editing={editingPersonal} onChange={setField('name')} />
                                     <ProfileField label='Apellido'          value={personal.lastname} editing={editingPersonal} onChange={setField('lastname')} />
-                                    <ProfileField label='Correo electrónico' value={personal.email}   editing={editingPersonal} onChange={setField('email')} type='email' />
+                                    <ProfileField label='Correo electrónico' value={personal.email}   editing={false} type='email' />
                                     <ProfileField label='Número de teléfono' value={personal.phone}   editing={editingPersonal} onChange={setField('phone')} type='tel' />
                                 </div>
                             </div>
                             <div>
-                                <SectionHeader
-                                    title='Identificación'
-                                    editing={editingId}
-                                    onEdit={() => setEditingId(true)}
-                                    onSave={saveId}
-                                    onCancel={() => setEditingId(false)}
-                                    saving={savingId}
-                                />
+                                <SectionHeader title='Identificación' />
                                 <div className='flex flex-col gap-4'>
                                     <ProfileField
                                         label='Tipo de documento'
                                         value={identification.document_type}
-                                        editing={editingId}
-                                        onChange={setIdField('document_type')}
+                                        editing={false}
                                         placeholder='Seleccione un tipo'
                                         options={[
                                             { value: 'dui',        label: 'Cédula de identidad (DUI)' },
@@ -218,7 +212,7 @@ const Profile = () => {
                                             { value: 'residencia', label: 'Residencia' },
                                         ]}
                                     />
-                                    <ProfileField label='Número de documento' value={identification.document_number} editing={editingId} onChange={setIdField('document_number')} placeholder='00000000-0' />
+                                    <ProfileField label='Número de documento' value={identification.document_number} editing={false} placeholder='00000000-0' />
                                 </div>
                             </div>
                         </div>

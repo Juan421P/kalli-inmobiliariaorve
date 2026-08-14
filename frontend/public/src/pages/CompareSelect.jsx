@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Search, SlidersHorizontal, MapPin, Bed, Bath, Car } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import { cn } from '@/lib/utils'
-import propertyService from '@/services/property'
+import propertyService from '@/services/Property'
 
 const STORAGE_KEY = 'compare_slots'
 

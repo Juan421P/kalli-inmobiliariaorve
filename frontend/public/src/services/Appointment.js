@@ -1,4 +1,4 @@
-import { api } from './service.js'
+import { api } from './Service.js'
 
 export const scheduleAvailabilityService = {
     get: async () => {

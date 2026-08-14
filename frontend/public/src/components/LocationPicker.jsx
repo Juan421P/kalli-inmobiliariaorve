@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-lea
 import { MapPin, CheckCircle2, RefreshCw, Loader2, AlertCircle, Search, X } from 'lucide-react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import GeoSVService from '@/services/geosv'
+import GeoSVService from '@/services/Geosv'
 
 const pinIcon = L.divIcon({
     html: `<svg viewBox="0 0 24 32" width="28" height="38" xmlns="http://www.w3.org/2000/svg">

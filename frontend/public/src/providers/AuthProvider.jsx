@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import AuthContext from '@/contexts/AuthContext'
-import AuthService from '@/services/auth'
+import AuthService from '@/services/Auth'
 
 /**
  * Maneja la sesion del usuario para toda la app. La sesion real vive en

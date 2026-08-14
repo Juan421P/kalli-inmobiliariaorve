@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import propertyService from '@/services/property'
+import propertyService from '@/services/Property'
 
 /**
  * Maneja el listado de propiedades para las paginas de Comprar/Alquilar:
