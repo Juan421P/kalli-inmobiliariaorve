@@ -6,6 +6,7 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
+import LocationPicker from '@/components/LocationPicker'
 import useProperty from '@/hooks/useProperty'
 import useAppointmentForm from '@/hooks/useAppointmentForm'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
@@ -255,7 +256,7 @@ const ScheduleAppointment = () => {
                                         </div>
                                         <div className='flex flex-col gap-1.5'>
                                             <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
-                                                Direccion actual
+                                                Referencia de direccion
                                             </label>
                                             <input
                                                 type='text'
@@ -264,6 +265,24 @@ const ScheduleAppointment = () => {
                                                 className='bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5 text-sm text-orve-darker-teal outline-none placeholder:text-orve-teal/30'
                                             />
                                         </div>
+                                    </div>
+
+                                    <div className='flex flex-col gap-3'>
+                                        <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
+                                            Su ubicacion actual
+                                        </label>
+                                        <Controller
+                                            control={control}
+                                            name='location'
+                                            rules={{ validate: (v) => Boolean(v?.address) || 'Marque su ubicación en el mapa' }}
+                                            render={({ field }) => (
+                                                <LocationPicker
+                                                    defaultCoordinates={field.value?.coordinates}
+                                                    defaultAddress={field.value?.address}
+                                                    onChange={field.onChange}
+                                                />
+                                            )}
+                                        />
                                     </div>
 
                                     <div className='flex flex-col gap-1.5'>

@@ -13,12 +13,13 @@ const DAY_MAP = {
 
 /**
  * Maneja el formulario de "Agendar cita" con react-hook-form: fecha/hora de
- * visita (dependen de los horarios configurados por el negocio), datos de
- * calificacion del interesado (origen de fondos, ingreso, motivo, direccion)
- * y metodo de contacto preferido. Los campos que son botones tipo "chip" o
- * el calendario (fecha, hora, fondos, contacto) se exponen via `control`
- * para que la pagina los maneje con <Controller>; ingreso/motivo/direccion
- * son inputs nativos y se registran normal con `register`.
+ * visita (dependen de los horarios configurados por el negocio), ubicacion
+ * actual (mapa + geocodificacion), datos de calificacion del interesado
+ * (origen de fondos, ingreso, motivo, direccion) y metodo de contacto
+ * preferido. Los campos que son botones tipo "chip", el mapa o el calendario
+ * (fecha, hora, fondos, contacto, ubicacion) se exponen via `control` para
+ * que la pagina los maneje con <Controller>; ingreso/motivo/direccion son
+ * inputs nativos y se registran normal con `register`.
  *
  * @param {object} property - propiedad sobre la que se agenda (de useProperty)
  * @param {string} publicId - public_id de la propiedad, para navegar de vuelta
@@ -50,10 +51,12 @@ const useAppointmentForm = ({ property, publicId }) => {
             monthlyIncome: '',
             reason: '',
             addressReference: '',
+            location: { coordinates: null, address: '', components: null },
         },
     })
 
     const selectedDate = watch('selectedDate')
+    const location = watch('location')
 
     // Disponibilidad de horarios: viene de un endpoint aparte (configurado
     // por el negocio), independiente de la propiedad puntual.
@@ -87,24 +90,25 @@ const useAppointmentForm = ({ property, publicId }) => {
         setValue('selectedSlot', null)
     }
 
-    // Arma el payload que espera POST /appointment (ver backend/src/models/appointment.js).
-    // current_address.district deberia ser el id de un distrito real, pero el backend
-    // todavia no tiene esa coleccion/endpoint, asi que se manda un ObjectId placeholder
-    // hasta que exista (ver nota en backend; el "reference" de texto si es real).
+    // Arma el payload que espera POST /appointment (ver backend/src/schemas/fields/appointment.js).
     const onSubmit = async (values) => {
         setIsSubmitting(true)
         try {
             await appointmentService.create({
                 property:        property?._id,
-                time:            values.selectedSlot._id,
+                time: {
+                    startTime: values.selectedSlot.start_time,
+                    endTime:   values.selectedSlot.end_time,
+                },
                 proposed_dates:  [values.selectedDate.toISOString()],
                 qualification:   {
-                    funds_source:   values.fundsSource,
-                    monthly_income: Number(values.monthlyIncome),
-                    reason:         values.reason.trim(),
+                    fundsSource:   values.fundsSource,
+                    monthlyIncome: Number(values.monthlyIncome),
+                    reason:        values.reason.trim(),
                 },
                 current_address: {
-                    district:  '000000000000000000000000',
+                    location:  { type: 'Point', coordinates: values.location.coordinates },
+                    address:   values.location.address,
                     reference: values.addressReference.trim(),
                 },
             })
@@ -128,6 +132,7 @@ const useAppointmentForm = ({ property, publicId }) => {
         selectedDate,
         slotsForDate,
         disabledDays,
+        location,
         handleDateChange,
         handleSubmit: handleSubmit(onSubmit),
     }
