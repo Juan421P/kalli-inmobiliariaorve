@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -30,6 +30,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { appointmentOptionsService } from '@/services/AppointmentsService'
+import LocationPicker from '@/components/properties/locationPicker'
+import { cn } from '@/lib/utils'
 import toast from '@/lib/toast'
 
 const FUNDS_SOURCES = [
@@ -37,6 +39,12 @@ const FUNDS_SOURCES = [
     { value: 'loan', label: 'Préstamo' },
     { value: 'mixed', label: 'Mixto' },
 ]
+
+// El backend guarda los días en inglés; Date.getDay() -> 0 = domingo
+const DAY_MAP = {
+    0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
+    4: 'thursday', 5: 'friday', 6: 'saturday',
+}
 
 const EMPTY_FORM = {
     buyer:            '',
@@ -54,6 +62,14 @@ const toDateInputValue = (dateStr) => {
     return new Date(dateStr).toISOString().slice(0, 10)
 }
 
+// Parsea 'YYYY-MM-DD' como fecha local (evita el corrimiento de día que causa
+// `new Date(str)` al interpretarla como medianoche UTC)
+const parseLocalDate = (dateStr) => {
+    if (!dateStr) return null
+    const [y, m, d] = dateStr.split('-').map(Number)
+    return new Date(y, m - 1, d)
+}
+
 const formFromInitialData = (initialData) => initialData ? {
     buyer:            initialData.buyer?._id ?? '',
     property:         initialData.property?._id ?? '',
@@ -65,27 +81,42 @@ const formFromInitialData = (initialData) => initialData ? {
     notes:            initialData.notes ?? '',
 } : EMPTY_FORM
 
+const initialLocation = (initialData) => ({
+    coordinates: initialData?.current_address?.location?.coordinates ?? null,
+    address:     initialData?.current_address?.address ?? '',
+    components:  null,
+})
+
+const initialSlot = (initialData) => initialData?.time
+    ? { start_time: initialData.time.start_time, end_time: initialData.time.end_time }
+    : null
+
 const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const isEditing = Boolean(initialData)
-    const [form,   setForm]   = useState(() => formFromInitialData(initialData))
-    const [errors, setErrors] = useState({})
+    const [form,     setForm]     = useState(() => formFromInitialData(initialData))
+    const [errors,   setErrors]   = useState({})
     const [clients,    setClients]    = useState([])
     const [properties, setProperties] = useState([])
+    const [schedules,  setSchedules]  = useState([])
     const [isLoadingOptions, setIsLoadingOptions] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
+    const [location, setLocation] = useState(() => initialLocation(initialData))
+    const [slot,     setSlot]     = useState(() => initialSlot(initialData))
 
     useEffect(() => {
         const loadOptions = async () => {
             setIsLoadingOptions(true)
             try {
-                const [clientsData, propertiesData] = await Promise.all([
+                const [clientsData, propertiesData, schedulesData] = await Promise.all([
                     appointmentOptionsService.listClients(),
                     appointmentOptionsService.listProperties(),
+                    appointmentOptionsService.listSchedules(),
                 ])
                 setClients(clientsData)
                 setProperties(propertiesData)
+                setSchedules(schedulesData)
             } catch {
-                toast.error('Error', 'No se pudieron cargar los clientes o propiedades.')
+                toast.error('Error', 'No se pudieron cargar los clientes, propiedades u horarios.')
             } finally {
                 setIsLoadingOptions(false)
             }
@@ -93,9 +124,21 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         loadOptions()
     }, [])
 
+    const slotsForDate = useMemo(() => {
+        if (!form.proposedDate) return []
+        const day = DAY_MAP[parseLocalDate(form.proposedDate).getDay()]
+        return schedules.find((s) => s.day === day)?.intervals ?? []
+    }, [form.proposedDate, schedules])
+
     const setField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }))
         setErrors((prev) => ({ ...prev, [key]: null }))
+    }
+
+    // Si cambia la fecha, el horario elegido antes ya no aplica necesariamente
+    const handleDateChange = (value) => {
+        setField('proposedDate', value)
+        setSlot(null)
     }
 
     const validate = () => {
@@ -103,18 +146,22 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         if (!form.buyer)                     e.buyer = 'Seleccione un cliente.'
         if (!form.property)                  e.property = 'Seleccione una propiedad.'
         if (!form.proposedDate)              e.proposedDate = 'Seleccione una fecha.'
+        if (!slot)                           e.slot = 'Seleccione un horario disponible.'
+        if (!location.address)               e.location = 'Marque y verifique la ubicación en el mapa.'
+        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
         if (!form.monthlyIncome)             e.monthlyIncome = 'El ingreso mensual es requerido.'
         else if (Number(form.monthlyIncome) < 0) e.monthlyIncome = 'Debe ser un valor positivo.'
         if (!form.reason.trim())             e.reason = 'El motivo es requerido.'
-        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
 
     const submit = async () => {
-        const ok = await onSubmit(form)
+        const ok = await onSubmit({ ...form, location, slot })
         if (ok && !isEditing) {
             setForm(EMPTY_FORM)
+            setLocation({ coordinates: null, address: '', components: null })
+            setSlot(null)
             setErrors({})
         }
     }
@@ -175,7 +222,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
             <FieldSeparator />
 
             <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Detalles de la cita</FieldLegend>
+                <FieldLegend className='text-orve-teal'>Fecha y horario</FieldLegend>
 
                 <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
                     <Field>
@@ -184,7 +231,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                             <Input
                                 type='date'
                                 value={form.proposedDate}
-                                onChange={(e) => setField('proposedDate', e.target.value)}
+                                onChange={(e) => handleDateChange(e.target.value)}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -193,16 +240,61 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
 
                     <Field>
                         <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Referencia de dirección actual</FieldTitle>
-                            <Input
-                                value={form.addressReference}
-                                onChange={(e) => setField('addressReference', e.target.value)}
-                                placeholder='Ej. Cerca de la gasolinera central'
-                                className='bg-white/70'
-                            />
+                            <FieldTitle className='text-orve-teal/70'>Horario disponible</FieldTitle>
                         </FieldLabel>
-                        <FieldError>{errors.addressReference}</FieldError>
+                        {!form.proposedDate ? (
+                            <p className='text-xs text-orve-teal/40 mt-1'>Seleccione una fecha primero.</p>
+                        ) : slotsForDate.length === 0 ? (
+                            <p className='text-xs text-orve-teal/40 mt-1'>No hay horarios disponibles para ese día.</p>
+                        ) : (
+                            <div className='flex flex-wrap gap-2 mt-1'>
+                                {slotsForDate.map((iv) => (
+                                    <button
+                                        type='button'
+                                        key={iv._id}
+                                        onClick={() => { setSlot(iv); setErrors((prev) => ({ ...prev, slot: null })) }}
+                                        className={cn(
+                                            'px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors',
+                                            slot?._id === iv._id
+                                                ? 'bg-orve-teal text-white border-orve-teal'
+                                                : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
+                                        )}
+                                    >
+                                        {iv.start_time} – {iv.end_time}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <FieldError>{errors.slot}</FieldError>
                     </Field>
+                </div>
+            </FieldGroup>
+
+            <FieldSeparator />
+
+            <FieldGroup>
+                <FieldLegend className='text-orve-teal'>Dirección actual del cliente</FieldLegend>
+
+                <Field>
+                    <FieldLabel>
+                        <FieldTitle className='text-orve-teal/70'>Referencia</FieldTitle>
+                        <Input
+                            value={form.addressReference}
+                            onChange={(e) => setField('addressReference', e.target.value)}
+                            placeholder='Ej. Cerca de la gasolinera central'
+                            className='bg-white/70'
+                        />
+                    </FieldLabel>
+                    <FieldError>{errors.addressReference}</FieldError>
+                </Field>
+
+                <div className='mt-2'>
+                    <LocationPicker
+                        defaultCoordinates={location.coordinates}
+                        defaultAddress={location.address}
+                        onChange={setLocation}
+                    />
+                    <FieldError>{errors.location}</FieldError>
                 </div>
             </FieldGroup>
 
