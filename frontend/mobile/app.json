@@ -9,7 +9,10 @@
     "backgroundColor": "#507177",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.orve.inmobiliaria"
+      "bundleIdentifier": "com.orve.inmobiliaria",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "ORVE usa tu ubicación para mostrarte en el mapa las propiedades más cercanas a vos."
+      }
     },
     "android": {
       "package": "com.orve.inmobiliaria",
@@ -29,6 +32,9 @@
         "imageWidth": 220,
         "resizeMode": "contain",
         "backgroundColor": "#507177"
+      }],
+      ["expo-location", {
+        "locationWhenInUsePermission": "ORVE usa tu ubicación para mostrarte en el mapa las propiedades más cercanas a vos."
       }]
     ]
   }

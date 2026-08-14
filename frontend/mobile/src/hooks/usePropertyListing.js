@@ -1,6 +1,22 @@
 import { useCallback, useEffect, useState } from 'react';
 import propertyService from '@/services/propertyService';
 
+const toRad = (deg) => (deg * Math.PI) / 180;
+
+/** Distancia aproximada en km entre la ubicacion del usuario y una propiedad
+ * (formula haversine), usada para el orden "Cerca de mi". */
+const distanceKm = (userCoords, property) => {
+    const coords = property.location?.coordinates;
+    if (!userCoords || !coords || coords.length !== 2) return Infinity;
+    const [lng, lat] = coords;
+    const R = 6371;
+    const dLat = toRad(lat - userCoords.latitude);
+    const dLng = toRad(lng - userCoords.longitude);
+    const a = Math.sin(dLat / 2) ** 2
+        + Math.cos(toRad(userCoords.latitude)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+};
+
 /**
  * Maneja el listado de propiedades para la pantalla de Propiedades: trae
  * todas las propiedades y aplica busqueda por texto, filtro por tipo de
@@ -18,6 +34,8 @@ const usePropertyListing = (listingType, initial = {}) => {
     const [search, setSearch] = useState(initial.query ?? '');
     const [typeFilter, setTypeFilter] = useState(initial.propertyType ?? 'all');
     const [sortBy, setSortBy] = useState('recommended');
+    const [view, setView] = useState('list'); // 'list' | 'map'
+    const [userCoords, setUserCoords] = useState(null);
 
     useEffect(() => {
         propertyService.getAll()
@@ -48,13 +66,21 @@ const usePropertyListing = (listingType, initial = {}) => {
         if (sortBy === 'price_asc') result.sort((a, b) => a.price - b.price);
         if (sortBy === 'price_desc') result.sort((a, b) => b.price - a.price);
         if (sortBy === 'newest') result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        if (sortBy === 'distance' && userCoords) result.sort((a, b) => distanceKm(userCoords, a) - distanceKm(userCoords, b));
 
         setFiltered(result);
-    }, [properties, search, typeFilter, sortBy]);
+    }, [properties, search, typeFilter, sortBy, userCoords]);
 
     useEffect(() => { applyFilters(); }, [applyFilters]);
 
-    return { isLoading, filtered, search, setSearch, typeFilter, setTypeFilter, sortBy, setSortBy };
+    return {
+        isLoading, filtered,
+        search, setSearch,
+        typeFilter, setTypeFilter,
+        sortBy, setSortBy,
+        view, setView,
+        userCoords, setUserCoords,
+    };
 };
 
 export default usePropertyListing;
