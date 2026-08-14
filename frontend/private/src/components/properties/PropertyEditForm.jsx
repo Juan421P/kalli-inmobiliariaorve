@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { ImagePlus, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -96,6 +97,88 @@ const FeatureToggle = ({ checked, onCheckedChange, label, description }) => (
     </label>
 )
 
+// Fotos que ya existen en la propiedad — clic para marcar/desmarcar como
+// "para quitar". No se borran de Cloudinary hasta que se confirme el guardado
+const ExistingPictures = ({ pictures, removedIds, onToggleRemove }) => (
+    <div className='grid grid-cols-3 sm:grid-cols-4 gap-2'>
+        {pictures.map((pic) => {
+            const isRemoved = removedIds.includes(pic.picture_id)
+            return (
+                <button
+                    type='button'
+                    key={pic.picture_id}
+                    onClick={() => onToggleRemove(pic.picture_id)}
+                    className='relative aspect-square rounded-lg overflow-hidden border border-orve-teal/15 group'
+                >
+                    <img
+                        src={pic.picture}
+                        alt=''
+                        className={`w-full h-full object-cover transition-opacity ${isRemoved ? 'opacity-25' : ''}`}
+                    />
+                    <div className={`absolute inset-0 flex items-center justify-center transition-colors ${
+                        isRemoved ? 'bg-red-500/10' : 'bg-black/0 group-hover:bg-black/40'
+                    }`}>
+                        {isRemoved
+                            ? <span className='text-[10px] font-semibold text-white bg-red-500 px-2 py-1 rounded-md'>Deshacer</span>
+                            : <X className='w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity' />
+                        }
+                    </div>
+                </button>
+            )
+        })}
+    </div>
+)
+
+// Fotos nuevas por subir — mismo patrón visual que ExistingPictures pero con
+// preview local (URL.createObjectURL) en vez de la URL de Cloudinary
+const NewImageUploader = ({ images, onChange }) => {
+    const inputRef = useRef(null)
+
+    const addFiles = (files) => {
+        const valid = Array.from(files).filter((f) => f.type.startsWith('image/'))
+        const items = valid.map((f) => ({ id: `${Date.now()}-${Math.random()}`, file: f, url: URL.createObjectURL(f) }))
+        onChange([...images, ...items])
+    }
+
+    const remove = (id) => onChange(images.filter((i) => i.id !== id))
+
+    return (
+        <div className='flex flex-col gap-3'>
+            <div
+                onClick={() => inputRef.current?.click()}
+                className='border-2 border-dashed rounded-xl p-4 flex flex-col items-center gap-1.5 cursor-pointer select-none transition-all border-orve-teal/20 bg-orve-teal/[0.02] hover:border-orve-teal/40 hover:bg-orve-teal/5'
+            >
+                <ImagePlus className='w-5 h-5 text-orve-teal/40' />
+                <p className='text-xs font-medium text-orve-teal/60'>Agregar fotos nuevas</p>
+                <input
+                    ref={inputRef}
+                    type='file'
+                    accept='image/*'
+                    multiple
+                    className='hidden'
+                    onChange={(e) => { addFiles(e.target.files); e.target.value = '' }}
+                />
+            </div>
+            {images.length > 0 && (
+                <div className='grid grid-cols-3 sm:grid-cols-4 gap-2'>
+                    {images.map((img) => (
+                        <div key={img.id} className='relative aspect-square rounded-lg overflow-hidden border border-orve-teal/15'>
+                            <img src={img.url} alt='' className='w-full h-full object-cover' />
+                            <button
+                                type='button'
+                                onClick={() => remove(img.id)}
+                                className='absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors'
+                            >
+                                <X className='w-3 h-3' />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
 const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const initCoords = initialData?.location?.coordinates ?? null
     // El campo address puede venir en un formato legado (objeto con reference/district)
@@ -123,6 +206,14 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const [errors,     setErrors]     = useState({})
     const [dialogOpen, setDialogOpen] = useState(false)
 
+    const existingPictures = initialData?.pictures ?? []
+    const [removedIds, setRemovedIds] = useState([])
+    const [newImages,  setNewImages]  = useState([])
+    const toggleRemove = (pictureId) => setRemovedIds((prev) =>
+        prev.includes(pictureId) ? prev.filter((id) => id !== pictureId) : [...prev, pictureId]
+    )
+    const remainingCount = existingPictures.filter((p) => !removedIds.includes(p.picture_id)).length + newImages.length
+
     const setField = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }))
         setErrors((prev) => ({ ...prev, [key]: null }))
@@ -136,6 +227,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         else if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0)
                                       e.price       = 'Ingrese un precio válido.'
         if (!location.address)        e.address     = 'Marque y verifique la ubicación en el mapa.'
+        if (remainingCount < 3)       e.images      = 'Debe quedar al menos 3 imágenes.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -166,6 +258,8 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
             area:           { number: parseFloat(form.area_number || '0'), unit: form.area_unit },
             allows_pets:    form.allows_pets,
             furnished:      form.furnished,
+            removePictureIds: removedIds,
+            newImages:        newImages.map((i) => i.file),
         })
     }
 
@@ -329,7 +423,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                     )}
                 </FieldSet>
 
-                {/* ── Columna derecha: ubicación ── */}
+                {/* ── Columna derecha: ubicación + imágenes ── */}
                 <FieldSet>
                     <FieldGroup>
                         <FieldLegend className='text-orve-teal'>
@@ -346,6 +440,26 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                 if (loc.address) setErrors((prev) => ({ ...prev, address: null }))
                             }}
                         />
+                    </FieldGroup>
+
+                    <FieldGroup>
+                        <FieldLegend className='text-orve-teal'>
+                            Imágenes
+                            {errors.images && (
+                                <span className='ml-2 text-xs font-normal text-red-500'>{errors.images}</span>
+                            )}
+                        </FieldLegend>
+                        {existingPictures.length > 0 && (
+                            <div className='flex flex-col gap-1.5'>
+                                <p className='text-xs text-orve-teal/50'>Clic en una foto para marcarla y quitarla</p>
+                                <ExistingPictures
+                                    pictures={existingPictures}
+                                    removedIds={removedIds}
+                                    onToggleRemove={toggleRemove}
+                                />
+                            </div>
+                        )}
+                        <NewImageUploader images={newImages} onChange={setNewImages} />
                     </FieldGroup>
                 </FieldSet>
             </div>

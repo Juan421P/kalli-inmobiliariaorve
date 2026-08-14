@@ -97,7 +97,7 @@ const service = {
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
 
-        const { removePictures = [], ...rest } = body;
+        const { remove_pictures: removePictures = [], ...rest } = body;
         const set = toDbFields(rest);
 
         const oldPrice = existing.price;
