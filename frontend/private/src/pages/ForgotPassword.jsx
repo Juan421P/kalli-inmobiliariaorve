@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils'
 import bgImage from '@/assets/login-bg.jpg'
 import orveLogo from '@/assets/orve-logo.svg'
 import AdminService from '@/services/AdminService'
+import { collaboratorsService } from '@/services/CollaboratorsService'
 import toast from '@/lib/toast'
 
 const filterEmail = (v) => v.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
@@ -64,9 +65,6 @@ const StepDots = ({ current }) => (
     </div>
 )
 
-// Ojo: a diferencia del login (que prueba admin y colaborador), esta pantalla
-// solo pega a AdminService — hoy por hoy un colaborador no tiene por dónde
-// recuperar su contraseña desde el panel
 const ForgotPassword = () => {
     const navigate = useNavigate()
     const [step, setStep] = useState(STEP.EMAIL)
@@ -77,6 +75,13 @@ const ForgotPassword = () => {
     const [emailError, setEmailError]     = useState('')
     const [emailTouched, setEmailTouched] = useState(false)
     const [recoveryToken, setRecoveryToken] = useState('')
+    // Igual que en el login: no hay selector de "soy admin / soy colaborador",
+    // así que se prueba como admin primero y si el correo no existe ahí se
+    // reintenta como colaborador. Una vez que uno responde, el resto de los
+    // pasos (verificar código, cambiar contraseña) usan ese mismo service —
+    // el token del paso 1 solo es válido para el que lo emitió
+    const [recoveryRole, setRecoveryRole] = useState('admin')
+    const recoveryService = recoveryRole === 'admin' ? AdminService : collaboratorsService
 
     // Step 2 – code
     const [code, setCode]               = useState('')
@@ -137,21 +142,32 @@ const ForgotPassword = () => {
 
         setIsLoading(true)
         try {
-            const { token } = await AdminService.requestPasswordRecovery(email)
+            let token
+            try {
+                ({ token } = await AdminService.requestPasswordRecovery(email))
+                setRecoveryRole('admin')
+            } catch (adminError) {
+                try {
+                    ({ token } = await collaboratorsService.requestPasswordRecovery(email))
+                    setRecoveryRole('collaborator')
+                } catch (collaboratorError) {
+                    const code = collaboratorError.response?.data?.meta?.code || adminError.response?.data?.meta?.code
+                    if (code === 'INVALID_CREDENTIALS') {
+                        setEmailTouched(true)
+                        setEmailError('No existe ningún usuario registrado con este correo.')
+                    } else {
+                        const msg = collaboratorError.response?.data?.message || adminError.response?.data?.message || 'No se pudo enviar el código'
+                        toast.error('Error', msg)
+                    }
+                    return
+                }
+            }
             setRecoveryToken(token)
             setTimeLeft(900)
             setCode('')
             setCodeError('')
             setCodeTouched(false)
             setStep(STEP.CODE)
-        } catch (error) {
-            const code = error.response?.data?.meta?.code
-            if (code === 'EMAIL_NOT_REGISTERED') {
-                setEmailTouched(true)
-                setEmailError('No existe ningún usuario registrado con este correo.')
-            } else {
-                toast.error('Error', error.response?.data?.message || 'No se pudo enviar el código')
-            }
         } finally {
             setIsLoading(false)
         }
@@ -161,7 +177,8 @@ const ForgotPassword = () => {
         if (isLoading) return
         setIsLoading(true)
         try {
-            const { token } = await AdminService.requestPasswordRecovery(email)
+            // ya se sabe si es admin o colaborador desde el paso 1, no hace falta reintentar los dos
+            const { token } = await recoveryService.requestPasswordRecovery(email)
             setRecoveryToken(token)
             setTimeLeft(900)
             setCode('')
@@ -182,7 +199,7 @@ const ForgotPassword = () => {
 
         setIsLoading(true)
         try {
-            const { token } = await AdminService.verifyPasswordRecovery({ token: recoveryToken, code: code.toLowerCase() })
+            const { token } = await recoveryService.verifyPasswordRecovery({ token: recoveryToken, code: code.toLowerCase() })
             setVerifiedToken(token)
             setStep(STEP.PASSWORD)
         } catch (error) {
@@ -198,7 +215,9 @@ const ForgotPassword = () => {
         if (!allRulesPass) return
         setIsLoading(true)
         try {
-            await AdminService.changePassword({ token: verifiedToken, newPassword: newPwd, confirmPassword: confirmPwd })
+            // el schema del backend es snake_case aquí (a diferencia de casi todo lo
+            // demás en este archivo, que usa camelCase de lado a lado)
+            await recoveryService.changePassword({ token: verifiedToken, new_password: newPwd, confirm_password: confirmPwd })
             toast.success('Contraseña actualizada', 'Ya puede iniciar sesión con su nueva contraseña.')
             navigate('/')
         } catch (error) {

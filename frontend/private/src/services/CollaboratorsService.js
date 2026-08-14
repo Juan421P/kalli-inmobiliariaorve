@@ -46,6 +46,22 @@ class CollaboratorsService extends Service {
         return response.data
     }
 
+    // el backend ya soportaba esto igual que admin, solo faltaba conectarlo aquí
+    async requestPasswordRecovery(email) {
+        const response = await this.api.post(`${this.endpoint}/password-recovery/request`, { email })
+        return response.data
+    }
+
+    async verifyPasswordRecovery(data) {
+        const response = await this.api.post(`${this.endpoint}/password-recovery/verify`, data)
+        return response.data
+    }
+
+    async changePassword(data) {
+        const response = await this.api.post(`${this.endpoint}/password-recovery/change-password`, data)
+        return response.data
+    }
+
     async uploadPicture(id, file) {
         const formData = new FormData()
         formData.append('picture', file)
