@@ -7,7 +7,12 @@ import { errorHandler } from './src/middleware/error_handler.js';
 import swaggerUI from 'swagger-ui-express';
 import swaggerDocs from './src/docs/swagger.json' with {type: 'json'};
 import router from './src/routers/router.js';
-const allowedOrigins = ['http://localhost:5173', process.env.FRONTEND_URL].filter(Boolean);
+const allowedOrigins = [
+    'http://localhost:5173',
+    'https://kalli-inmobiliariaorve-omega.vercel.app',
+    'https://kalli-inmobiliariaorve-6s5l.vercel.app',
+    process.env.FRONTEND_URL,
+].filter(Boolean);
 const requestLimit = {
     general: rateLimit({
         windowMs: 15 * 60 * 1000,
