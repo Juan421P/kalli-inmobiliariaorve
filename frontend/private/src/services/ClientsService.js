@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // No hay create() aquí a propósito: los clientes se registran ellos mismos desde
 // el sitio público, el panel solo administra lo que ya existe
