@@ -20,12 +20,18 @@ function toDbFields(body) {
 
 const service = {
 
+    // amenities/features/appliances/tags son referencias a sus catálogos
+    // (ver models/property.js) — sin populate llegan como el ObjectId crudo
+    // en vez del nombre, que es justo lo que se necesita mostrar en el frontend
     async getAll() {
-        return await model.find().lean();
+        return await model.find()
+            .populate('amenities').populate('features').populate('appliances').populate('tags')
+            .lean();
     },
 
     async getById(id) {
-        const property = await model.findById(id);
+        const property = await model.findById(id)
+            .populate('amenities').populate('features').populate('appliances').populate('tags');
         if (!property) throw new NotFoundError(
             'property not found',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
@@ -34,7 +40,8 @@ const service = {
     },
 
     async getByPublicId(publicId) {
-        const property = await model.findOne({ public_id: publicId.toUpperCase() });
+        const property = await model.findOne({ public_id: publicId.toUpperCase() })
+            .populate('amenities').populate('features').populate('appliances').populate('tags');
         if (!property) throw new NotFoundError(
             'property not found',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', public_id: publicId }
