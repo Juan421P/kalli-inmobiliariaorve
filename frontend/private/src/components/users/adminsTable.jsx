@@ -14,7 +14,7 @@ import {
     EmptyDescription,
 } from '@/components/ui/empty'
 import { Spinner } from '@/components/ui/spinner'
-import UserAvatar from './userAvatar'
+import UserAvatar from './UserAvatar'
 
 const AdminsTable = ({ admins = [], isLoading }) => {
     if (isLoading) {

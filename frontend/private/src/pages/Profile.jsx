@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Camera, Mail, Shield } from 'lucide-react'
-import Sidebar from '@/components/sidebar'
+import Sidebar from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'

@@ -30,7 +30,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { appointmentOptionsService } from '@/services/AppointmentsService'
-import LocationPicker from '@/components/properties/locationPicker'
+import LocationPicker from '@/components/properties/LocationPicker'
 import { cn } from '@/lib/utils'
 import toast from '@/lib/toast'
 

@@ -8,7 +8,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
-import UserAvatar from '@/components/users/userAvatar'
+import UserAvatar from '@/components/users/UserAvatar'
 import { cn } from '@/lib/utils'
 import { getStatus, FUNDS_SOURCE_LABELS, formatDate, formatCurrency } from './constants'
 

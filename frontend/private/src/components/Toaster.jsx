@@ -1,5 +1,5 @@
 import { Toaster as Sonner } from 'sonner'
-import { TOAST_DURATION } from '@/components/toastCard'
+import { TOAST_DURATION } from '@/components/ToastCard'
 const Toaster = () => (
     <Sonner
         position='top-right'

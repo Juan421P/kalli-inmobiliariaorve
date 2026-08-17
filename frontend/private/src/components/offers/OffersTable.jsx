@@ -12,7 +12,7 @@ import {
     AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { Spinner } from '@/components/ui/spinner'
-import UserAvatar from '@/components/users/userAvatar'
+import UserAvatar from '@/components/users/UserAvatar'
 
 // colores y etiquetas según el estado de la oferta
 const STATUS_MAP = {

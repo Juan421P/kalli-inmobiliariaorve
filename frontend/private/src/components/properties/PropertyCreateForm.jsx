@@ -19,7 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import LocationPicker from '@/components/properties/locationPicker'
+import LocationPicker from '@/components/properties/LocationPicker'
 
 // Los `value` de estas cuatro listas tienen que calzar exacto con los enums del
 // schema de property en el backend — si allá agregan un tipo nuevo hay que

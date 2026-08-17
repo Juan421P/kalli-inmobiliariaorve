@@ -1,4 +1,4 @@
-import CatalogPage from '@/components/catalog/catalogPage'
+import CatalogPage from '@/components/catalog/CatalogPage'
 import { tagService } from '@/services/CatalogService'
 
 const Tags = () => (
