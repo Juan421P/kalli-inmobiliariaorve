@@ -1,12 +1,12 @@
 import { Search, ShieldPlus } from 'lucide-react'
-import Sidebar from '@/components/sidebar'
+import Sidebar from '@/components/Sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { panel } from '@/lib/styles'
 import useAdmins from '@/hooks/useAdmins'
 import AdminsTable from '@/components/users/adminsTable'
 import AdminInviteForm from '@/components/users/adminInviteForm'
-import UsersPagination from '@/components/users/usersPagination'
+import UsersPagination from '@/components/users/UsersPagination'
 
 const Admins = () => {
     const {

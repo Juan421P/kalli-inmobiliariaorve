@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Search, SlidersHorizontal, CalendarPlus, Pencil, Calendar, Clock, CalendarCheck, CheckCircle2 } from 'lucide-react'
-import Sidebar from '@/components/sidebar'
+import Sidebar from '@/components/Sidebar'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -11,10 +11,10 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import AppointmentMetricCard from '@/components/appointments/appointmentMetricCard'
-import AppointmentsTable from '@/components/appointments/appointmentsTable'
-import AppointmentCreateForm from '@/components/appointments/appointmentCreateForm'
-import UsersPagination from '@/components/users/usersPagination'
+import AppointmentMetricCard from '@/components/appointments/AppointmentMetricCard'
+import AppointmentsTable from '@/components/appointments/AppointmentsTable'
+import AppointmentCreateForm from '@/components/appointments/AppointmentCreateForm'
+import UsersPagination from '@/components/users/UsersPagination'
 import useAppointments from '@/hooks/useAppointments'
 import useAuth from '@/hooks/useAuth'
 import { panel } from '@/lib/styles'
