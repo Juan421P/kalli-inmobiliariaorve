@@ -1,4 +1,4 @@
-import CatalogPage from '@/components/catalog/catalogPage'
+import CatalogPage from '@/components/catalog/CatalogPage'
 import { amenityService } from '@/services/CatalogService'
 
 const Amenities = () => (

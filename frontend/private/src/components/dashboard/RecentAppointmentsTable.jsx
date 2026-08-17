@@ -1,6 +1,6 @@
 import { Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import ScrollArea from '@/components/scrollArea'
+import ScrollArea from '@/components/ScrollArea'
 const STATUS_STYLES = {
     Confirmada: 'text-orve-teal font-semibold',
     Pendiente: 'text-orve-red font-semibold',

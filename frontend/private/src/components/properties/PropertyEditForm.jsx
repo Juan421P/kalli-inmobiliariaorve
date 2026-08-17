@@ -29,7 +29,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import LocationPicker from '@/components/properties/locationPicker'
+import LocationPicker from '@/components/properties/LocationPicker'
 
 const PROPERTY_TYPES = [
     { value: 'house',     label: 'Casa'        },

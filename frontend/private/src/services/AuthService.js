@@ -1,4 +1,4 @@
-import Service from './Service'
+import Service from './service'
 class AuthService extends Service {
     constructor() {
         super('/auth');

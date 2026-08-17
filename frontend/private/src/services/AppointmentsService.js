@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // placeholders para campos del esquema que referencian modelos que aún no existen
 // en el backend ('district' y 'time'); el sitio público usa el mismo truco

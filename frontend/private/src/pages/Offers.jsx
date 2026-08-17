@@ -1,5 +1,5 @@
 import { Search, Briefcase, Clock, CheckCircle, CheckCheck } from 'lucide-react'
-import Sidebar from '@/components/sidebar'
+import Sidebar from '@/components/Sidebar'
 import { Input } from '@/components/ui/input'
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -7,8 +7,8 @@ import {
 import { panel } from '@/lib/styles'
 import useAuth from '@/hooks/useAuth'
 import useOffers from '@/hooks/useOffers'
-import OffersTable from '@/components/offers/offersTable'
-import UsersPagination from '@/components/users/usersPagination'
+import OffersTable from '@/components/offers/OffersTable'
+import UsersPagination from '@/components/users/UsersPagination'
 
 // tarjeta pequeña que muestra un número resumido (total, pendientes, etc.)
 const MetricCard = ({ icon: Icon, label, value, sub, highlight = false }) => (

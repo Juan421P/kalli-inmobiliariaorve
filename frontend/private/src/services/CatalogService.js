@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // Mock 
 // Cuando el backend esté listo, cambiá USE_MOCK a false y listo.

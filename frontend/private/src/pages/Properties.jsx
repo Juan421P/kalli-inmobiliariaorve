@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Search, PlusCircle, Pencil, Building, CheckCircle2, TrendingUp, DollarSign } from 'lucide-react'
-import Sidebar from '@/components/sidebar'
+import Sidebar from '@/components/Sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import {
@@ -13,10 +13,10 @@ import {
 import { panel } from '@/lib/styles'
 import useAuth from '@/hooks/useAuth'
 import useProperties from '@/hooks/useProperties'
-import PropertiesTable from '@/components/properties/propertiesTable'
-import PropertyCreateForm from '@/components/properties/propertyCreateForm'
-import PropertyEditForm from '@/components/properties/propertyEditForm'
-import UsersPagination from '@/components/users/usersPagination'
+import PropertiesTable from '@/components/properties/PropertiesTable'
+import PropertyCreateForm from '@/components/properties/PropertyCreateForm'
+import PropertyEditForm from '@/components/properties/PropertyEditForm'
+import UsersPagination from '@/components/users/UsersPagination'
 
 // ─── Tarjeta de métrica ───────────────────────────────────────────────────────
 const MetricCard = ({ icon: Icon, label, value, accent = 'teal' }) => {
