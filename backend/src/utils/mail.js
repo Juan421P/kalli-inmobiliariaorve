@@ -1,26 +1,29 @@
-import nodemailer from 'nodemailer';
+import axios from 'axios';
 import { config } from '../../config.js';
-const transport = nodemailer.createTransport({
-    service: 'gmail',
-    auth: { user: config.email.user, pass: config.email.password },
-    tls: { rejectUnauthorized: false }
+
+const client = axios.create({
+    baseURL: 'https://api.brevo.com/v3',
+    headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': config.brevo.apiKey
+    }
 });
+
 const send = async (to, subject, text, html = null) => {
-    return await transport.sendMail({
-        from: config.email.user,
-        to,
+    return await client.post('/smtp/email', {
+        sender: { email: config.brevo.fromEmail, name: config.brevo.fromName },
+        to: [{ email: to }],
         subject,
-        text,
-        html
+        textContent: text,
+        htmlContent: html ?? undefined
     });
 };
+
 const Mail = {
-    transport, send,
+    send,
     async sendHtml(to, subject, text, html) {
         return await send(to, subject, text, html);
-    },
-    async verify() {
-        return await transport.verify();
     }
 };
 export default Mail;
