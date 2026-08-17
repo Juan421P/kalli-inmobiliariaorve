@@ -3,9 +3,10 @@ dotenv.config();
 export const config = {
     db: { URI: process.env.DB_URI },
     jwt: { secret: process.env.JWT_SECRET_KEY },
-    email: {
-        user: process.env.USER_EMAIL,
-        password: process.env.USER_PASSWORD
+    brevo: {
+        apiKey: process.env.BREVO_API_KEY,
+        fromEmail: process.env.BREVO_FROM_EMAIL,
+        fromName: process.env.BREVO_FROM_NAME
     },
     app: {
         frontend_url: process.env.FRONTEND_URL,
