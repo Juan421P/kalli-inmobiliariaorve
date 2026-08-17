@@ -1,4 +1,4 @@
-import Service from './Service.js';
+import Service from './service.js';
 class AdminService extends Service {
     constructor() {
         super('/admin');

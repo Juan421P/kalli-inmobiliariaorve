@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // mismo interruptor de datos falsos que en PropertyService, por si hace falta
 // mostrar la pantalla sin backend

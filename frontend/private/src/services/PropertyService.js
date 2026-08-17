@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // Quedó de cuando se armó esta pantalla antes de que el backend tuviera todo
 // listo. Se deja el interruptor por si hace falta demostrar la UI sin backend

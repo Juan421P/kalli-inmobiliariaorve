@@ -1,4 +1,4 @@
-import Service from './Service.js'
+import Service from './service.js'
 
 // Parsea 'YYYY-MM-DD' (el value crudo de <input type="date">) como fecha local.
 // `new Date('YYYY-MM-DD')` la interpreta como medianoche UTC, lo que corre el
