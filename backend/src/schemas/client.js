@@ -1,38 +1,59 @@
 import { z } from 'zod';
-const c = z.object({
-    name: z.string().min(1, 'name is required'),
-    lastname: z.string().min(1, 'lastname is required'),
-    password: z.string().min(8, 'password must be at least 8 characters long'),
-    email: z.string().email('invalid email format'),
-    document: z.object({
-        type: z.enum(['dui', 'pasaporte', 'residencia']),
-        number: z.string().min(1, 'document number is required')
-    }),
-    phone: z.object({
-        country_code: z.string().regex(/^\+\d+$/, 'must start with +'),
-        number: z.string().regex(/^\d{4}-\d{4}$/, 'must be 0000-0000 format')
-    }),
-    verified_email: z.boolean(),
-    verified_phone_number: z.boolean()
-});
-export const register = c.omit({
-    verified_email: true,
-    verified_phone_number: true
-});
-export const login = c.pick({
-    email: true,
-    password: true
-});
-export const update = c.omit({
-    password: true,
-    verified_email: true,
-    verified_phone_number: true
-}).partial();
-export const changePassword = z.object({
-    newPassword: c.shape.password,
-    confirmPassword: c.shape.password
-}).refine((data) => data.newPassword === data.confirmPassword, {
-    message: `passwords don't match`,
-    path: ['confirmPassword'],
-});
-export const search = c.omit({ password: true }).partial();
+import { user, auth, media, database } from './fields/index.js'
+import { boolean } from './fields/primitives.js'
+
+export const schemas = {
+
+    queryById: z.object({ id: database.id }).strict(),
+
+    // picture/picture_id llegan como JSON plano (no multipart) — el
+    // frontend siempre manda una URL, ya sea real o el avatar generado por
+    // defecto, así que se validan como opcionales y el service aplica un
+    // respaldo si por algún motivo no llegan.
+    register: z.object({
+        name: user.name,
+        lastname: user.lastname,
+        email: user.email,
+        document: user.document,
+        phone: user.phone,
+        password: auth.password,
+        confirm_password: auth.password
+    }).strict().refine(
+        data => data.password === data.confirm_password,
+        { path: ['confirm_password'], message: 'passwords do not match' }
+    ),
+
+    verifyEmail: z.object({
+        token: auth.token,
+        code: auth.code
+    }).strict(),
+
+    login: z.object({
+        email: user.email,
+        password: auth.password
+    }).strict(),
+
+    update: z.object({
+        name: user.name.optional(),
+        lastname: user.lastname.optional(),
+        phone: user.phone.optional(),
+        active: boolean().optional()
+    }).strict(),
+
+    uploadPicture: z.object({}).strict(),
+
+    resendVerification: z.object({ email: user.email }).strict(),
+
+    requestRecoveryCode: z.object({ email: user.email }).strict(),
+
+    verifyRecoveryCode: z.object({ token: auth.token, code: auth.code }).strict(),
+
+    changePassword: z.object({
+        token: auth.token,
+        new_password: auth.password,
+        confirm_password: auth.password
+    }).strict().refine(
+        data => data.new_password === data.confirm_password,
+        { path: ['confirm_password'], message: 'passwords do not match' }
+    ),
+};

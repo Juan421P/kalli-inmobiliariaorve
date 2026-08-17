@@ -1,6 +1,6 @@
-import HttpResponses from '../../utils/http_responses.js';
+// Impresionantemente obvio creo yo
 export const requireAdmin = (req, res, next) => {
-    if (!req.user) return HttpResponses.serverError(res, 'auth middleware missing before role check');
-    if (req.user.role !== 'admin') return HttpResponses.forbidden(res, 'admin privileges required');
-    next();
+    if (!req.user) return res.status(500).json({ message: 'auth middleware missing before role check' });
+    if (req.user?.role === 'admin') return next();
+    return res.status(403).json({ message: 'access denied' });
 };

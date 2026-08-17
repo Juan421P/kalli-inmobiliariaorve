@@ -1,26 +1,42 @@
 import { z } from 'zod';
-const oid = z.string().regex(/^[0-9a-fA-F]{24}$/, 'invalid object id format');
-const o = z.object({
-    buyer: oid,
-    property: oid,
-    price: z.number().positive('price must be greater than 0'),
-    status: z.enum(['pending', 'countered', 'accepted', 'rejected', 'withdrawn']),
-    move_in_date: z.string().datetime().optional(),
-    rental_months: z.enum(['6', '12', '24', '36+']).optional(),
-    last_actor: z.enum(['buyer', 'seller']),
-    history: z.array(z.object({
+import { database } from './fields/index.js';
+import { coercedDate } from './fields/appointment.js';
+
+const resolution_statuses = ['accepted', 'rejected', 'withdrawn'];
+const rental_months = ['6', '12', '24', '36+'];
+
+export const schemas = {
+
+    queryById: z.object({ id: database.id }).strict(),
+
+    queryFilter: z.object({
+        search: z.string().trim().optional(),
+        page: z.coerce.number().int().positive().default(1),
+        limit: z.coerce.number().int().positive().max(100).default(5),
+        type: z.union([z.literal('all'), z.enum(['sale', 'rent'])]).default('all'),
+    }).strict(),
+
+    create: z.object({
+        property: database.id,
         price: z.number().positive(),
-        actor: z.enum(['buyer', 'seller'])
-    }))
-});
-export const create = o.omit({
-    status: true,
-    last_actor: true,
-    history: true
-});
-export const counter = z.object({
-    price: z.number().positive('counter price must be greater than 0')
-});
-export const resolve = z.object({
-    status: z.enum(['accepted', 'rejected', 'withdrawn'])
-});
+        move_in_date: coercedDate().optional(),
+        rental_months: z.enum(rental_months).optional(),
+        buyer: database.id.optional(),
+    }).strict(),
+
+    counter: z.object({
+        price: z.number().positive(),
+    }).strict(),
+
+    resolve: z.object({
+        status: z.enum(resolution_statuses),
+    }).strict(),
+
+    update: z.object({
+        move_in_date: coercedDate().optional(),
+        rental_months: z.enum(rental_months).optional(),
+    }).strict().refine(
+        data => Object.keys(data).length > 0,
+        { message: 'at least one field must be updated' }
+    ),
+};

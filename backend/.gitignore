@@ -1,2 +1,6 @@
 *.env
 node_modules
+admin_seeder.js
+client_seeder.js
+img
+seeder.js

@@ -1,0 +1,734 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kalli - Inmobiliaria Orve API",
+    "version": "1.0.0",
+    "description": "API REST del sistema Kalli - Inmobiliaria Orve. Gestiona propiedades en venta/alquiler, clientes, colaboradores, administradores, citas de visita y ofertas/contraofertas. Todas las rutas estan montadas bajo /api. La sesion se transporta en una cookie httpOnly llamada 'auth' (JWT, 30 dias) o alternativamente en un header Authorization: Bearer <token>. Los tres roles (admin, client, collaborator) comparten el mismo nombre de cookie."
+  },
+  "servers": [
+    { "url": "http://localhost:4000/api", "description": "Backend local de desarrollo" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Verificacion de sesion activa" },
+    { "name": "Admin", "description": "Administradores: invitacion, login, gestion" },
+    { "name": "Client", "description": "Clientes: registro, login, gestion de perfil" },
+    { "name": "Collaborator", "description": "Colaboradores: invitacion, login, gestion" },
+    { "name": "Property", "description": "Propiedades en venta o alquiler" },
+    { "name": "Offer", "description": "Ofertas y contraofertas sobre propiedades" },
+    { "name": "Appointment", "description": "Citas de visita a propiedades" },
+    { "name": "Amenity", "description": "Catalogo de amenidades" },
+    { "name": "Appliance", "description": "Catalogo de electrodomesticos" },
+    { "name": "Feature", "description": "Catalogo de caracteristicas" },
+    { "name": "Tag", "description": "Catalogo de etiquetas" },
+    { "name": "ScheduleAvailability", "description": "Horarios de disponibilidad para citas" },
+    { "name": "ResolveAddress", "description": "Geocodificacion inversa (coordenadas -> direccion), reenviada a GeoSV" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "auth", "description": "Cookie httpOnly emitida al iniciar sesion. Compartida por los tres roles." },
+      "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Alternativa a la cookie para clientes/herramientas que no manejan cookies." }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "resource not found" },
+          "meta": {
+            "type": "object",
+            "nullable": true,
+            "properties": { "code": { "type": "string", "example": "SOME_ERROR_CODE" } },
+            "additionalProperties": true,
+            "description": "Presente en errores lanzados como AppError (servicios/controladores). Ausente (solo 'message') en los middlewares de autenticacion/autorizacion (require_auth, require_role, require_self, etc.), que responden directamente sin pasar por AppError."
+          }
+        },
+        "required": ["message"]
+      },
+      "ValidationErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string", "example": "validation failed" },
+          "meta": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "VALIDATION_FAILED" },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": { "field": { "type": "string" }, "message": { "type": "string" } }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Phone": {
+        "type": "object",
+        "properties": {
+          "country_code": { "type": "string", "pattern": "^\\+[1-9]\\d{0,2}$", "example": "+503" },
+          "number": { "type": "string", "pattern": "^\\d{4}-\\d{4}$", "example": "7123-4567" }
+        },
+        "required": ["country_code", "number"]
+      },
+      "Document": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["dui", "pasaporte", "residencia"], "default": "dui" },
+          "number": { "type": "string", "example": "04512345-6" }
+        },
+        "required": ["type", "number"]
+      },
+      "GeoPoint": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["Point"], "default": "Point" },
+          "coordinates": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "[longitud, latitud] (orden GeoJSON)",
+            "example": [-89.2182, 13.6929]
+          }
+        },
+        "required": ["coordinates"]
+      },
+      "Admin": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "lastname": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "document": { "$ref": "#/components/schemas/Document" },
+          "phone": { "$ref": "#/components/schemas/Phone" },
+          "verified_email": { "type": "boolean" },
+          "verified_phone_number": { "type": "boolean" },
+          "picture": { "type": "string", "nullable": true },
+          "picture_id": { "type": "string", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Client": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Admin" },
+          {
+            "type": "object",
+            "properties": {
+              "active": { "type": "boolean", "default": true },
+              "favorites": { "type": "array", "items": { "type": "string" }, "description": "IDs de propiedades favoritas" }
+            }
+          }
+        ]
+      },
+      "Collaborator": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Admin" },
+          { "type": "object", "properties": { "active": { "type": "boolean", "default": true } } }
+        ]
+      },
+      "CatalogItem": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string", "minLength": 3, "maxLength": 60 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["name"]
+      },
+      "Picture": {
+        "type": "object",
+        "properties": {
+          "picture": { "type": "string", "description": "URL de Cloudinary" },
+          "picture_id": { "type": "string", "description": "Public ID de Cloudinary" }
+        }
+      },
+      "Property": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "public_id": { "type": "string", "example": "SS-SSC-SSV-0001", "description": "Codigo legible autogenerado (prefijo geografico + secuencia)" },
+          "title": { "type": "string" },
+          "description": { "type": "string" },
+          "property_type": { "type": "string", "enum": ["house", "apartment", "land"] },
+          "listing_type": { "type": "string", "enum": ["sale", "rent"] },
+          "status": { "type": "string", "enum": ["available", "occupied"], "default": "available" },
+          "price": { "type": "number", "minimum": 0 },
+          "price_history": { "type": "array", "items": { "type": "number" } },
+          "address": { "type": "string" },
+          "address_components": {
+            "type": "object",
+            "properties": {
+              "department": { "type": "string" },
+              "municipality": { "type": "string" },
+              "district": { "type": "string" }
+            },
+            "required": ["department", "municipality", "district"]
+          },
+          "location": { "$ref": "#/components/schemas/GeoPoint" },
+          "bedrooms": { "type": "integer", "minimum": 0, "default": 0 },
+          "bathrooms": { "type": "integer", "minimum": 0, "default": 0 },
+          "parking_spaces": { "type": "integer", "minimum": 0, "default": 0 },
+          "allows_pets": { "type": "boolean", "default": false },
+          "furnished": { "type": "boolean", "default": false },
+          "area": {
+            "type": "object",
+            "properties": { "number": { "type": "number" }, "unit": { "type": "string", "enum": ["v2", "m2"] } },
+            "required": ["number", "unit"]
+          },
+          "appliances": { "type": "array", "items": { "type": "string" } },
+          "amenities": { "type": "array", "items": { "type": "string" } },
+          "features": { "type": "array", "items": { "type": "string" } },
+          "tags": { "type": "array", "items": { "type": "string" } },
+          "pictures": { "type": "array", "items": { "$ref": "#/components/schemas/Picture" }, "minItems": 3 },
+          "owner": { "type": "string", "description": "ID del cliente propietario" },
+          "collaborator": { "type": "string", "nullable": true, "description": "ID del colaborador asignado" },
+          "views": { "type": "integer", "default": 0 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Qualification": {
+        "type": "object",
+        "properties": {
+          "fundsSource": { "type": "string", "enum": ["own", "loan", "mixed"] },
+          "monthlyIncome": { "type": "number", "minimum": 0 },
+          "reason": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "required": ["fundsSource", "monthlyIncome", "reason"],
+        "description": "Nombres de campo en camelCase en la peticion; el backend los persiste como funds_source/monthly_income."
+      },
+      "CurrentAddress": {
+        "type": "object",
+        "properties": {
+          "location": { "$ref": "#/components/schemas/GeoPoint" },
+          "address": { "type": "string", "maxLength": 255, "description": "Direccion formateada, obtenida via POST /resolve-address" },
+          "reference": { "type": "string", "minLength": 1, "maxLength": 255 }
+        },
+        "required": ["location", "address", "reference"]
+      },
+      "TimeWindow": {
+        "type": "object",
+        "properties": {
+          "startTime": { "type": "string", "pattern": "^(0?[1-9]|1[0-2]):[0-5]\\d (AM|PM)$", "example": "09:00 AM" },
+          "endTime": { "type": "string", "pattern": "^(0?[1-9]|1[0-2]):[0-5]\\d (AM|PM)$", "example": "10:00 AM" }
+        },
+        "required": ["startTime", "endTime"]
+      },
+      "Appointment": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "buyer": { "type": "string" },
+          "property": { "type": "string" },
+          "qualification": {
+            "type": "object",
+            "properties": {
+              "funds_source": { "type": "string", "enum": ["own", "loan", "mixed"] },
+              "monthly_income": { "type": "number" },
+              "reason": { "type": "string" }
+            }
+          },
+          "current_address": {
+            "type": "object",
+            "properties": {
+              "location": { "$ref": "#/components/schemas/GeoPoint" },
+              "address": { "type": "string" },
+              "reference": { "type": "string" }
+            }
+          },
+          "proposed_dates": { "type": "array", "items": { "type": "string", "format": "date-time" } },
+          "scheduled_date": { "type": "string", "format": "date-time", "nullable": true },
+          "collaborator": { "type": "string", "nullable": true },
+          "status": { "type": "string", "enum": ["pending", "assigned", "scheduled", "completed", "cancelled"], "default": "pending" },
+          "notes": { "type": "string", "nullable": true },
+          "time": {
+            "type": "object",
+            "properties": { "start_time": { "type": "string" }, "end_time": { "type": "string" } }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Offer": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "buyer": { "type": "string" },
+          "property": { "type": "string" },
+          "price": { "type": "number" },
+          "status": { "type": "string", "enum": ["pending", "countered", "accepted", "rejected", "withdrawn"], "default": "pending" },
+          "move_in_date": { "type": "string", "format": "date-time", "nullable": true },
+          "rental_months": { "type": "string", "enum": ["6", "12", "24", "36+"], "nullable": true },
+          "last_actor": { "type": "string", "enum": ["buyer", "seller"], "default": "buyer" },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "price": { "type": "number" },
+                "actor": { "type": "string", "enum": ["buyer", "seller"] },
+                "created_at": { "type": "string", "format": "date-time" }
+              }
+            }
+          },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ScheduleInterval": {
+        "type": "object",
+        "properties": {
+          "startTime": { "type": "string", "example": "09:00 AM" },
+          "endTime": { "type": "string", "example": "12:00 PM" }
+        },
+        "required": ["startTime", "endTime"]
+      },
+      "ScheduleAvailability": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "day": { "type": "string", "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] },
+          "intervals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": { "start_time": { "type": "string" }, "end_time": { "type": "string" }, "_id": { "type": "string" } }
+            }
+          }
+        }
+      }
+    },
+    "parameters": {
+      "MongoIdParam": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": { "type": "string", "pattern": "^[0-9a-fA-F]{24}$" },
+        "description": "ObjectId de MongoDB"
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "No autenticado: cookie/token de sesion ausente o invalido/expirado.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Forbidden": {
+        "description": "Autenticado pero sin permiso sobre el recurso (rol insuficiente o no es el dueno del recurso).",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "NotFound": {
+        "description": "El recurso solicitado no existe.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "Conflict": {
+        "description": "Conflicto: valor duplicado o transicion de estado invalida.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      },
+      "ValidationError": {
+        "description": "El cuerpo/parametros no pasaron la validacion de Zod, o el archivo subido es invalido.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationErrorResponse" } } }
+      },
+      "ServerError": {
+        "description": "Error interno no controlado, de Cloudinary o de envio de correo.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } }
+      }
+    }
+  },
+  "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+  "paths": {
+    "/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Obtener el usuario autenticado segun la sesion activa",
+        "security": [{ "cookieAuth": [] }, { "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Sesion valida",
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "role": { "type": "string", "enum": ["admin", "client", "collaborator"] }, "user": { "type": "object" } } } } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/admin": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Listar administradores",
+        "security": [{ "cookieAuth": [] }],
+        "responses": {
+          "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "admins": { "type": "array", "items": { "$ref": "#/components/schemas/Admin" } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/admin/invite": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Invitar a un nuevo administrador (correo con enlace para completar registro)",
+        "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "maxLength": 20 },
+                  "lastname": { "type": "string", "maxLength": 20 },
+                  "email": { "type": "string", "format": "email" },
+                  "document": { "$ref": "#/components/schemas/Document" },
+                  "phone": { "$ref": "#/components/schemas/Phone" },
+                  "picture": { "type": "string", "format": "binary" }
+                },
+                "required": ["name", "lastname", "email", "document", "phone"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Invitacion enviada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/admin/complete-invitation": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Completar invitacion definiendo la contrasena (token recibido por correo)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "password": { "type": "string", "minLength": 8, "maxLength": 20 }, "confirm_password": { "type": "string" } }, "required": ["token", "password", "confirm_password"] } } }
+        },
+        "responses": {
+          "200": { "description": "Cuenta activada, sesion iniciada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "admin": { "$ref": "#/components/schemas/Admin" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "$ref": "#/components/responses/Conflict" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/admin/login": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Iniciar sesion como administrador",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string" } }, "required": ["email", "password"] } } } },
+        "responses": {
+          "200": { "description": "Sesion iniciada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "admin": { "$ref": "#/components/schemas/Admin" } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "422": { "$ref": "#/components/responses/ValidationError" }
+        }
+      }
+    },
+    "/admin/logout": {
+      "post": { "tags": ["Admin"], "summary": "Cerrar sesion de administrador", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/admin/password-recovery/request": {
+      "post": {
+        "tags": ["Admin"], "summary": "Solicitar codigo de recuperacion de contrasena",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" } }, "required": ["email"] } } } },
+        "responses": { "200": { "description": "Codigo enviado por correo" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/admin/password-recovery/verify": {
+      "post": {
+        "tags": ["Admin"], "summary": "Verificar codigo de recuperacion",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "code": { "type": "string", "minLength": 6, "maxLength": 6 } }, "required": ["token", "code"] } } } },
+        "responses": { "200": { "description": "Codigo valido" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/admin/password-recovery/change-password": {
+      "post": {
+        "tags": ["Admin"], "summary": "Cambiar contrasena tras verificar el codigo",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "new_password": { "type": "string" }, "confirm_password": { "type": "string" } }, "required": ["token", "new_password", "confirm_password"] } } } },
+        "responses": { "200": { "description": "Contrasena actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/admin/{id}": {
+      "get": { "tags": ["Admin"], "summary": "Obtener un administrador por ID", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "admin": { "$ref": "#/components/schemas/Admin" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": {
+        "tags": ["Admin"], "summary": "Actualizar el propio perfil (solo el propio administrador)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }],
+        "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" }, "lastname": { "type": "string" }, "phone": { "$ref": "#/components/schemas/Phone" } } } } } },
+        "responses": { "200": { "description": "Perfil actualizado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      },
+      "delete": { "tags": ["Admin"], "summary": "Eliminar administrador", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/admin/{id}/image": {
+      "put": {
+        "tags": ["Admin"], "summary": "Actualizar foto de perfil (solo el propio administrador)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "picture": { "type": "string", "format": "binary" } }, "required": ["picture"] } } } },
+        "responses": { "200": { "description": "Foto actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" }, "500": { "$ref": "#/components/responses/ServerError" } }
+      }
+    },
+    "/client": {
+      "get": { "tags": ["Client"], "summary": "Listar clientes (solo administradores)", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "clients": { "type": "array", "items": { "$ref": "#/components/schemas/Client" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/client/register": {
+      "post": {
+        "tags": ["Client"], "summary": "Autorregistro de cliente (envia codigo de verificacion por correo)",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" }, "lastname": { "type": "string" }, "email": { "type": "string", "format": "email" }, "document": { "$ref": "#/components/schemas/Document" }, "phone": { "$ref": "#/components/schemas/Phone" }, "password": { "type": "string" }, "confirm_password": { "type": "string" } }, "required": ["name", "lastname", "email", "document", "phone", "password", "confirm_password"] } } }
+        },
+        "responses": { "201": { "description": "Codigo enviado, cuenta creada sin verificar" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" }, "500": { "$ref": "#/components/responses/ServerError" } }
+      }
+    },
+    "/client/verify-email": {
+      "post": { "tags": ["Client"], "summary": "Verificar correo con el codigo recibido", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "code": { "type": "string" } }, "required": ["token", "code"] } } } }, "responses": { "200": { "description": "Correo verificado, sesion iniciada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "422": { "$ref": "#/components/responses/ValidationError" } } }
+    },
+    "/client/resend-verification": {
+      "post": { "tags": ["Client"], "summary": "Reenviar codigo de verificacion de correo", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" } }, "required": ["email"] } } } }, "responses": { "200": { "description": "Codigo reenviado" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/client/login": {
+      "post": { "tags": ["Client"], "summary": "Iniciar sesion como cliente", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string" } }, "required": ["email", "password"] } } } }, "responses": { "200": { "description": "Sesion iniciada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "client": { "$ref": "#/components/schemas/Client" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/client/logout": {
+      "post": { "tags": ["Client"], "summary": "Cerrar sesion", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/client/password-recovery/request": {
+      "post": { "tags": ["Client"], "summary": "Solicitar codigo de recuperacion de contrasena", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" } }, "required": ["email"] } } } }, "responses": { "200": { "description": "Codigo enviado" } } }
+    },
+    "/client/password-recovery/verify": {
+      "post": { "tags": ["Client"], "summary": "Verificar codigo de recuperacion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "code": { "type": "string" } }, "required": ["token", "code"] } } } }, "responses": { "200": { "description": "Codigo valido" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/client/password-recovery/change-password": {
+      "post": { "tags": ["Client"], "summary": "Cambiar contrasena", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "new_password": { "type": "string" }, "confirm_password": { "type": "string" } }, "required": ["token", "new_password", "confirm_password"] } } } }, "responses": { "200": { "description": "Contrasena actualizada" } } }
+    },
+    "/client/{id}": {
+      "get": { "tags": ["Client"], "summary": "Obtener un cliente por ID (el propio cliente o un admin)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "client": { "$ref": "#/components/schemas/Client" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Client"], "summary": "Actualizar perfil (el propio cliente o un admin; incluye activar/desactivar)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" }, "lastname": { "type": "string" }, "phone": { "$ref": "#/components/schemas/Phone" }, "active": { "type": "boolean" } } } } } }, "responses": { "200": { "description": "Perfil actualizado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" } } },
+      "delete": { "tags": ["Client"], "summary": "Eliminar cliente", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/client/{id}/image": {
+      "put": { "tags": ["Client"], "summary": "Actualizar foto de perfil (solo el propio cliente)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "picture": { "type": "string", "format": "binary" } }, "required": ["picture"] } } } }, "responses": { "200": { "description": "Foto actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" } } }
+    },
+    "/collaborator": {
+      "get": { "tags": ["Collaborator"], "summary": "Listar colaboradores (solo administradores)", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "collaborators": { "type": "array", "items": { "$ref": "#/components/schemas/Collaborator" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/collaborator/invite": {
+      "post": {
+        "tags": ["Collaborator"], "summary": "Invitar a un nuevo colaborador", "security": [{ "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "name": { "type": "string" }, "lastname": { "type": "string" }, "email": { "type": "string", "format": "email" }, "document": { "$ref": "#/components/schemas/Document" }, "phone": { "$ref": "#/components/schemas/Phone" }, "picture": { "type": "string", "format": "binary" } }, "required": ["name", "lastname", "email", "document", "phone"] } } } },
+        "responses": { "201": { "description": "Invitacion enviada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/collaborator/complete-invitation": {
+      "post": { "tags": ["Collaborator"], "summary": "Completar invitacion definiendo la contrasena", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "password": { "type": "string" }, "confirm_password": { "type": "string" } }, "required": ["token", "password", "confirm_password"] } } } }, "responses": { "200": { "description": "Cuenta activada, sesion iniciada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/collaborator/login": {
+      "post": { "tags": ["Collaborator"], "summary": "Iniciar sesion como colaborador", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" }, "password": { "type": "string" } }, "required": ["email", "password"] } } } }, "responses": { "200": { "description": "Sesion iniciada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/collaborator/logout": {
+      "post": { "tags": ["Collaborator"], "summary": "Cerrar sesion", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" } } }
+    },
+    "/collaborator/password-recovery/request": {
+      "post": { "tags": ["Collaborator"], "summary": "Solicitar codigo de recuperacion de contrasena", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "email": { "type": "string", "format": "email" } }, "required": ["email"] } } } }, "responses": { "200": { "description": "Codigo enviado" } } }
+    },
+    "/collaborator/password-recovery/verify": {
+      "post": { "tags": ["Collaborator"], "summary": "Verificar codigo de recuperacion", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "code": { "type": "string" } }, "required": ["token", "code"] } } } }, "responses": { "200": { "description": "Codigo valido" } } }
+    },
+    "/collaborator/password-recovery/change-password": {
+      "post": { "tags": ["Collaborator"], "summary": "Cambiar contrasena", "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "token": { "type": "string" }, "new_password": { "type": "string" }, "confirm_password": { "type": "string" } }, "required": ["token", "new_password", "confirm_password"] } } } }, "responses": { "200": { "description": "Contrasena actualizada" } } }
+    },
+    "/collaborator/{id}": {
+      "get": { "tags": ["Collaborator"], "summary": "Obtener un colaborador por ID (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Collaborator"], "summary": "Actualizar colaborador (el propio colaborador o un admin)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" }, "lastname": { "type": "string" }, "phone": { "$ref": "#/components/schemas/Phone" }, "picture": { "type": "string" }, "picture_id": { "type": "string" }, "active": { "type": "boolean" } } } } } }, "responses": { "200": { "description": "Actualizado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } },
+      "delete": { "tags": ["Collaborator"], "summary": "Eliminar colaborador (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/collaborator/{id}/image": {
+      "put": { "tags": ["Collaborator"], "summary": "Actualizar foto de perfil (solo el propio colaborador)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "picture": { "type": "string", "format": "binary" } } } } } }, "responses": { "200": { "description": "Foto actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/property": {
+      "get": { "tags": ["Property"], "summary": "Listar todas las propiedades (publico, sin filtros ni paginacion)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "properties": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } } } } } } } } },
+      "post": {
+        "tags": ["Property"], "summary": "Crear propiedad (admin o colaborador)", "security": [{ "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "title": { "type": "string" }, "description": { "type": "string" }, "property_type": { "type": "string", "enum": ["house", "apartment", "land"] }, "listing_type": { "type": "string", "enum": ["sale", "rent"] }, "price": { "type": "number" }, "status": { "type": "string", "enum": ["available", "occupied"] }, "address": { "type": "string" }, "address_components": { "type": "string", "description": "JSON stringificado: {department,municipality,district}" }, "location": { "type": "string", "description": "JSON stringificado GeoJSON Point" }, "bedrooms": { "type": "integer" }, "bathrooms": { "type": "integer" }, "parking_spaces": { "type": "integer" }, "allows_pets": { "type": "boolean" }, "area": { "type": "string", "description": "JSON stringificado: {number,unit}" }, "furnished": { "type": "boolean" }, "appliances": { "type": "string", "description": "JSON stringificado: array de IDs" }, "amenities": { "type": "string" }, "features": { "type": "string" }, "tags": { "type": "string" }, "owner": { "type": "string" }, "collaborator": { "type": "string" }, "pictures": { "type": "array", "items": { "type": "string", "format": "binary" }, "minItems": 3 } }, "required": ["title", "description", "property_type", "listing_type", "price", "address", "address_components", "location", "area", "owner", "pictures"] } } } },
+        "responses": { "201": { "description": "Propiedad creada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "property": { "$ref": "#/components/schemas/Property" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/property/public/{public_id}": {
+      "get": { "tags": ["Property"], "summary": "Obtener propiedad por su codigo publico (ej. SS-SSC-SSV-0001)", "parameters": [{ "name": "public_id", "in": "path", "required": true, "schema": { "type": "string" } }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "property": { "$ref": "#/components/schemas/Property" } } } } } }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/property/nearby": {
+      "get": {
+        "tags": ["Property"], "summary": "Buscar propiedades disponibles cerca de un punto (2dsphere $near)",
+        "parameters": [
+          { "name": "lat", "in": "query", "required": true, "schema": { "type": "number", "minimum": -90, "maximum": 90 } },
+          { "name": "lng", "in": "query", "required": true, "schema": { "type": "number", "minimum": -180, "maximum": 180 } },
+          { "name": "radius", "in": "query", "required": false, "schema": { "type": "number", "default": 5000, "maximum": 50000 }, "description": "Radio de busqueda en metros" }
+        ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "properties": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } } } } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/property/search/region": {
+      "get": {
+        "tags": ["Property"], "summary": "Buscar propiedades por departamento/municipio/distrito",
+        "parameters": [
+          { "name": "department", "in": "query", "schema": { "type": "string" } },
+          { "name": "municipality", "in": "query", "schema": { "type": "string" } },
+          { "name": "district", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "properties": { "type": "array", "items": { "$ref": "#/components/schemas/Property" } } } } } } }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/property/{id}": {
+      "get": { "tags": ["Property"], "summary": "Obtener propiedad por ID de Mongo", "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "property": { "$ref": "#/components/schemas/Property" } } } } } }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": {
+        "tags": ["Property"], "summary": "Actualizar propiedad (admin, o el colaborador asignado)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }],
+        "requestBody": { "content": { "multipart/form-data": { "schema": { "type": "object", "properties": { "title": { "type": "string" }, "price": { "type": "number" }, "status": { "type": "string", "enum": ["available", "occupied"] }, "remove_pictures": { "type": "string", "description": "JSON stringificado: array de picture_id a eliminar" }, "pictures": { "type": "array", "items": { "type": "string", "format": "binary" }, "description": "Imagenes nuevas a agregar" } } } } } },
+        "responses": { "200": { "description": "Actualizada (minimo 3 imagenes deben permanecer)" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      },
+      "delete": { "tags": ["Property"], "summary": "Eliminar propiedad (admin, o el colaborador asignado)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/property/{id}/view": {
+      "put": { "tags": ["Property"], "summary": "Incrementar el contador de vistas de la propiedad", "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Vista contabilizada" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/offer": {
+      "get": {
+        "tags": ["Offer"], "summary": "Listar ofertas con paginacion, busqueda y metricas (staff)", "security": [{ "cookieAuth": [] }],
+        "parameters": [
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 5, "maximum": 100 } },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["all", "sale", "rent"], "default": "all" } }
+        ],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "offers": { "type": "array", "items": { "$ref": "#/components/schemas/Offer" } }, "total": { "type": "integer" }, "metrics": { "type": "object", "properties": { "total": { "type": "integer" }, "pending": { "type": "integer" }, "confirmed": { "type": "integer" }, "completed": { "type": "integer" } } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Offer"], "summary": "Crear una oferta sobre una propiedad", "security": [{ "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "property": { "type": "string" }, "price": { "type": "number", "minimum": 0 }, "move_in_date": { "type": "string", "format": "date-time" }, "rental_months": { "type": "string", "enum": ["6", "12", "24", "36+"] }, "buyer": { "type": "string", "description": "Solo staff puede indicar un comprador distinto al usuario autenticado" } }, "required": ["property", "price"] } } } },
+        "responses": { "201": { "description": "Oferta creada", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "offer": { "$ref": "#/components/schemas/Offer" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" }, "422": { "$ref": "#/components/responses/ValidationError" } }
+      }
+    },
+    "/offer/{id}": {
+      "get": { "tags": ["Offer"], "summary": "Obtener oferta (admin, el comprador, o el colaborador asignado a la propiedad)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "offer": { "$ref": "#/components/schemas/Offer" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Offer"], "summary": "Editar oferta (solo el comprador, solo mientras esta pending)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "move_in_date": { "type": "string", "format": "date-time" }, "rental_months": { "type": "string", "enum": ["6", "12", "24", "36+"] } } } } } }, "responses": { "200": { "description": "Actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["Offer"], "summary": "Eliminar oferta (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/offer/{id}/counter": {
+      "post": { "tags": ["Offer"], "summary": "Hacer una contraoferta", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "price": { "type": "number", "minimum": 0 } }, "required": ["price"] } } } }, "responses": { "200": { "description": "Contraoferta registrada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/offer/{id}/resolve": {
+      "patch": { "tags": ["Offer"], "summary": "Resolver la oferta (aceptar/rechazar/retirar)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "status": { "type": "string", "enum": ["accepted", "rejected", "withdrawn"] } }, "required": ["status"] } } } }, "responses": { "200": { "description": "Oferta resuelta (al aceptar, la propiedad pasa a status=occupied)" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/appointment": {
+      "get": {
+        "tags": ["Appointment"], "summary": "Listar citas (staff)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "name": "status", "in": "query", "schema": { "type": "string", "enum": ["pending", "assigned", "scheduled", "completed", "cancelled"] } }],
+        "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointments": { "type": "array", "items": { "$ref": "#/components/schemas/Appointment" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } }
+      },
+      "post": {
+        "tags": ["Appointment"], "summary": "Solicitar una cita de visita", "security": [{ "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "type": "object", "properties": { "property": { "type": "string" }, "qualification": { "$ref": "#/components/schemas/Qualification" }, "current_address": { "$ref": "#/components/schemas/CurrentAddress" }, "proposed_dates": { "type": "array", "items": { "type": "string", "format": "date-time" }, "minItems": 1 }, "notes": { "type": "string", "maxLength": 1000 }, "time": { "$ref": "#/components/schemas/TimeWindow" }, "buyer": { "type": "string", "description": "Solo staff puede fijar un comprador distinto al usuario autenticado" } }, "required": ["property", "qualification", "current_address", "proposed_dates", "time"] } } }
+        },
+        "responses": { "201": { "description": "Cita creada en estado pending", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "appointment": { "$ref": "#/components/schemas/Appointment" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "404": { "$ref": "#/components/responses/NotFound" }, "422": { "description": "Datos invalidos, o la franja horaria no coincide con la disponibilidad configurada (TIME_NOT_AVAILABLE)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationErrorResponse" } } } } }
+      }
+    },
+    "/appointment/{id}": {
+      "get": { "tags": ["Appointment"], "summary": "Obtener cita (admin, el comprador, o el colaborador asignado)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "appointment": { "$ref": "#/components/schemas/Appointment" } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["Appointment"], "summary": "Editar cita (staff; solo mientras esta pending o assigned)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "qualification": { "$ref": "#/components/schemas/Qualification" }, "current_address": { "$ref": "#/components/schemas/CurrentAddress" }, "proposed_dates": { "type": "array", "items": { "type": "string", "format": "date-time" } }, "notes": { "type": "string" } } } } } }, "responses": { "200": { "description": "Actualizada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "description": "APPOINTMENT_NOT_EDITABLE: la cita ya no esta en pending/assigned", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } } } },
+      "delete": { "tags": ["Appointment"], "summary": "Eliminar cita (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/appointment/{id}/assign": {
+      "put": {
+        "tags": ["Appointment"], "summary": "Asignar un colaborador a la cita (solo administradores)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "collaborator": { "type": "string" } }, "required": ["collaborator"] } } } },
+        "responses": { "200": { "description": "Colaborador asignado, estado pasa a 'assigned'" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "description": "INVALID_STATUS_TRANSITION", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } } }
+      }
+    },
+    "/appointment/{id}/schedule": {
+      "put": {
+        "tags": ["Appointment"], "summary": "Confirmar la fecha de visita entre las propuestas por el cliente (admin o el colaborador asignado)", "security": [{ "cookieAuth": [] }],
+        "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "scheduled_date": { "type": "string", "format": "date-time" } }, "required": ["scheduled_date"] } } } },
+        "responses": { "200": { "description": "Fecha confirmada, estado pasa a 'scheduled'" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "description": "Estado invalido para confirmar (debe estar 'assigned')", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }, "422": { "description": "SCHEDULED_DATE_NOT_PROPOSED: la fecha no coincide con ninguna proposed_dates", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationErrorResponse" } } } } }
+      }
+    },
+    "/appointment/{id}/complete": {
+      "put": { "tags": ["Appointment"], "summary": "Marcar la cita como completada (admin o el colaborador asignado; requiere estar 'scheduled')", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Completada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/appointment/{id}/cancel": {
+      "put": { "tags": ["Appointment"], "summary": "Cancelar la cita (admin, el comprador, o el colaborador asignado)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Cancelada" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "description": "Ya estaba completed/cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } } } }
+    },
+    "/schedule-availability": {
+      "get": { "tags": ["ScheduleAvailability"], "summary": "Listar horarios de disponibilidad (publico)", "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "schedules": { "type": "array", "items": { "$ref": "#/components/schemas/ScheduleAvailability" } } } } } } } } },
+      "post": { "tags": ["ScheduleAvailability"], "summary": "Crear disponibilidad para un dia (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "day": { "type": "string", "enum": ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] }, "intervals": { "type": "array", "items": { "$ref": "#/components/schemas/ScheduleInterval" }, "minItems": 1 } }, "required": ["day", "intervals"] } } } }, "responses": { "201": { "description": "Creado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "description": "SCHEDULE_DAY_ALREADY_EXISTS", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }, "422": { "$ref": "#/components/responses/ValidationError" } } }
+    },
+    "/schedule-availability/{id}": {
+      "get": { "tags": ["ScheduleAvailability"], "summary": "Obtener un horario por ID (publico)", "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "OK" }, "404": { "$ref": "#/components/responses/NotFound" } } },
+      "put": { "tags": ["ScheduleAvailability"], "summary": "Actualizar horario (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "content": { "application/json": { "schema": { "type": "object", "properties": { "day": { "type": "string" }, "intervals": { "type": "array", "items": { "$ref": "#/components/schemas/ScheduleInterval" } } } } } } }, "responses": { "200": { "description": "Actualizado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["ScheduleAvailability"], "summary": "Eliminar horario (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminado" }, "401": { "$ref": "#/components/responses/Unauthorized" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/resolve-address": {
+      "post": {
+        "tags": ["ResolveAddress"], "summary": "Geocodificacion inversa: coordenadas -> direccion estructurada. El backend reenvia la peticion al servicio configurado en ADDRESS_API (GeoSV en desarrollo).", "security": [{ "cookieAuth": [] }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "coordinates": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "[longitud, latitud]" } }, "required": ["coordinates"] } } } },
+        "responses": {
+          "200": { "description": "Direccion resuelta", "content": { "application/json": { "schema": { "type": "object", "properties": { "message": { "type": "string" }, "address": { "type": "string" }, "components": { "type": "object", "properties": { "department": { "type": "string" }, "municipality": { "type": "string" }, "district": { "type": "string" } } } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "422": { "$ref": "#/components/responses/ValidationError" },
+          "500": { "description": "ADDRESS_RESOLUTION_FAILED: GeoSV no respondio o respondio con error", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } }
+        }
+      }
+    },
+    "/possible-amenity": {
+      "get": { "tags": ["Amenity"], "summary": "Listar amenidades", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "amenities": { "type": "array", "items": { "$ref": "#/components/schemas/CatalogItem" } } } } } } }, "401": { "$ref": "#/components/responses/Unauthorized" } } },
+      "post": { "tags": ["Amenity"], "summary": "Crear amenidad (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string", "minLength": 3, "maxLength": 60 } }, "required": ["name"] } } } }, "responses": { "201": { "description": "Creada" }, "403": { "$ref": "#/components/responses/Forbidden" }, "409": { "description": "AMENITY_ALREADY_EXISTS", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ErrorResponse" } } } } } }
+    },
+    "/possible-amenity/merge": {
+      "post": { "tags": ["Amenity"], "summary": "Fusionar amenidades duplicadas en una principal (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "principal": { "type": "string" }, "references": { "type": "array", "items": { "type": "string" }, "minItems": 1 } }, "required": ["principal", "references"] } } } }, "responses": { "200": { "description": "Fusionadas" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/possible-amenity/{id}": {
+      "put": { "tags": ["Amenity"], "summary": "Renombrar amenidad (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "200": { "description": "Actualizada" }, "403": { "$ref": "#/components/responses/Forbidden" }, "404": { "$ref": "#/components/responses/NotFound" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["Amenity"], "summary": "Eliminar amenidad (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" }, "403": { "$ref": "#/components/responses/Forbidden" } } }
+    },
+    "/possible-appliance": {
+      "get": { "tags": ["Appliance"], "summary": "Listar electrodomesticos", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "appliances": { "type": "array", "items": { "$ref": "#/components/schemas/CatalogItem" } } } } } } } } },
+      "post": { "tags": ["Appliance"], "summary": "Crear electrodomestico (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "201": { "description": "Creado" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/possible-appliance/merge": {
+      "post": { "tags": ["Appliance"], "summary": "Fusionar electrodomesticos duplicados (solo administradores). Nota: el filtro de reasignacion en propiedades tiene un bug conocido (usa el campo 'amenities' en vez de 'appliances').", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "principal": { "type": "string" }, "references": { "type": "array", "items": { "type": "string" } } }, "required": ["principal", "references"] } } } }, "responses": { "200": { "description": "Fusionados" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/possible-appliance/{id}": {
+      "put": { "tags": ["Appliance"], "summary": "Renombrar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "200": { "description": "Actualizado" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["Appliance"], "summary": "Eliminar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminado" } } }
+    },
+    "/possible-feature": {
+      "get": { "tags": ["Feature"], "summary": "Listar caracteristicas", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "features": { "type": "array", "items": { "$ref": "#/components/schemas/CatalogItem" } } } } } } } } },
+      "post": { "tags": ["Feature"], "summary": "Crear caracteristica (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "201": { "description": "Creada" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/possible-feature/merge": {
+      "post": { "tags": ["Feature"], "summary": "Fusionar caracteristicas duplicadas (solo administradores). Nota: mismo bug de reasignacion que appliance/tag.", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "principal": { "type": "string" }, "references": { "type": "array", "items": { "type": "string" } } }, "required": ["principal", "references"] } } } }, "responses": { "200": { "description": "Fusionadas" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/possible-feature/{id}": {
+      "put": { "tags": ["Feature"], "summary": "Renombrar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "200": { "description": "Actualizada" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["Feature"], "summary": "Eliminar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" } } }
+    },
+    "/possible-tag": {
+      "get": { "tags": ["Tag"], "summary": "Listar etiquetas", "security": [{ "cookieAuth": [] }], "responses": { "200": { "description": "OK", "content": { "application/json": { "schema": { "type": "object", "properties": { "tags": { "type": "array", "items": { "$ref": "#/components/schemas/CatalogItem" } } } } } } } } },
+      "post": { "tags": ["Tag"], "summary": "Crear etiqueta (solo administradores)", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "201": { "description": "Creada" }, "409": { "$ref": "#/components/responses/Conflict" } } }
+    },
+    "/possible-tag/merge": {
+      "post": { "tags": ["Tag"], "summary": "Fusionar etiquetas duplicadas (solo administradores). Nota: mismo bug de reasignacion que appliance/feature.", "security": [{ "cookieAuth": [] }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "principal": { "type": "string" }, "references": { "type": "array", "items": { "type": "string" } } }, "required": ["principal", "references"] } } } }, "responses": { "200": { "description": "Fusionadas" }, "404": { "$ref": "#/components/responses/NotFound" } } }
+    },
+    "/possible-tag/{id}": {
+      "put": { "tags": ["Tag"], "summary": "Renombrar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "requestBody": { "required": true, "content": { "application/json": { "schema": { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] } } } }, "responses": { "200": { "description": "Actualizada" }, "409": { "$ref": "#/components/responses/Conflict" } } },
+      "delete": { "tags": ["Tag"], "summary": "Eliminar (solo administradores)", "security": [{ "cookieAuth": [] }], "parameters": [{ "$ref": "#/components/parameters/MongoIdParam" }], "responses": { "200": { "description": "Eliminada" } } }
+    }
+  }
+}

@@ -1,33 +1,99 @@
-import Router from './router.js';
-import Controller from '../controllers/collaborator.js';
+import express from 'express';
+import controller from '../controllers/collaborator.js';
+import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
-import { requireAdmin } from '../middleware/auth/require_admin.js';
-import { requireAdminOrSelf } from '../middleware/auth/require_admin_or_self.js';
-import { validate } from '../middleware/validate.js';
-import { changePassword, login, register, search, update } from '../schemas/collaborator.js';
-class CollaboratorRoute extends Router {
-    constructor() {
-        super({
-            disabledRoutes: [],
-            routeMiddleware: {
-                get: [requireAuth, requireAdmin],
-                search: [requireAuth, requireAdmin, validate(search)],
-                post: [validate(register)],
-                getById: [requireAuth, requireAdminOrSelf],
-                put: [requireAuth, requireAdminOrSelf, validate(update)],
-                delete: [requireAuth, requireAdmin]
-            }
-        });
-        this.controller = Controller;
-        this._init();
-    }
-    initializeCustomRoutes() {
-        this.router.post('/login', validate(login), this.controller.login);
-        this.router.post('/verify-email', this.controller.verifyEmail);
-        this.router.post('/password-recovery/request', this.controller.requestRecovery);
-        this.router.post('/password-recovery/verify', this.controller.verifyRecovery);
-        this.router.post('/password-recovery/change-password', validate(changePassword), this.controller.changePassword);
-        this.router.post('/logout', requireAuth, this.controller.logout);
-    }
-}
-export default new CollaboratorRoute().getRouter();
+import { requireRole } from '../middleware/auth/require_role.js';
+import { requireSelf } from '../middleware/auth/require_self.js';
+import { requireSelfOrAdmin } from '../middleware/auth/require_self_or_admin.js';
+import { validatePayload } from '../middleware/validate_payload.js';
+import { parseMultipartJSON } from '../middleware/parse_multipart_json.js';
+import { injectUploadedFile } from '../middleware/inject_uploaded_file.js';
+import { schemas } from '../schemas/collaborator.js';
+
+const collaborator = express.Router();
+
+collaborator.route('/')
+    .get(
+        requireAuth,
+        requireRole('admin'),
+        controller.get
+    );
+
+collaborator.route('/invite')
+    .post(
+        requireAuth,
+        requireRole('admin'),
+        cloudinary.single('picture'),
+        injectUploadedFile,
+        parseMultipartJSON,
+        validatePayload({ body: schemas.invite }),
+        controller.invite
+    );
+
+collaborator.route('/complete-invitation')
+    .post(
+        validatePayload({ body: schemas.completeInvitation }),
+        controller.completeInvitation
+    );
+
+collaborator.route('/login')
+    .post(
+        validatePayload({ body: schemas.login }),
+        controller.login
+    );
+
+collaborator.route('/logout')
+    .post(
+        requireAuth,
+        controller.logout
+    );
+
+collaborator.route('/password-recovery/request')
+    .post(
+        validatePayload({ body: schemas.requestRecoveryCode }),
+        controller.requestRecoveryCode
+    );
+
+collaborator.route('/password-recovery/verify')
+    .post(
+        validatePayload({ body: schemas.verifyRecoveryCode }),
+        controller.verifyRecoveryCode
+    );
+
+collaborator.route('/password-recovery/change-password')
+    .post(
+        validatePayload({ body: schemas.changePassword }),
+        controller.changePassword
+    );
+
+collaborator.route('/:id')
+    .get(
+        requireAuth,
+        requireRole('admin'),
+        validatePayload({ params: schemas.queryById }),
+        controller.getById
+    )
+    .put(
+        requireAuth,
+        requireSelfOrAdmin,
+        validatePayload({ params: schemas.queryById, body: schemas.update }),
+        controller.put
+    )
+    .delete(
+        requireAuth,
+        requireRole('admin'),
+        validatePayload({ params: schemas.queryById }),
+        controller.delete
+    );
+
+collaborator.route('/:id/image')
+    .put(
+        requireAuth,
+        requireRole('collaborator'),
+        requireSelf,
+        cloudinary.single('picture'),
+        validatePayload({ params: schemas.queryById, body: schemas.uploadPicture }),
+        controller.uploadPicture
+    );
+
+export default collaborator;

@@ -1,5 +1,5 @@
-import { Schema, model } from 'mongoose';
-const propertySchema = new Schema({
+import { Schema, model } from 'mongoose'; // ya
+const schema = new Schema({
     title: { type: String, required: true, trim: true },
     description: { type: String, required: true },
     property_type: { type: String, enum: ['house', 'apartment', 'land'], required: true },
@@ -8,6 +8,11 @@ const propertySchema = new Schema({
     price_history: [{ type: Number }],
     status: { type: String, enum: ['available', 'occupied'], default: 'available' },
     address: { type: String },
+    address_components: {
+        department: { type: String, required: true, trim: true },
+        municipality: { type: String, required: true, trim: true },
+        district: { type: String, required: true, trim: true },
+    },
     location: {
         type: { type: String, enum: ['Point'], required: true },
         coordinates: { type: [Number], required: true }
@@ -31,8 +36,11 @@ const propertySchema = new Schema({
     views: { type: Number, default: 0 },
     availability: {
         since: { type: Date, default: Date.now }
-    }
+    },
+    public_id: { type: String, unique: true, required: true, index: true },
+    pictures: [{ picture: String, picture_id: String }]
 }, { timestamps: true });
-propertySchema.index({ location: '2dsphere' });
-const p = model('property', propertySchema);
+schema.index({ location: '2dsphere' });
+schema.index({ 'address_components.department': 1, 'address_components.municipality': 1, 'address_components.district': 1 });
+const p = model('property', schema);
 export default p;

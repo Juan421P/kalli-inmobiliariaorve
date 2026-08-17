@@ -1,4 +1,4 @@
-import { Schema, model } from 'mongoose';
+import { Schema, model } from 'mongoose'; // ya
 import bcrypt from 'bcryptjs';
 const schema = new Schema({
     name: {
@@ -35,7 +35,7 @@ const schema = new Schema({
         country_code: {
             type: String,
             required: true,
-            match: [/^\+\d+$/, 'country code must start with + followed by numbers']
+            match: [/^\+[1-9]\d{0,2}$/, 'country code must start with + followed by 1 to 3 digits']
         },
         number: {
             type: String,
@@ -59,22 +59,29 @@ const schema = new Schema({
         type: Boolean,
         default: false
     },
+    active: {
+        type: Boolean,
+        default: true
+    },
     favorites: [{
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'property',
         default: []
-    }]
+    }],
+    picture: {
+        type: String,
+        trim: true
+    },
+    picture_id: {
+        type: String,
+        trim: true
+    }
 }, {
     timestamps: true
 });
-schema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next();
-    try {
-        this.password = await bcrypt.hash(this.password, 10);
-        next();
-    } catch (err) {
-        next(err);
-    }
+schema.pre('save', async function () {
+    if (!this.isModified('password')) return;
+    this.password = await bcrypt.hash(this.password, 10);
 });
 schema.methods.comparePassword = async function (candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
