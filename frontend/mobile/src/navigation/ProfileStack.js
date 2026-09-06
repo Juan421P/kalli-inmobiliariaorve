@@ -8,6 +8,9 @@ import CompareSelectScreen from '@/screens/CompareSelectScreen';
 import CompareScreen from '@/screens/CompareScreen';
 import SellPropertyScreen from '@/screens/SellPropertyScreen';
 import RentOutPropertyScreen from '@/screens/RentOutPropertyScreen';
+import PropertyDetailScreen from '@/screens/PropertyDetailScreen';
+import ScheduleAppointmentScreen from '@/screens/ScheduleAppointmentScreen';
+import MakeOfferScreen from '@/screens/MakeOfferScreen';
 import { stackScreenOptions } from './screenOptions';
 
 const Stack = createNativeStackNavigator();
@@ -28,6 +31,9 @@ const ProfileStack = () => (
         <Stack.Screen name='Compare' component={CompareScreen} options={{ title: 'Comparar propiedades' }} />
         <Stack.Screen name='SellProperty' component={SellPropertyScreen} options={{ title: 'Vender mi propiedad' }} />
         <Stack.Screen name='RentOutProperty' component={RentOutPropertyScreen} options={{ title: 'Alquilar mi propiedad' }} />
+        <Stack.Screen name='PropertyDetail' component={PropertyDetailScreen} options={{ title: 'Propiedad' }} />
+        <Stack.Screen name='ScheduleAppointment' component={ScheduleAppointmentScreen} options={{ title: 'Agendar cita' }} />
+        <Stack.Screen name='MakeOffer' component={MakeOfferScreen} options={{ title: 'Hacer oferta' }} />
     </Stack.Navigator>
 );
 
