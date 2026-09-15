@@ -33,6 +33,9 @@ const Login = () => {
     const passwordRegister = register('password')
     const [isLoading, setIsLoading] = useState(false)
     const [showPassword, setShowPassword] = useState(false)
+    // No hay selector de "soy admin / soy colaborador" en el formulario, así que
+    // se intenta como admin primero y, si rebota, se reintenta como colaborador
+    // con las mismas credenciales. Solo si ambos fallan se muestra el error
     const attemptLogin = async (data) => {
         setIsLoading(true)
         try {

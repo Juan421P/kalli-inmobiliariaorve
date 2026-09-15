@@ -46,7 +46,9 @@ const useProperties = () => {
         fetchProperties(1, '', 'all', 'all', 'all')
     }, [])
 
-    // Búsqueda con debounce + filtros
+    // Van separados del efecto de arriba para no pegarle al backend en cada letra
+    // que se escribe en el buscador; el timeout se cancela y se reinicia con cada
+    // tecla, así que solo dispara la búsqueda 400ms después de que la persona para
     useEffect(() => {
         const timer = setTimeout(() => fetchProperties(1, search, filterType, filterListing, filterStatus), 400)
         return () => clearTimeout(timer)

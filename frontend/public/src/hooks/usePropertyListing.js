@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import propertyService from '@/services/property'
+import propertyService from '@/services/Property'
 
 /**
  * Maneja el listado de propiedades para las paginas de Comprar/Alquilar:
@@ -34,6 +34,15 @@ const usePropertyListing = (listingType) => {
             .catch(() => setProperties([]))
             .finally(() => setIsLoading(false))
     }, [listingType])
+
+    // El useState de arriba solo lee la URL una vez, al montar. Si el usuario
+    // navega a otro type/q desde el menú sin que la página se remonte (misma
+    // ruta, cambia el query string), searchParams cambia pero typeFilter/search
+    // se quedan pegados en el valor viejo — de ahí que el filtro "no reaccione".
+    useEffect(() => {
+        setSearch(searchParams.get('q') ?? '')
+        setTypeFilter(searchParams.get('type') ?? 'all')
+    }, [searchParams])
 
     // Re-calcula la lista visible cada vez que cambia el texto buscado,
     // el tipo de propiedad seleccionado o el criterio de orden.

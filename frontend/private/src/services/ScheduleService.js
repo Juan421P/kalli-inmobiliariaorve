@@ -126,9 +126,11 @@ class ScheduleService extends Service {
         const dayDoc = this._cache.find((d) => d.intervals.some((iv) => String(iv._id) === String(slotId)))
         if (!dayDoc) throw new Error('Slot no encontrado')
 
+        const startTime = to12h(from)
+        const endTime   = to12h(to)
         const intervals = dayDoc.intervals.map((iv) =>
             String(iv._id) === String(slotId)
-                ? { startTime: to12h(from), endTime: to12h(to) }
+                ? { startTime, endTime }
                 : { startTime: iv.start_time, endTime: iv.end_time }
         )
 
@@ -136,7 +138,14 @@ class ScheduleService extends Service {
         const idx     = this._cache.findIndex((d) => d._id === dayDoc._id)
         this._cache[idx] = res.data.schedule
 
-        return { ok: true }
+        // El backend reasigna un _id nuevo al intervalo en cada actualización (no
+        // conserva el que tenía). Si no devolvemos el _id fresco, quien nos llama
+        // se queda con el viejo en su estado local, y la próxima edición de este
+        // mismo slot ya no lo va a encontrar
+        const updatedInterval = res.data.schedule.intervals.find(
+            (iv) => iv.start_time === startTime && iv.end_time === endTime
+        )
+        return { slot: { _id: updatedInterval?._id, from, to } }
     }
 
     async deleteSlot(slotId) {

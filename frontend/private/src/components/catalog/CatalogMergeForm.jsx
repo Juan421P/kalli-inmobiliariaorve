@@ -10,6 +10,10 @@ import {
 } from '@/components/ui/select'
 import toast from '@/lib/toast'
 
+// Para limpiar duplicados tipo "A/C" y "Aire acondicionado": se elige un
+// principal y una o más referencias, y el backend reasigna a todas las
+// propiedades que usaban una referencia para que apunten al principal, y luego
+// borra las referencias. Es una fusión real, no se puede deshacer
 const CatalogMergeForm = ({ label, items = [], service, onMerged }) => {
     const [principalId, setPrincipalId] = useState('')
     const [referenceIds, setReferenceIds] = useState([])

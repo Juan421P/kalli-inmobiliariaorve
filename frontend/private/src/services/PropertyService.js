@@ -1,5 +1,8 @@
 import Service from './service.js'
 
+// Quedó de cuando se armó esta pantalla antes de que el backend tuviera todo
+// listo. Se deja el interruptor por si hace falta demostrar la UI sin backend
+// (o sin internet), pero en desarrollo normal esto va en false
 const USE_MOCK = false
 
 const mockDelay = () => new Promise((r) => setTimeout(r, 300))
@@ -185,6 +188,8 @@ class PropertyService extends Service {
 
         const form = new FormData()
         const { images = [], ...fields } = data
+        // form-data no entiende objetos anidados (location, area, address_components...),
+        // así que van como texto y el backend los vuelve a parsear del otro lado
         for (const [key, value] of Object.entries(fields)) {
             if (value !== null && value !== undefined) {
                 form.append(key, typeof value === 'object' ? JSON.stringify(value) : value)
@@ -202,18 +207,23 @@ class PropertyService extends Service {
     async update(id, data) {
         if (USE_MOCK) {
             await mockDelay()
-            const { images: _images, newImages: _new, ...fields } = data
+            const { newImages: _new, removePictureIds: _rm, ...fields } = data
             const idx = mockState.properties.findIndex((p) => p._id === id)
             if (idx !== -1) mockState.properties[idx] = { ...mockState.properties[idx], ...fields }
             return { property: mockState.properties[idx] }
         }
 
         const form = new FormData()
-        const { newImages = [], images = [], ...fields } = data
+        const { newImages = [], removePictureIds = [], ...fields } = data
         for (const [key, value] of Object.entries(fields)) {
             if (value !== null && value !== undefined) {
                 form.append(key, typeof value === 'object' ? JSON.stringify(value) : value)
             }
+        }
+        // el backend espera esta llave en snake_case (remove_pictures), a
+        // diferencia de casi todo lo demás en este payload
+        if (removePictureIds.length) {
+            form.append('remove_pictures', JSON.stringify(removePictureIds))
         }
         for (const file of newImages) {
             form.append('pictures', file)

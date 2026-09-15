@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import ClientService from '@/services/client'
+import ClientService from '@/services/Client'
 import useAuth from '@/hooks/useAuth'
 
 const useLoginForm = () => {

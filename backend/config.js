@@ -3,9 +3,11 @@ dotenv.config();
 export const config = {
     db: { URI: process.env.DB_URI },
     jwt: { secret: process.env.JWT_SECRET_KEY },
-    email: {
-        user: process.env.USER_EMAIL,
-        password: process.env.USER_PASSWORD
+    mailjet: {
+        apiKey: process.env.MAILJET_API_KEY,
+        apiSecret: process.env.MAILJET_API_SECRET,
+        fromEmail: process.env.MAILJET_FROM_EMAIL,
+        fromName: process.env.MAILJET_FROM_NAME
     },
     app: {
         frontend_url: process.env.FRONTEND_URL,

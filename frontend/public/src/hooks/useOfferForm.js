@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
-import offerService from '@/services/offer'
+import offerService from '@/services/Offer'
 import toast from '@/lib/toast'
 
 /**

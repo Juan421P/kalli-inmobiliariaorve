@@ -1,4 +1,4 @@
-import Service from './service.js'
+import Service from './Service.js'
 
 class PropertyService extends Service {
     constructor() {

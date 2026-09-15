@@ -29,6 +29,9 @@ const RootLayout = () => (
 	</div>
 )
 
+// createBrowserRouter arma el árbol de rutas una sola vez al cargar el módulo, así
+// que si agregás una ruta y no aparece en el navegador, no está mal escrita: hace
+// falta un reload completo del dev server, HMR no lo recoge
 const router = createBrowserRouter([
 	{
 		element: <RootLayout />,
@@ -39,6 +42,7 @@ const router = createBrowserRouter([
 			{ path: '/admin/complete-invitation', element: <CompleteInvitation role='admin' /> },
 			{ path: '/collaborator/complete-invitation', element: <CompleteInvitation role='collaborator' /> },
 			{
+				// Todo lo de aquí para abajo requiere sesión iniciada, sin importar el rol
 				element: <ProtectedRoute />,
 				children: [
 					{ path: '/dashboard', element: <Dashboard /> },
@@ -53,6 +57,9 @@ const router = createBrowserRouter([
 					{ path: '/catalogs/features', element: <Features /> },
 					{ path: '/catalogs/appliances', element: <Appliances /> },
 					{
+						// Estas dos van un nivel más adentro porque además de sesión
+						// iniciada exigen rol admin — un colaborador que entre a mano
+						// por la URL rebota a /dashboard
 						element: <ProtectedRoute requiredRole='admin' />,
 						children: [
 							{ path: '/clients', element: <Clients /> },

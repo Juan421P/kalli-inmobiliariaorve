@@ -66,12 +66,15 @@ const Schedules = () => {
     const handleUpdate = async (slotId, from, to) => {
         setIsSubmitting(true)
         try {
-            await scheduleService.updateSlot(slotId, from, to)
+            // El backend le pone un _id nuevo al intervalo en cada edición, así que
+            // hay que tomar el que devuelve la respuesta, no reciclar el viejo —
+            // si no, la segunda edición de este mismo slot ya no lo encuentra
+            const { slot } = await scheduleService.updateSlot(slotId, from, to)
             setSchedules((prev) =>
                 prev.map((d) => ({
                     ...d,
                     slots: d.slots.map((s) =>
-                        s._id === slotId ? { ...s, from, to } : s
+                        s._id === slotId ? (slot?._id ? slot : { ...s, from, to }) : s
                     ),
                 }))
             )

@@ -20,7 +20,7 @@ const SectionHeader = ({ title, editing, onEdit, onSave, onCancel, saving }) => 
                     </button>
                 </div>
             )
-            : (
+            : onEdit && (
                 <button
                     onClick={onEdit}
                     className='w-8 h-8 rounded-xl bg-orve-teal/10 hover:bg-orve-teal/20 flex items-center justify-center transition-colors cursor-pointer'

@@ -3,7 +3,7 @@ import { Lock, Eye, EyeOff, Monitor, CheckCircle2, Trash2, MoreVertical, Mail, A
 import { useForm } from 'react-hook-form'
 import { cn } from '@/lib/utils'
 import useAuth from '@/hooks/useAuth'
-import ClientService from '@/services/client'
+import ClientService from '@/services/Client'
 
 const inputBase = 'w-full pl-9 pr-10 py-3 text-sm bg-orve-teal/5 border border-orve-teal/15 rounded-xl outline-none transition-colors placeholder:text-orve-teal/30 focus:border-orve-teal/40'
 
