@@ -48,6 +48,12 @@ client.route('/logout')
         controller.logout
     );
 
+client.route('/logout-all')
+    .post(
+        requireAuth,
+        controller.logoutAllSessions
+    );
+
 client.route('/password-recovery/request')
     .post(
         validatePayload({ body: schemas.requestRecoveryCode }),

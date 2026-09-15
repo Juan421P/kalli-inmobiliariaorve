@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react'
-import { Calculator } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 
 /**
@@ -12,7 +11,6 @@ const Calculate = () => {
     const [creditPct, setCreditPct] = useState(10)
     const [annualRate, setAnnualRate] = useState(6.7)
     const [months, setMonths] = useState(67)
-    const [simulated, setSimulated] = useState(true)
 
     const fmt = (n) =>
         new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(n)
@@ -31,7 +29,6 @@ const Calculate = () => {
     const handlePropertyValue = (e) => {
         const raw = e.target.value.replace(/[^0-9]/g, '')
         setPropertyValue(Number(raw) || 0)
-        setSimulated(false)
     }
 
     return (
@@ -76,7 +73,7 @@ const Calculate = () => {
                             value={creditPct}
                             min={0} max={100} step={1}
                             leftLabel='0%' rightLabel='100%'
-                            onChange={(v) => { setCreditPct(v); setSimulated(false) }}
+                            onChange={setCreditPct}
                         />
 
                         {/* Tasa de interés */}
@@ -86,7 +83,7 @@ const Calculate = () => {
                             value={annualRate}
                             min={0} max={50} step={0.1}
                             leftLabel='0%' rightLabel='50%'
-                            onChange={(v) => { setAnnualRate(v); setSimulated(false) }}
+                            onChange={setAnnualRate}
                         />
 
                         {/* Plazo del crédito */}
@@ -96,16 +93,8 @@ const Calculate = () => {
                             value={months}
                             min={0} max={360} step={1}
                             leftLabel='0 meses' rightLabel='360 meses'
-                            onChange={(v) => { setMonths(v); setSimulated(false) }}
+                            onChange={setMonths}
                         />
-
-                        <button
-                            onClick={() => setSimulated(true)}
-                            className='self-start flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orve-darker-teal text-white text-sm font-semibold hover:bg-orve-teal transition-colors'
-                        >
-                            Simular cálculo
-                            <Calculator className='w-4 h-4' />
-                        </button>
                     </div>
 
                     {/* Panel derecho — resultados */}

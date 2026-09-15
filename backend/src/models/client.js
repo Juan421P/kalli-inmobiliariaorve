@@ -75,6 +75,14 @@ const schema = new Schema({
     picture_id: {
         type: String,
         trim: true
+    },
+    // Se incluye en cada JWT emitido al iniciar sesión (ver services/client.js
+    // login/verifyEmail). "Cerrar todas las sesiones" incrementa este número:
+    // los tokens ya emitidos, que llevan el número anterior, dejan de ser
+    // válidos aunque no hayan expirado (ver middleware/auth/require_auth.js).
+    session_version: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

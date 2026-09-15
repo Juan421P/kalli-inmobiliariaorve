@@ -135,7 +135,7 @@ const service = {
         );
         client.verified_email = true;
         await client.save();
-        const session_token = jwt.sign({ id: client._id, role: 'client' }, '30d');
+        const session_token = jwt.sign({ id: client._id, role: 'client', v: client.session_version }, '30d');
 
         return {
             token: session_token,
@@ -299,7 +299,7 @@ const service = {
             'debe verificar su correo electrónico antes de iniciar sesión',
             { code: 'EMAIL_NOT_VERIFIED', field: 'email' }
         );
-        const token = jwt.sign({ id: client._id, role: 'client' }, '30d');
+        const token = jwt.sign({ id: client._id, role: 'client', v: client.session_version }, '30d');
         return {
             token,
             client: {
@@ -313,6 +313,22 @@ const service = {
     },
 
     async logout() { return },
+
+    // Invalida todas las sesiones activas del cliente (incluida la actual):
+    // al subir session_version, cualquier token ya emitido (que lleva el
+    // número anterior) deja de pasar la validación en require_auth.js.
+    async logoutAllSessions(id) {
+        const client = await model.findByIdAndUpdate(
+            id,
+            { $inc: { session_version: 1 } },
+            { new: true }
+        );
+        if (!client) throw new NotFoundError(
+            'cliente no encontrado',
+            { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
+        );
+        return { id: client._id };
+    },
 
 };
 export default service;

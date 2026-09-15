@@ -6,6 +6,29 @@
 /*@import "@fontsource-variable/inter";*/
 :root {
 	--radius: 0.5rem;
+
+	/* Tokens de color de shadcn: sin esto, utilidades como bg-popover,
+	   bg-card, bg-background, etc. apuntan a variables sin definir y los
+	   componentes (diálogos, popovers, tarjetas...) se renderizan
+	   transparentes. Paleta alineada a los colores de ORVE de arriba. */
+	--background: #ffffff;
+	--foreground: #2B2B2B;
+	--card: #ffffff;
+	--card-foreground: #2B2B2B;
+	--popover: #ffffff;
+	--popover-foreground: #2B2B2B;
+	--primary: #507177;
+	--primary-foreground: #ffffff;
+	--secondary: #F3F4F6;
+	--secondary-foreground: #2B2B2B;
+	--muted: #F3F4F6;
+	--muted-foreground: #6B7280;
+	--accent: #EAF1F1;
+	--accent-foreground: #405C62;
+	--destructive: #D05B5B;
+	--border: #E5E7EB;
+	--input: #E5E7EB;
+	--ring: #507177;
 }
 
 @theme {

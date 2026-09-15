@@ -47,6 +47,10 @@ const clientService = {
         const { data } = await api.post('/client/logout');
         return data;
     },
+    async logoutAllSessions() {
+        const { data } = await api.post('/client/logout-all');
+        return data;
+    },
     async requestPasswordRecovery({ email }) {
         const { data } = await api.post('/client/password-recovery/request', { email });
         recoveryToken = data?.token ?? null;
@@ -89,6 +93,10 @@ const clientService = {
         // en { updates }: PUT /client/:id -> controller.put pasa req.body tal cual
         // a service.update(id, updates).
         const { data } = await api.put(`/client/${id}`, updates);
+        return data;
+    },
+    async delete(id) {
+        const { data } = await api.delete(`/client/${id}`);
         return data;
     },
     async uploadPicture(file) {

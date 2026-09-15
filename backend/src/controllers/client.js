@@ -85,6 +85,12 @@ const controller = {
         await service.logout();
         authCookie.clear(res);
         return res.status(200).json({ message: 'logout successful' });
+    }),
+
+    logoutAllSessions: catchAsync(async (req, res) => {
+        await service.logoutAllSessions(req.user.id);
+        authCookie.clear(res);
+        return res.status(200).json({ message: 'todas las sesiones fueron cerradas' });
     })
 
 };
