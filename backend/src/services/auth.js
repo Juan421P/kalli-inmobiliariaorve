@@ -14,13 +14,13 @@ const service = {
     async me({ id, role }) {
         const model = models[role];
         if (!model) throw new AuthenticationError(
-            'invalid session', {
+            'la sesión no es válida', {
             code: 'INVALID_SESSION_ROLE'
         });
 
         const found = await model.findById(id);
         if (!found) throw new NotFoundError(
-            'user not found', {
+            'usuario no encontrado', {
             code: 'USER_NOT_FOUND',
             resource: role,
             id

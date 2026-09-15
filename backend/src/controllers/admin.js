@@ -39,7 +39,7 @@ const controller = {
 
     uploadPicture: catchAsync(async (req, res) => {
         if (!req.file) throw new ValidationError(
-            'picture is required',
+            'la foto de perfil es obligatoria',
             { code: 'PICTURE_REQUIRED', field: 'picture' }
         );
         await service.uploadPicture(

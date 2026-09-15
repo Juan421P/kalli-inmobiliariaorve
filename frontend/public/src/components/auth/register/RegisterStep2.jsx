@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, Hash, FileText, ArrowLeft, UserPlus, ShieldCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatPhoneInput } from '@/lib/utils'
 
 const DOCUMENT_TYPES = ['DUI', 'Pasaporte', 'Residencia']
 
@@ -21,6 +21,14 @@ const validateDocument = (value, type) => {
 const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
     const [showConfirm, setShowConfirm] = useState(false)
     const { register, watch, trigger, formState: { errors, isSubmitting, isValid } } = form
+
+    const phoneField = register('phone', {
+        required: 'El teléfono es requerido.',
+        pattern: {
+            value: /^\d{4}-?\d{4}$/,
+            message: 'Formato: 0000-0000',
+        },
+    })
 
     const documentType = watch('document_type', '')
     const docHint = DOCUMENT_HINTS[documentType] ?? { placeholder: 'Ingrese su número de documento', hint: null }
@@ -50,15 +58,14 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
                             <span className='text-[10px] text-orve-teal/50 font-medium'>+503</span>
                         </div>
                         <input
-                            {...register('phone', {
-                                required: 'El teléfono es requerido.',
-                                pattern: {
-                                    value: /^\d{4}-?\d{4}$/,
-                                    message: 'Formato: 0000-0000',
-                                },
-                            })}
+                            {...phoneField}
+                            onChange={(e) => {
+                                e.target.value = formatPhoneInput(e.target.value)
+                                phoneField.onChange(e)
+                            }}
                             type='tel'
                             placeholder='0000-0000'
+                            maxLength={9}
                             className={cn(
                                 'flex-1 pl-2 pr-3 py-2.5 text-xs bg-transparent outline-none placeholder:text-orve-teal/30',
                                 errors.phone && 'placeholder:text-orve-red/50'

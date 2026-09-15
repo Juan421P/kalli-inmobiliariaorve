@@ -7,7 +7,7 @@ import AppError from './app.js';
     intentar editar recursos de otro usuario sin permisos correspondientes, etc.
  */
 class AuthorizationError extends AppError {
-    constructor(message = 'forbidden', meta = null) {
+    constructor(message = 'acceso denegado', meta = null) {
         super(message, 403, meta);
     }
 }

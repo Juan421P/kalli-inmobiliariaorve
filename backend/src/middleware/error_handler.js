@@ -14,7 +14,7 @@ export const errorHandler = (err, req, res, next) => {
     // Error de validación de Zod (campos inválidos o faltantes).
     if (err instanceof ZodError) {
         return res.status(400).json({
-            message: 'validation error',
+            message: 'los datos enviados no son válidos',
             meta: { errors: err.errors },
         });
     }
@@ -22,6 +22,6 @@ export const errorHandler = (err, req, res, next) => {
     // Error inesperado.
     console.error(err);
     return res.status(500).json({
-        message: 'internal server error',
+        message: 'ocurrió un error interno, intente de nuevo más tarde',
     });
 };

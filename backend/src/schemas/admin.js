@@ -21,7 +21,7 @@ export const schemas = {
         confirm_password: auth.password
     }).strict().refine(
         data => data.password === data.confirm_password,
-        { path: ['confirm_password'], message: 'passwords do not match' }
+        { path: ['confirm_password'], message: 'las contraseñas no coinciden' }
     ),
 
     update: z.object({
@@ -47,7 +47,7 @@ export const schemas = {
         confirm_password: auth.password
     }).strict().refine(
         data => data.new_password === data.confirm_password,
-        { path: ['confirm_password'], message: 'passwords do not match' }
+        { path: ['confirm_password'], message: 'las contraseñas no coinciden' }
     )
 
 };

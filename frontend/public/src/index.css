@@ -93,6 +93,44 @@
 	}
 }
 
+/* Chrome del popup de Leaflet (PropertiesMap) alineado a la paleta ORVE */
+.leaflet-popup-content-wrapper {
+	padding: 0;
+	border-radius: var(--radius-xl);
+	box-shadow: 0 8px 24px rgba(43, 43, 43, 0.18);
+}
+
+.leaflet-popup-content {
+	margin: 0;
+	width: auto !important;
+}
+
+.leaflet-popup-tip-container {
+	filter: drop-shadow(0 4px 3px rgba(43, 43, 43, 0.1));
+}
+
+.leaflet-popup-close-button {
+	color: color-mix(in srgb, #507177 55%, transparent) !important;
+	font-size: 18px !important;
+	padding: 7px 8px 0 0 !important;
+}
+
+.leaflet-popup-close-button:hover {
+	color: #405C62 !important;
+	background: transparent !important;
+}
+
+/* leaflet.css fuerza .leaflet-container a { color: #0078A8 }, con mayor
+   especificidad que las utilidades de Tailwind; se sobreescribe puntualmente
+   para el CTA del popup en vez de tocar todos los links del mapa. */
+.leaflet-popup-content a.popup-cta {
+	color: #fff;
+}
+
+.leaflet-popup-content a.popup-cta:hover {
+	color: #fff;
+}
+
 @keyframes toast-shrink {
 	from {
 		width: 100%

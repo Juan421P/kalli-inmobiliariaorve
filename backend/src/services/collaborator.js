@@ -27,7 +27,7 @@ const service = {
     async getById(id) {
         const collaborator = await model.findById(id);
         if (!collaborator) throw new NotFoundError(
-            'collaborator not found',
+            'colaborador no encontrado',
             { code: 'COLLABORATOR_NOT_FOUND', resource: 'collaborator', id }
         );
         return collaborator;
@@ -35,10 +35,23 @@ const service = {
 
     async invite({ name, lastname, email, document, phone, picture, picture_id }) {
         const exists = await model.findOne({ email });
-        if (exists) throw new ConflictError(
-            'collaborator already exists',
-            { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
-        );
+        if (exists) {
+            if (!exists.verified_email) {
+                await model.findByIdAndDelete(exists._id);
+            } else {
+                throw new ConflictError(
+                    'ya existe una cuenta de colaborador registrada con este correo electrónico',
+                    { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
+                );
+            }
+        }
+        // si una invitación anterior (sin completar) se quedó con el mismo número
+        // de documento, se descarta ese registro huérfano antes de validar
+        // unicidad, para que no bloquee la invitación real
+        const existingByDocument = await model.findOne({ 'document.number': document.number });
+        if (existingByDocument && !existingByDocument.verified_email) {
+            await model.findByIdAndDelete(existingByDocument._id);
+        }
         // lo mismo que dice en el service de clientes qué pereza volver a escribirlo
         await checkDocumentUniqueness(document.number);
         const collaborator = await model.create({
@@ -63,7 +76,7 @@ const service = {
         } catch (error) {
             console.log('Mail.send() failed', error);
             throw new NodemailerError(
-                'failed to send invitation email',
+                'no se pudo enviar el correo de invitación',
                 { email: collaborator.email }
             )
         }
@@ -76,17 +89,16 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired invitation token',
-                { code: 'INVALID_INVITATION_TOKEN' }
+                'el enlace de invitación es inválido o ha expirado'
             );
         }
         const collaborator = await model.findById(decoded.id);
         if (!collaborator) throw new NotFoundError(
-            'collaborator does not exist',
+            'el colaborador no existe',
             { code: 'COLLABORATOR_NOT_FOUND', resource: 'collaborator', id: decoded.id }
         );
         if (collaborator.verified_email) throw new ConflictError(
-            'invitation already completed',
+            'esta invitación ya fue completada anteriormente',
             { code: 'INVITATION_ALREADY_COMPLETED', resource: 'collaborator', id: collaborator._id }
         );
         collaborator.password = password;
@@ -108,7 +120,7 @@ const service = {
     async update(id, updates) {
         const collaborator = await model.findByIdAndUpdate(id, updates, { new: true });
         if (!collaborator) throw new NotFoundError(
-            'collaborator not found',
+            'colaborador no encontrado',
             { code: 'COLLABORATOR_NOT_FOUND', resource: 'collaborator', id }
         );
         return collaborator;
@@ -117,7 +129,7 @@ const service = {
     async delete(id) {
         const collaborator = await model.findByIdAndDelete(id);
         if (!collaborator) throw new NotFoundError(
-            'collaborator not found',
+            'colaborador no encontrado',
             { code: 'COLLABORATOR_NOT_FOUND', resource: 'collaborator', id }
         );
         return { id, deleted: true };
@@ -126,7 +138,7 @@ const service = {
     async uploadPicture(id, { picture, picture_id }) {
         const collaborator = await model.findById(id);
         if (!collaborator) throw new NotFoundError(
-            'collaborator not found',
+            'colaborador no encontrado',
             { code: 'COLLABORATOR_NOT_FOUND', resource: 'collaborator', id }
         );
         if (collaborator.picture_id) {
@@ -134,7 +146,7 @@ const service = {
                 await cloudinary.uploader.destroy(collaborator.picture_id);
             } catch (err) {
                 throw new CloudinaryError(
-                    'failed to remove previous picture',
+                    'no se pudo eliminar la foto de perfil anterior',
                     { previous_picture_id: collaborator.picture_id }
                 );
             }
@@ -151,12 +163,11 @@ const service = {
 
     async requestRecoveryCode({ email }) {
         if (!email?.trim()) throw new ValidationError(
-            'email is required',
+            'el correo electrónico es obligatorio',
             { code: 'EMAIL_REQUIRED', field: 'email' });
         const collaborator = await model.findOne({ email });
         if (!collaborator) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'no existe ninguna cuenta con ese correo electrónico'
         );
         const code = crypto.randomBytes(3).toString('hex');
         const token = jwt.sign({ email, code, verified_email: false }, '15m');
@@ -169,7 +180,7 @@ const service = {
             );
         } catch (err) {
             throw new NodemailerError(
-                'failed to send recovery email',
+                'no se pudo enviar el correo de recuperación',
                 { email }
             );
         }
@@ -178,11 +189,10 @@ const service = {
 
     async verifyRecoveryCode({ token, code }) {
         if (!token) throw new AuthenticationError(
-            'session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
         if (!code?.trim()) throw new ValidationError(
-            'code is required',
+            'el código es obligatorio',
             { code: 'CODE_REQUIRED', field: 'code' }
         );
         let decoded;
@@ -190,12 +200,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (decoded.code !== code) throw new AuthorizationError(
-            'incorrect code',
+            'el código ingresado es incorrecto',
             { code: 'INVALID_RECOVERY_CODE', field: 'code' }
         );
         const newToken = jwt.sign({ email: decoded.email, verified_email: true }, '15m');
@@ -203,17 +212,17 @@ const service = {
     },
 
     async changePassword({ token, new_password, confirm_password }) {
-        if (!token) throw new AuthenticationError('session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+        if (!token) throw new AuthenticationError(
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
-        if (!new_password) throw new ValidationError('password is required',
+        if (!new_password) throw new ValidationError('la contraseña es obligatoria',
             { code: 'PASSWORD_REQUIRED', field: 'new_password' }
         );
-        if (!confirm_password) throw new ValidationError('confirm_password is required',
+        if (!confirm_password) throw new ValidationError('debe confirmar la contraseña',
             { code: 'CONFIRM_PASSWORD_REQUIRED', field: 'confirm_password' }
         );
         if (new_password !== confirm_password) throw new ValidationError(
-            'passwords do not match',
+            'las contraseñas no coinciden',
             { code: 'PASSWORDS_DO_NOT_MATCH', fields: ['new_password', 'confirm_password'] }
         );
         let decoded;
@@ -221,12 +230,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (!decoded.verified_email) throw new AuthorizationError(
-            'account not verified for password change',
+            'debe verificar el código de recuperación antes de cambiar la contraseña',
             { code: 'RECOVERY_NOT_VERIFIED', email: decoded.email }
         );
         const hash = await bcrypt.hash(new_password, 10);
@@ -236,25 +244,23 @@ const service = {
             { new: true }
         );
         if (!collaborator) throw new NotFoundError(
-            'collaborator not found',
+            'colaborador no encontrado',
             { code: 'COLLABORATOR_NOT_FOUND', email: decoded.email }
         );
-        return { id: collaborator._id, message: 'password updated successfully' };
+        return { id: collaborator._id, message: 'contraseña actualizada correctamente' };
     },
 
     async login({ email, password }) {
         const collaborator = await model.findOne({ email }).select('+password');
         if (!collaborator) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'correo electrónico o contraseña incorrectos'
         );
         const isMatch = await collaborator.comparePassword(password);
         if (!isMatch) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'correo electrónico o contraseña incorrectos'
         );
         if (!collaborator.verified_email) throw new AuthorizationError(
-            'email not yet verified',
+            'debe verificar su correo electrónico antes de iniciar sesión',
             { code: 'EMAIL_NOT_VERIFIED', field: 'email' }
         );
         const token = jwt.sign({ id: collaborator._id, role: 'collaborator' }, '30d');

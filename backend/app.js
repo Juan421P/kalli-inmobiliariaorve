@@ -7,17 +7,17 @@ import { errorHandler } from './src/middleware/error_handler.js';
 import swaggerUI from 'swagger-ui-express';
 import swaggerDocs from './src/docs/swagger.json' with {type: 'json'};
 import router from './src/routers/router.js';
-const allowedOrigins = ['http://localhost:5173', process.env.FRONTEND_URL].filter(Boolean);
+const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', process.env.FRONTEND_URL].filter(Boolean);
 const requestLimit = {
     general: rateLimit({
         windowMs: 15 * 60 * 1000,
         max: 100,
-        message: { error: 'too many requests, please try again later' }
+        message: { error: 'demasiadas solicitudes, intente de nuevo más tarde' }
     }),
     auth: rateLimit({
         windowMs: 15 * 60 * 1000,
         max: 10,
-        message: { error: 'too many attempts, please try again later' },
+        message: { error: 'demasiados intentos, intente de nuevo más tarde' },
         skipSuccessfulRequests: true,
     })
 };
@@ -54,7 +54,7 @@ app.use([
 ], requestLimit.auth);
 app.use('/api', router);
 app.use((req, res) => {
-    return res.status(404).json({ message: 'route not found' });
+    return res.status(404).json({ message: 'ruta no encontrada' });
 });
 app.use(errorHandler);
 export default app;

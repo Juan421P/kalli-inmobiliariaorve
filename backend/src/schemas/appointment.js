@@ -28,7 +28,7 @@ export const schemas = {
         notes: longText().optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
-        { message: 'at least one field must be updated' }
+        { message: 'debe actualizar al menos un campo' }
     ),
 
     assign: z.object({

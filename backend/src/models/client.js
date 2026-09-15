@@ -35,21 +35,21 @@ const schema = new Schema({
         country_code: {
             type: String,
             required: true,
-            match: [/^\+[1-9]\d{0,2}$/, 'country code must start with + followed by 1 to 3 digits']
+            match: [/^\+[1-9]\d{0,2}$/, 'el código de país debe iniciar con + seguido de 1 a 3 dígitos']
         },
         number: {
             type: String,
             required: true,
-            match: [/^\d{4}-\d{4}$/, 'phone number must follow the format 0000-0000']
+            match: [/^\d{4}-\d{4}$/, 'el número de teléfono debe seguir el formato 0000-0000']
         }
     },
     email: {
         type: String,
-        required: [true, 'email is required'],
+        required: [true, 'el correo electrónico es obligatorio'],
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'invalid email address']
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'el correo electrónico no es válido']
     },
     verified_email: {
         type: Boolean,

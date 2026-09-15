@@ -6,7 +6,7 @@ import AppError from './app.js';
     cookies que hagan falta, sesiones inválidas, etc.
  */
 class AuthenticationError extends AppError {
-    constructor(message = 'unauthorized') {
+    constructor(message = 'no autorizado') {
         super(message, 401);
     }
 }

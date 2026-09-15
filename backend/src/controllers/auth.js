@@ -5,7 +5,7 @@ import AuthenticationError from '../errors/authentication.js';
 const controller = {
     me: catchAsync(async (req, res) => {
         if (!req.user?.id) throw new AuthenticationError(
-            'invalid session', {
+            'la sesión no es válida', {
             code: 'INVALID_SESSION'
         });
         const { role, user } = await service.me(req.user);

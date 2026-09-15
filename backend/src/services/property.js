@@ -27,7 +27,7 @@ const service = {
     async getById(id) {
         const property = await model.findById(id);
         if (!property) throw new NotFoundError(
-            'property not found',
+            'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
         return property;
@@ -36,7 +36,7 @@ const service = {
     async getByPublicId(publicId) {
         const property = await model.findOne({ public_id: publicId.toUpperCase() });
         if (!property) throw new NotFoundError(
-            'property not found',
+            'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', public_id: publicId }
         );
         return property;
@@ -69,7 +69,7 @@ const service = {
 
     async create({ actor, files, body }) {
         if (!files || files.length < 3) throw new ValidationError(
-            'at least 3 pictures are required',
+            'se requieren al menos 3 fotografías',
             { code: 'MIN_PICTURES_REQUIRED', field: 'pictures', min: 3 }
         );
 
@@ -93,7 +93,7 @@ const service = {
     async update(id, { actor, files, body }) {
         const existing = await model.findById(id);
         if (!existing) throw new NotFoundError(
-            'property not found',
+            'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
 
@@ -110,7 +110,7 @@ const service = {
                 await Promise.all(toRemove.map(pic => cloudinary.uploader.destroy(pic.picture_id)));
             } catch (err) {
                 throw new CloudinaryError(
-                    'failed to remove one or more pictures',
+                    'no se pudo eliminar una o más fotografías',
                     { property_id: id }
                 );
             }
@@ -120,7 +120,7 @@ const service = {
             pictures.push(...files.map(file => ({ picture: file.path, picture_id: file.filename })));
         }
         if (pictures.length < 3) throw new ValidationError(
-            'a property must have at least 3 pictures',
+            'una propiedad debe tener al menos 3 fotografías',
             { code: 'MIN_PICTURES_REQUIRED', field: 'pictures', min: 3 }
         );
         set.pictures = pictures;
@@ -140,7 +140,7 @@ const service = {
             { new: true }
         );
         if (!property) throw new NotFoundError(
-            'property not found',
+            'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
         return property;
@@ -149,7 +149,7 @@ const service = {
     async delete(id) {
         const property = await model.findByIdAndDelete(id);
         if (!property) throw new NotFoundError(
-            'property not found',
+            'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
         return { id, deleted: true };

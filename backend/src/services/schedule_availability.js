@@ -11,7 +11,7 @@ const service = {
     async getById(id) {
         const schedule = await model.findById(id);
         if (!schedule) throw new NotFoundError(
-            'schedule availability not found', {
+            'disponibilidad de horario no encontrada', {
             code: 'SCHEDULE_AVAILABILITY_NOT_FOUND',
             resource: 'schedule_availability',
             id
@@ -22,7 +22,7 @@ const service = {
     async create({ day, intervals }) {
         const exists = await model.findOne({ day });
         if (exists) throw new ConflictError(
-            'a schedule for this day already exists', {
+            'ya existe una disponibilidad de horario para este día', {
             code: 'SCHEDULE_DAY_ALREADY_EXISTS',
             field: 'day',
             value: day
@@ -38,7 +38,7 @@ const service = {
         if (day !== undefined) {
             const exists = await model.findOne({ day, _id: { $ne: id } });
             if (exists) throw new ConflictError(
-                'a schedule for this day already exists', {
+                'ya existe una disponibilidad de horario para este día', {
                 code: 'SCHEDULE_DAY_ALREADY_EXISTS',
                 field: 'day',
                 value: day
@@ -51,7 +51,7 @@ const service = {
 
         const schedule = await model.findByIdAndUpdate(id, data, { new: true, runValidators: true });
         if (!schedule) throw new NotFoundError(
-            'schedule availability not found', {
+            'disponibilidad de horario no encontrada', {
             code: 'SCHEDULE_AVAILABILITY_NOT_FOUND',
             resource: 'schedule_availability',
             id
@@ -62,7 +62,7 @@ const service = {
     async delete(id) {
         const schedule = await model.findByIdAndDelete(id);
         if (!schedule) throw new NotFoundError(
-            'schedule availability not found', {
+            'disponibilidad de horario no encontrada', {
             code: 'SCHEDULE_AVAILABILITY_NOT_FOUND',
             resource: 'schedule_availability',
             id

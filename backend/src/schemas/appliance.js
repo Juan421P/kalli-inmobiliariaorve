@@ -12,9 +12,9 @@ export const schemas = {
 
     merge: z.object({
         principal: database.id,
-        references: z.array(database.id).min(1, 'at least one appliance to absorb is required'),
+        references: z.array(database.id).min(1, 'debe indicar al menos un electrodoméstico a absorber'),
     }).strict().refine(
         data => !data.references.includes(data.principal),
-        { path: ['references'], message: 'principal cannot also appear in references' }
+        { path: ['references'], message: 'el electrodoméstico principal no puede aparecer también en las referencias' }
     ),
 };

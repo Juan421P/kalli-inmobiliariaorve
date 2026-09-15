@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { formatPhoneInput } from '@/lib/utils'
 import {
     Field,
     FieldLabel,
@@ -196,9 +197,10 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                             </FieldTitle>
                             <Input
                                 value={form.phone}
-                                onChange={(e) => setField('phone', e.target.value)}
+                                onChange={(e) => setField('phone', formatPhoneInput(e.target.value))}
                                 onBlur={() => touchField('phone')}
                                 placeholder='0000-0000'
+                                maxLength={9}
                                 className='bg-white/70'
                             />
                         </FieldLabel>

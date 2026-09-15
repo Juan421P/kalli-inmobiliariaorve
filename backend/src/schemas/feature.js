@@ -12,9 +12,9 @@ export const schemas = {
 
     merge: z.object({
         principal: database.id,
-        references: z.array(database.id).min(1, 'at least one feature to absorb is required'),
+        references: z.array(database.id).min(1, 'debe indicar al menos una característica a absorber'),
     }).strict().refine(
         data => !data.references.includes(data.principal),
-        { path: ['references'], message: 'principal cannot also appear in references' }
+        { path: ['references'], message: 'la característica principal no puede aparecer también en las referencias' }
     ),
 };

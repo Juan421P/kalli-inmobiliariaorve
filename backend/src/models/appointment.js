@@ -75,12 +75,12 @@ const schema = new Schema({
         start_time: {
             type: String,
             required: true,
-            validate: { validator: v => timeRegex.test(v), message: 'start time format is invalid, use hh:mm AM/PM (example: 09:00 AM)' }
+            validate: { validator: v => timeRegex.test(v), message: 'el formato de la hora de inicio no es válido, use hh:mm AM/PM (ejemplo: 09:00 AM)' }
         },
         end_time: {
             type: String,
             required: true,
-            validate: { validator: v => timeRegex.test(v), message: 'end time format is invalid, use hh:mm AM/PM (example: 05:00 PM)' }
+            validate: { validator: v => timeRegex.test(v), message: 'el formato de la hora de fin no es válido, use hh:mm AM/PM (ejemplo: 05:00 PM)' }
         }
     }
 }, {
