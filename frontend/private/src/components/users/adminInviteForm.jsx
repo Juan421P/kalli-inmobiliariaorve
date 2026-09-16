@@ -93,21 +93,27 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
 
     const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
 
+    const isDuiValid = form.documentType !== 'dui' || /^\d{8}-\d$/.test(form.documentNumber)
+
     const isFormReady =
         form.name.trim() &&
         form.lastname.trim() &&
-        form.email.trim() && /\S+@\S+\.\S+/.test(form.email) &&
-        form.phone.trim() &&
-        form.documentNumber.trim()
+        form.email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+        /^\d{4}-\d{4}$/.test(form.phone) &&
+        form.documentNumber.trim() && isDuiValid &&
+        avatar.file
 
     const validate = () => {
         const e = {}
+        if (!avatar.file)                e.avatar         = 'La foto es requerida.'
         if (!form.name.trim())           e.name           = 'El nombre es requerido.'
         if (!form.lastname.trim())       e.lastname       = 'El apellido es requerido.'
         if (!form.email.trim())          e.email          = 'El correo es requerido.'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Correo inválido.'
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Ingrese un correo válido.'
         if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
+        else if (!/^\d{4}-\d{4}$/.test(form.phone)) e.phone = 'Formato: 0000-0000'
         if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
+        else if (!isDuiValid)            e.documentNumber = 'El DUI debe tener el formato 00000000-0'
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -194,6 +200,9 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.phone && !form.phone.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
+                                {touched.phone && form.phone.trim() && !/^\d{4}-\d{4}$/.test(form.phone) && (
+                                    <span className='text-orve-red text-xs font-semibold'>Formato: 0000-0000</span>
+                                )}
                             </FieldTitle>
                             <Input
                                 value={form.phone}
@@ -214,7 +223,7 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.email && !form.email.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
-                                {touched.email && form.email.trim() && !/\S+@\S+\.\S+/.test(form.email) && (
+                                {touched.email && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
                                     <span className='text-orve-red text-xs font-semibold'>Formato inválido</span>
                                 )}
                             </FieldTitle>
@@ -258,12 +267,15 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.documentNumber && !form.documentNumber.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
+                                {touched.documentNumber && form.documentNumber.trim() && !isDuiValid && (
+                                    <span className='text-orve-red text-xs font-semibold'>Formato: 00000000-0</span>
+                                )}
                             </FieldTitle>
                             <Input
                                 value={form.documentNumber}
                                 onChange={(e) => setField('documentNumber', e.target.value)}
                                 onBlur={() => touchField('documentNumber')}
-                                placeholder='Número de documento'
+                                placeholder={form.documentType === 'dui' ? '00000000-0' : 'Número de documento'}
                                 className='bg-white/70'
                             />
                         </FieldLabel>

@@ -74,6 +74,10 @@ const clientService = {
         const { data } = await api.get(`/client/${id}`);
         return data;
     },
+    async getActivity(id) {
+        const { data } = await api.get(`/client/${id}/activity`);
+        return data;
+    },
     // PUT /client/:id solo acepta name, lastname, phone y active (schemas.update
     // es .strict()). Email y documento no son editables desde el perfil: si se
     // mandan, Zod rechaza el request completo con 400.

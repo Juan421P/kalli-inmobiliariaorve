@@ -74,16 +74,20 @@ const service = {
         const appointment = await model.create({
             buyer: buyerId,
             property,
-            qualification: {
-                funds_source: qualification.fundsSource,
-                monthly_income: qualification.monthlyIncome,
-                reason: qualification.reason,
-            },
-            current_address: {
-                location: currentAddress.location,
-                address: currentAddress.address,
-                reference: currentAddress.reference,
-            },
+            ...(qualification && {
+                qualification: {
+                    funds_source: qualification.fundsSource,
+                    monthly_income: qualification.monthlyIncome,
+                    reason: qualification.reason,
+                },
+            }),
+            ...(currentAddress && {
+                current_address: {
+                    location: currentAddress.location,
+                    address: currentAddress.address,
+                    reference: currentAddress.reference,
+                },
+            }),
             proposed_dates: proposedDates,
             notes,
             time: { start_time: time.startTime, end_time: time.endTime },

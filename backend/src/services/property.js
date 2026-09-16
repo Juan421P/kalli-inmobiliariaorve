@@ -1,10 +1,15 @@
 import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import model from '../models/property.js';
+import clientModel from '../models/client.js';
 import NotFoundError from '../errors/not_found.js';
 import ValidationError from '../errors/validation.js';
 import CloudinaryError from '../errors/cloudinary.js';
 import { generatePropertyId } from '../utils/property_id/generate.js';
+
+// Máximo de propiedades que se guardan en el historial de "vistas
+// recientes" de un cliente (ver models/client.js -> recently_viewed).
+const MAX_RECENTLY_VIEWED = 8;
 
 // El schema ya emite las llaves en snake_case (property_type, listing_type,
 // etc.) y es .strict(), así que camelCase nunca llega hasta acá. Esto solo
@@ -140,7 +145,7 @@ const service = {
         return property;
     },
 
-    async incrementViews(id) {
+    async incrementViews(id, viewer) {
         const property = await model.findByIdAndUpdate(
             id,
             { $inc: { views: 1 } },
@@ -150,6 +155,27 @@ const service = {
             'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', id }
         );
+
+        // Si quien ve la propiedad está logueado como cliente, se guarda en
+        // su historial para la sección "Actividad reciente" del perfil.
+        // Primero se quita cualquier entrada previa de esta misma propiedad
+        // y luego se agrega al frente, para que "verla otra vez" la suba al
+        // tope de la lista en vez de dejar duplicados.
+        if (viewer?.role === 'client') {
+            await clientModel.findByIdAndUpdate(viewer.id, {
+                $pull: { recently_viewed: { property: property._id } },
+            });
+            await clientModel.findByIdAndUpdate(viewer.id, {
+                $push: {
+                    recently_viewed: {
+                        $each: [{ property: property._id, viewed_at: new Date() }],
+                        $position: 0,
+                        $slice: MAX_RECENTLY_VIEWED,
+                    },
+                },
+            });
+        }
+
         return property;
     },
 

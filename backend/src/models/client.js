@@ -83,7 +83,24 @@ const schema = new Schema({
     session_version: {
         type: Number,
         default: 0
-    }
+    },
+    // Registro de propiedades vistas para la sección "Actividad reciente" del
+    // perfil. Se actualiza desde property.incrementViews cuando quien ve la
+    // propiedad está logueado como cliente (ver optional_auth.js). No usa
+    // "default: []" porque eso duplicaría el arreglo en cada subdocumento; el
+    // arreglo vacío ya es el comportamiento por defecto de Mongoose.
+    recently_viewed: [{
+        _id: false,
+        property: {
+            type: Schema.Types.ObjectId,
+            ref: 'property',
+            required: true
+        },
+        viewed_at: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true
 });

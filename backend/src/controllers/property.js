@@ -47,7 +47,7 @@ const controller = {
     }),
 
     incrementViews: catchAsync(async (req, res) => {
-        await service.incrementViews(req.params.id);
+        await service.incrementViews(req.params.id, req.user);
         return res.status(200).json({ message: 'view counted' });
     }),
 

@@ -23,7 +23,7 @@ const controller = {
 
     completeInvitation: catchAsync(async (req, res) => {
         const { token, collaborator } = await service.completeInvitation(req.body);
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'collaborator');
         return res.status(200).json({ message: 'registration completed successfully, logging in', collaborator });
     }),
 
@@ -74,13 +74,13 @@ const controller = {
     login: catchAsync(async (req, res) => {
         const { email, password } = req.body;
         const { token, collaborator } = await service.login({ email, password });
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'collaborator');
         return res.status(200).json({ message: 'login successful', collaborator });
     }),
 
     logout: catchAsync(async (req, res) => {
         await service.logout();
-        authCookie.clear(res);
+        authCookie.clear(res, 'collaborator');
         return res.status(200).json({ message: 'logout successful' });
     })
 

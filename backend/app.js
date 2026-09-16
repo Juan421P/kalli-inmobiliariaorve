@@ -10,6 +10,7 @@ import router from './src/routers/router.js';
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:5174',
+    'http://localhost:5175',
     'https://kalli-inmobiliariaorve-omega.vercel.app',
     'https://kalli-inmobiliariaorve-6s5l.vercel.app',
     process.env.FRONTEND_URL,

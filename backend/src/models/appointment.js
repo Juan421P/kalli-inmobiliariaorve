@@ -15,33 +15,32 @@ const schema = new Schema({
         required: true
     },
 
+    // Opcionales: el formulario público de "Agendar cita" ya no pide estos
+    // datos (ver frontend hooks/useAppointmentForm.js); el staff los completa
+    // después, desde el panel privado, al calificar al interesado.
     qualification: {
         funds_source: {
             type: String,
-            required: true,
             enum: ['own', 'loan', 'mixed']
         },
         monthly_income: {
             type: Number,
-            required: true,
             min: 0
         },
         reason: {
             type: String,
-            required: true,
             trim: true
         }
     },
 
     current_address: {
         location: {
-            type: { type: String, enum: ['Point'], required: true },
-            coordinates: { type: [Number], required: true }
+            type: { type: String, enum: ['Point'] },
+            coordinates: { type: [Number], default: undefined }
         },
         address: { type: String },
         reference: {
             type: String,
-            required: true,
             trim: true
         }
     },
