@@ -24,7 +24,7 @@ const inputBase = 'w-full pl-9 pr-10 py-3 text-sm bg-orve-teal/5 border border-o
  * Esto es necesario porque el backend requiere la cookie c_recovery del flujo de recovery.
  */
 const ProfileSecurity = () => {
-    const { user, logout } = useAuth()
+    const { user, clearSession } = useAuth()
 
     return (
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
@@ -33,7 +33,7 @@ const ProfileSecurity = () => {
                 <EmailVerificationSection email={user?.email} />
             </div>
             <div className='flex flex-col gap-6'>
-                <ActiveSessionsSection logout={logout} />
+                <ActiveSessionsSection clearSession={clearSession} />
                 <DeleteAccountSection />
             </div>
         </div>
@@ -207,7 +207,7 @@ const ChangePasswordSection = ({ email }) => {
 // backend cualquier token ya emitido (ver require_auth.js) -no solo limpia la
 // cookie de este dispositivo como hacía antes con el logout normal-, así que
 // sí afecta sesiones abiertas en otros dispositivos.
-const ActiveSessionsSection = ({ logout }) => {
+const ActiveSessionsSection = ({ clearSession }) => {
     const navigate = useNavigate()
     const [closing, setClosing] = useState(false)
     const [error, setError] = useState(null)
@@ -217,7 +217,7 @@ const ActiveSessionsSection = ({ logout }) => {
         setError(null)
         try {
             await ClientService.logoutAllSessions()
-            await logout()
+            clearSession()
             navigate('/login')
         } catch {
             setError('No se pudieron cerrar las sesiones. Intente de nuevo.')
@@ -282,7 +282,7 @@ const EmailVerificationSection = ({ email }) => (
 // diálogo que explica las consecuencias, y un segundo que pide confirmar
 // definitivamente la eliminación (evita borrados accidentales por un solo clic).
 const DeleteAccountSection = () => {
-    const { user, logout } = useAuth()
+    const { user, clearSession } = useAuth()
     const navigate = useNavigate()
     // step: 0 cerrado, 1 primera confirmación, 2 confirmación definitiva
     const [step, setStep] = useState(0)
@@ -301,7 +301,7 @@ const DeleteAccountSection = () => {
         try {
             await ClientService.delete(user.id)
             setStep(0)
-            await logout()
+            clearSession()
             navigate('/')
         } catch {
             setError('No se pudo eliminar la cuenta. Intente de nuevo.')

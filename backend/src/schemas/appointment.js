@@ -14,8 +14,8 @@ export const schemas = {
     create: z.object({
         buyer: database.id.optional(),
         property: database.id,
-        qualification,
-        current_address: currentAddress,
+        qualification: qualification.optional(),
+        current_address: currentAddress.optional(),
         proposed_dates: proposedDates,
         notes: longText().optional(),
         time,

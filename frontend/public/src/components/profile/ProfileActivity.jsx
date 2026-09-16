@@ -1,12 +1,31 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-    CalendarDays, Clock, MapPin, Star, Eye,
+    CalendarDays, Clock, MapPin, Heart, Eye, Tag,
     HelpCircle, MoreVertical, ExternalLink, RotateCcw, X,
 } from 'lucide-react'
 import useAuth from '@/hooks/useAuth'
 import useFavorites from '@/hooks/useFavorites'
+import ClientService from '@/services/Client'
 import toast from '@/lib/toast'
+
+// Formatea una fecha como tiempo relativo ("Hace 2h", "Hace 3d"), igual que
+// ListingCard.jsx usa para "publicado hace...".
+const timeAgo = (date) => {
+    const diff = Date.now() - new Date(date).getTime()
+    const hours = Math.floor(diff / 3_600_000)
+    if (hours < 1)  return 'Hace menos de 1 hora'
+    if (hours < 24) return `Hace ${hours}h`
+    return `Hace ${Math.floor(hours / 24)}d`
+}
+
+const OFFER_STATUS_LABEL = {
+    pending:   'Oferta pendiente',
+    countered: 'Contraoferta recibida',
+    accepted:  'Oferta aceptada',
+    rejected:  'Oferta rechazada',
+    withdrawn: 'Oferta retirada',
+}
 
 const ProfileActivity = () => {
     const { user } = useAuth()
@@ -14,9 +33,19 @@ const ProfileActivity = () => {
     const { favorites } = useFavorites()
 
     const [appointments, setAppointments] = useState({ upcoming: [], past: [] })
+    const [activity, setActivity] = useState([])
+    const [isLoadingActivity, setIsLoadingActivity] = useState(true)
 
     useEffect(() => {
         // TODO: fetchAppointmentsByClient(user.id) → setAppointments(...)
+    }, [user?.id])
+
+    useEffect(() => {
+        if (!user?.id) return
+        ClientService.getActivity(user.id)
+            .then((data) => setActivity(data.activity ?? []))
+            .catch(() => setActivity([]))
+            .finally(() => setIsLoadingActivity(false))
     }, [user?.id])
 
     const cancelAppointment = (id) => {
@@ -75,7 +104,19 @@ const ProfileActivity = () => {
                     <button className='text-xs text-orve-teal hover:underline'>Ver toda mi actividad</button>
                 </div>
                 <div className='flex flex-col gap-2'>
-                    <EmptyActivity />
+                    {isLoadingActivity ? (
+                        <div className='flex flex-col gap-2'>
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className='h-14 rounded-2xl bg-orve-teal/5 border border-orve-teal/10 animate-pulse' />
+                            ))}
+                        </div>
+                    ) : activity.length === 0 ? (
+                        <EmptyActivity />
+                    ) : (
+                        activity.map((item, i) => (
+                            <ActivityItem key={`${item.type}-${item.property._id}-${i}`} item={item} />
+                        ))
+                    )}
                 </div>
             </section>
 
@@ -83,7 +124,7 @@ const ProfileActivity = () => {
             <section>
                 <div className='flex items-center justify-between mb-4'>
                     <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2'>
-                        <Star className='w-4 h-4' />
+                        <Heart className='w-4 h-4' />
                         Mis propiedades favoritas
                     </h3>
                     <button onClick={() => navigate('/buy')} className='text-xs text-orve-teal hover:underline'>
@@ -92,9 +133,9 @@ const ProfileActivity = () => {
                 </div>
                 {favorites.length === 0 ? (
                     <div className='flex flex-col items-center justify-center py-10 gap-2 bg-orve-teal/5 rounded-2xl border border-orve-teal/10'>
-                        <Star className='w-8 h-8 text-orve-teal/25' />
+                        <Heart className='w-8 h-8 text-orve-teal/25' />
                         <p className='text-sm text-orve-teal/50 font-medium'>Sin favoritos aún</p>
-                        <p className='text-xs text-gray-400'>Las propiedades que marque con estrella aparecerán aquí.</p>
+                        <p className='text-xs text-gray-400'>Las propiedades que marque como favoritas aparecerán aquí.</p>
                         <button onClick={() => navigate('/buy')} className='mt-2 text-xs text-orve-teal underline hover:text-orve-darker-teal'>
                             Explorar propiedades
                         </button>
@@ -262,6 +303,38 @@ const EmptyActivity = () => (
     </div>
 )
 
+// Una fila del feed de "Actividad reciente": propiedades vistas u ofertas
+// hechas, ordenadas por fecha (ver services/client.js -> getActivity).
+const ActivityItem = ({ item }) => {
+    const navigate = useNavigate()
+    const { property } = item
+    const isOffer = item.type === 'offer'
+    const image = property.pictures?.[0]?.picture
+
+    return (
+        <button
+            onClick={() => navigate(`/property/${property.public_id}`)}
+            className='flex items-center gap-3 bg-white/60 hover:bg-white/90 border border-orve-teal/10 rounded-2xl p-3 text-left transition-colors'
+        >
+            <div className='w-11 h-11 rounded-xl overflow-hidden bg-orve-teal/10 shrink-0'>
+                {image && <img src={image} alt='' className='w-full h-full object-cover' />}
+            </div>
+            <div className='flex-1 min-w-0'>
+                <p className='text-xs font-semibold text-orve-darker-teal truncate'>
+                    {property.title}
+                </p>
+                <p className='text-[10px] text-gray-400 flex items-center gap-1 mt-0.5'>
+                    {isOffer
+                        ? <><Tag className='w-3 h-3 shrink-0' /> {OFFER_STATUS_LABEL[item.status] ?? 'Oferta enviada'}{item.price ? ` · $${item.price.toLocaleString()}` : ''}</>
+                        : <><Eye className='w-3 h-3 shrink-0' /> Propiedad vista</>
+                    }
+                </p>
+            </div>
+            <span className='text-[10px] text-gray-400 shrink-0'>{timeAgo(item.at)}</span>
+        </button>
+    )
+}
+
 const FavoriteCard = ({ property, onClick }) => (
     <button onClick={onClick} className='relative rounded-2xl overflow-hidden aspect-[4/3] group cursor-pointer'>
         <img
@@ -273,8 +346,8 @@ const FavoriteCard = ({ property, onClick }) => (
         <span className='absolute bottom-2 left-2 text-xs font-bold text-white'>
             ${property.price?.toLocaleString()}
         </span>
-        <div className='absolute top-2 right-2 w-6 h-6 rounded-full bg-yellow-400 flex items-center justify-center'>
-            <Star className='w-3 h-3 text-white fill-white' />
+        <div className='absolute top-2 right-2 w-6 h-6 rounded-full bg-red-500 flex items-center justify-center'>
+            <Heart className='w-3 h-3 text-white fill-white' />
         </div>
     </button>
 )

@@ -72,6 +72,14 @@ client.route('/password-recovery/change-password')
         controller.changePassword
     );
 
+client.route('/:id/activity')
+    .get(
+        requireAuth,
+        requireSelfOrAdmin,
+        validatePayload({ params: schemas.queryById }),
+        controller.getActivity
+    );
+
 client.route('/:id')
     .get(
         requireAuth,

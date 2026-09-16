@@ -15,6 +15,7 @@ import InternalServerError from '../errors/internal_server.js';
 import NotFoundError from '../errors/not_found.js';
 import ValidationError from '../errors/validation.js';
 import { checkDocumentUniqueness } from '../utils/check_document_uniqueness.js';
+import { findEmailInOtherRole, roleLabel } from '../utils/check_cross_role_login.js';
 import CloudinaryError from '../errors/cloudinary.js';
 import NodemailerError from '../errors/nodemailer.js';
 
@@ -252,9 +253,13 @@ const service = {
 
     async login({ email, password }) {
         const admin = await model.findOne({ email }).select('+password');
-        if (!admin) throw new AuthenticationError(
-            'correo electrónico o contraseña incorrectos'
-        );
+        if (!admin) {
+            const otherRole = await findEmailInOtherRole(email, 'admin');
+            if (otherRole) throw new AuthenticationError(
+                `este correo pertenece a una cuenta de ${roleLabel(otherRole)}, inicie sesión desde la sección correspondiente`
+            );
+            throw new AuthenticationError('correo electrónico o contraseña incorrectos');
+        }
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) throw new AuthenticationError(
             'correo electrónico o contraseña incorrectos'

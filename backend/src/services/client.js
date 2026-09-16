@@ -2,11 +2,13 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { v2 as cloudinary } from 'cloudinary';
 import model from '../models/client.js';
+import offerModel from '../models/offer.js';
 import { jwt } from '../utils/jwt.js';
 import Mail from '../utils/mail.js';
 import { registration } from '../utils/html/registration.js';
 import { recovery } from '../utils/html/recovery.js';
 import { checkDocumentUniqueness } from '../utils/check_document_uniqueness.js';
+import { findEmailInOtherRole, roleLabel } from '../utils/check_cross_role_login.js';
 import AuthenticationError from '../errors/authentication.js';
 import AuthorizationError from '../errors/authorization.js';
 import ConflictError from '../errors/conflict.js';
@@ -28,6 +30,51 @@ const service = {
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
         );
         return client;
+    },
+
+    // Feed de "Actividad reciente" del perfil: combina las últimas propiedades
+    // vistas (recently_viewed, ver models/client.js) y las últimas ofertas
+    // hechas por el cliente en un solo arreglo ordenado por fecha, más
+    // reciente primero. `limit` acota cuántos items finales se devuelven.
+    async getActivity(id, { limit = 8 } = {}) {
+        const PROPERTY_FIELDS = 'title public_id pictures listing_type price';
+
+        const [client, offers] = await Promise.all([
+            model.findById(id)
+                .select('recently_viewed')
+                .populate('recently_viewed.property', PROPERTY_FIELDS),
+            offerModel.find({ buyer: id })
+                .sort({ updatedAt: -1 })
+                .limit(limit)
+                .populate('property', PROPERTY_FIELDS),
+        ]);
+        if (!client) throw new NotFoundError(
+            'cliente no encontrado',
+            { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
+        );
+
+        const viewedItems = (client.recently_viewed ?? [])
+            // una propiedad eliminada deja el populate en null; se descarta
+            .filter(entry => entry.property)
+            .map(entry => ({
+                type: 'viewed',
+                at: entry.viewed_at,
+                property: entry.property,
+            }));
+
+        const offerItems = offers
+            .filter(offer => offer.property)
+            .map(offer => ({
+                type: 'offer',
+                at: offer.updatedAt,
+                property: offer.property,
+                status: offer.status,
+                price: offer.price,
+            }));
+
+        return [...viewedItems, ...offerItems]
+            .sort((a, b) => new Date(b.at) - new Date(a.at))
+            .slice(0, limit);
     },
 
     async register({ name, lastname, email, document, phone, picture, pictureId, password }) {
@@ -288,9 +335,13 @@ const service = {
 
     async login({ email, password }) {
         const client = await model.findOne({ email }).select('+password');
-        if (!client) throw new AuthenticationError(
-            'correo electrónico o contraseña incorrectos'
-        );
+        if (!client) {
+            const otherRole = await findEmailInOtherRole(email, 'client');
+            if (otherRole) throw new AuthenticationError(
+                `este correo pertenece a una cuenta de ${roleLabel(otherRole)}, inicie sesión desde la sección correspondiente`
+            );
+            throw new AuthenticationError('correo electrónico o contraseña incorrectos');
+        }
         const isMatch = await client.comparePassword(password);
         if (!isMatch) throw new AuthenticationError(
             'correo electrónico o contraseña incorrectos'

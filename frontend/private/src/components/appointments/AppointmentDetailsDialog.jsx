@@ -1,4 +1,4 @@
-import { Eye, Home, Wallet, MapPin, FileText } from 'lucide-react'
+import { Eye, Home, MapPin, FileText } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import UserAvatar from '@/components/users/UserAvatar'
 import { cn } from '@/lib/utils'
-import { getStatus, FUNDS_SOURCE_LABELS, formatDate, formatCurrency } from './constants'
+import { getStatus, formatDate } from './constants'
 
 const InfoRow = ({ label, value }) => (
     <div className='flex flex-col gap-0.5'>
@@ -71,17 +71,6 @@ const AppointmentDetailsDialog = ({ appointment: apt }) => {
                         <InfoRow label='Fecha' value={formatDate(date)} />
                         <InfoRow label='Colaborador asignado' value={apt.collaborator ? `${apt.collaborator.name} ${apt.collaborator.lastname}` : null} />
                     </div>
-                </div>
-
-                <Separator />
-
-                <div className='flex flex-col gap-3'>
-                    <SectionTitle icon={Wallet}>Calificación financiera</SectionTitle>
-                    <div className='grid grid-cols-2 gap-4'>
-                        <InfoRow label='Fuente de fondos' value={FUNDS_SOURCE_LABELS[apt.qualification?.funds_source] ?? apt.qualification?.funds_source} />
-                        <InfoRow label='Ingreso mensual' value={formatCurrency(apt.qualification?.monthly_income)} />
-                    </div>
-                    <InfoRow label='Motivo' value={apt.qualification?.reason} />
                 </div>
 
                 {apt.current_address?.reference && (

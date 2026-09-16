@@ -15,6 +15,11 @@ const controller = {
         return res.status(200).json({ client });
     }),
 
+    getActivity: catchAsync(async (req, res) => {
+        const activity = await service.getActivity(req.params.id);
+        return res.status(200).json({ activity });
+    }),
+
     register: catchAsync(async (req, res) => {
         const { token } = await service.register({
             ...req.body,
@@ -25,7 +30,7 @@ const controller = {
 
     verifyEmail: catchAsync(async (req, res) => {
         const { token, client } = await service.verifyEmail(req.body);
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'client');
         return res.status(200).json({ message: 'registration completed successfully, logging in', client });
     }),
 
@@ -36,6 +41,7 @@ const controller = {
 
     delete: catchAsync(async (req, res) => {
         await service.delete(req.params.id);
+        authCookie.clear(res, 'client');
         return res.status(200).json({ message: 'client deleted successfully' });
     }),
 
@@ -77,19 +83,19 @@ const controller = {
     login: catchAsync(async (req, res) => {
         const { email, password } = req.body;
         const { token, client } = await service.login({ email, password });
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'client');
         return res.status(200).json({ message: 'login successful', client });
     }),
 
     logout: catchAsync(async (req, res) => {
         await service.logout();
-        authCookie.clear(res);
+        authCookie.clear(res, 'client');
         return res.status(200).json({ message: 'logout successful' });
     }),
 
     logoutAllSessions: catchAsync(async (req, res) => {
         await service.logoutAllSessions(req.user.id);
-        authCookie.clear(res);
+        authCookie.clear(res, 'client');
         return res.status(200).json({ message: 'todas las sesiones fueron cerradas' });
     })
 

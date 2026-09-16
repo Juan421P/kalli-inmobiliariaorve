@@ -11,16 +11,10 @@ const parseLocalDate = (dateStr) => {
 // Campos que acepta tanto crear como actualizar (ver backend/src/schemas/appointment.js:
 // schemas.update es .strict() y NO incluye buyer/property/time, esos solo se mandan al crear)
 const buildCommonPayload = ({
-    proposedDate, fundsSource, monthlyIncome, reason,
-    addressReference, notes, location,
+    proposedDate, addressReference, notes, location,
 }) => {
     const payload = {
         proposed_dates: [parseLocalDate(proposedDate).toISOString()],
-        qualification: {
-            fundsSource,
-            monthlyIncome: Number(monthlyIncome),
-            reason,
-        },
         current_address: {
             location: { type: 'Point', coordinates: location.coordinates },
             address: location.address,

@@ -34,12 +34,6 @@ import LocationPicker from '@/components/properties/LocationPicker'
 import { cn } from '@/lib/utils'
 import toast from '@/lib/toast'
 
-const FUNDS_SOURCES = [
-    { value: 'own',  label: 'Fondos propios' },
-    { value: 'loan', label: 'Préstamo' },
-    { value: 'mixed', label: 'Mixto' },
-]
-
 // El backend guarda los días en inglés; Date.getDay() -> 0 = domingo
 const DAY_MAP = {
     0: 'sunday', 1: 'monday', 2: 'tuesday', 3: 'wednesday',
@@ -50,9 +44,6 @@ const EMPTY_FORM = {
     buyer:            '',
     property:         '',
     proposedDate:     '',
-    fundsSource:      'own',
-    monthlyIncome:    '',
-    reason:           '',
     addressReference: '',
     notes:            '',
 }
@@ -86,9 +77,6 @@ const formFromInitialData = (initialData) => initialData ? {
     buyer:            initialData.buyer?._id ?? '',
     property:         initialData.property?._id ?? '',
     proposedDate:     toDateInputValue(initialData.scheduled_date ?? initialData.proposed_dates?.[0]),
-    fundsSource:      initialData.qualification?.funds_source ?? 'own',
-    monthlyIncome:    initialData.qualification?.monthly_income?.toString() ?? '',
-    reason:           initialData.qualification?.reason ?? '',
     addressReference: initialData.current_address?.reference ?? '',
     notes:            initialData.notes ?? '',
 } : EMPTY_FORM
@@ -214,22 +202,18 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         const nextForm = { ...form, proposedDate: value }
         setForm(nextForm)
         setSlot(null)
-        setTouched((prev) => ({ ...prev, proposedDate: true }))
-        validateField('proposedDate', nextForm)
-        // el horario queda sin elegir de nuevo, así que se marca requerido otra vez
-        setErrors((prev) => ({ ...prev, slot: touched.slot ? 'Seleccione un horario disponible.' : null }))
     }
 
-    const handleLocationChange = (loc) => {
-        setLocation(loc)
-        setTouched((prev) => ({ ...prev, location: true }))
-        validateField('location', form, loc)
-    }
-
-    const handleSlotSelect = (iv) => {
-        setSlot(iv)
-        setTouched((prev) => ({ ...prev, slot: true }))
-        setErrors((prev) => ({ ...prev, slot: null }))
+    const validate = () => {
+        const e = {}
+        if (!form.buyer)                     e.buyer = 'Seleccione un cliente.'
+        if (!form.property)                  e.property = 'Seleccione una propiedad.'
+        if (!form.proposedDate)              e.proposedDate = 'Seleccione una fecha.'
+        if (!slot)                           e.slot = 'Seleccione un horario disponible.'
+        if (!location.address)               e.location = 'Marque y verifique la ubicación en el mapa.'
+        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
+        setErrors(e)
+        return Object.keys(e).length === 0
     }
 
     const submit = async () => {
@@ -375,58 +359,6 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                     />
                     <FieldError>{errors.location}</FieldError>
                 </div>
-            </FieldGroup>
-
-            <FieldSeparator />
-
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Calificación financiera</FieldLegend>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Fuente de fondos</FieldTitle>
-                            <Select value={form.fundsSource} onValueChange={(v) => setField('fundsSource', v)}>
-                                <SelectTrigger className='w-full bg-white/70'>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position='popper' className='bg-white border border-input shadow-md'>
-                                    {FUNDS_SOURCES.map((f) => (
-                                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </FieldLabel>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Ingreso mensual (USD)</FieldTitle>
-                            <Input
-                                type='number'
-                                min='0'
-                                value={form.monthlyIncome}
-                                onChange={(e) => setField('monthlyIncome', e.target.value)}
-                                placeholder='0.00'
-                                className='bg-white/70'
-                            />
-                        </FieldLabel>
-                        <FieldError>{errors.monthlyIncome}</FieldError>
-                    </Field>
-                </div>
-
-                <Field>
-                    <FieldLabel>
-                        <FieldTitle className='text-orve-teal/70'>Motivo</FieldTitle>
-                        <Textarea
-                            value={form.reason}
-                            onChange={(e) => setField('reason', e.target.value)}
-                            placeholder='Ej. Busca su primera casa propia.'
-                            className='bg-white/70'
-                        />
-                    </FieldLabel>
-                    <FieldError>{errors.reason}</FieldError>
-                </Field>
             </FieldGroup>
 
             <FieldSeparator />

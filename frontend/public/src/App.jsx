@@ -46,7 +46,7 @@ const router = createBrowserRouter([
 			{ path: '/help',      element: <Help /> },
 			{ path: '*',          element: <NotFound /> },
 			{
-				element: <ProtectedRoute />,
+				element: <ProtectedRoute requiredRole='client' />,
 				children: [
 					{ path: '/profile', element: <Profile /> },
 					{ path: '/property/:public_id/offer', element: <MakeOfferPage /> },

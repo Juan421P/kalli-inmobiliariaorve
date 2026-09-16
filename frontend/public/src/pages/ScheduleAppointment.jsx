@@ -6,7 +6,6 @@ import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
-import LocationPicker from '@/components/LocationPicker'
 import useProperty from '@/hooks/useProperty'
 import useAppointmentForm from '@/hooks/useAppointmentForm'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
@@ -15,12 +14,6 @@ const CONTACT_OPTIONS = [
     { value: 'whatsapp', label: 'WhatsApp',          icon: 'logos:whatsapp-icon'  },
     { value: 'phone',    label: 'Telefono',           icon: 'solar:phone-bold'     },
     { value: 'email',    label: 'Correo electronico', icon: 'solar:letter-bold'    },
-]
-
-const FUNDS_SOURCE_OPTIONS = [
-    { value: 'own',   label: 'Fondos propios'   },
-    { value: 'loan',  label: 'Prestamo/credito' },
-    { value: 'mixed', label: 'Mixto'            },
 ]
 
 /**
@@ -64,7 +57,7 @@ const ScheduleAppointment = () => {
             <div className='fixed inset-0 z-0 bg-white/30' />
 
             <Navbar />
-            <div className='relative z-10 pt-14 max-w-5xl mx-auto px-4 py-8'>
+            <div className='relative z-10 pt-24 max-w-5xl mx-auto px-4 py-8'>
                 {isLoading ? (
                     <div className='flex gap-8'>
                         <Skeleton className='w-64 h-96 rounded-2xl shrink-0' />
@@ -209,81 +202,6 @@ const ScheduleAppointment = () => {
                                     </div>
 
                                     <div className='h-px bg-orve-teal/10' />
-
-                                    <div className='flex flex-col gap-3'>
-                                        <p className='text-sm font-medium text-orve-teal'>Cual es el origen de los fondos?</p>
-                                        <Controller
-                                            control={control}
-                                            name='fundsSource'
-                                            rules={{ required: 'Selecciona el origen de los fondos' }}
-                                            render={({ field }) => (
-                                                <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-                                                    {FUNDS_SOURCE_OPTIONS.map(({ value, label }) => (
-                                                        <button
-                                                            type='button'
-                                                            key={value}
-                                                            onClick={() => field.onChange(value)}
-                                                            className={cn(
-                                                                'px-4 py-3 rounded-xl border text-sm font-medium transition-colors',
-                                                                field.value === value
-                                                                    ? 'bg-orve-teal text-white border-orve-teal'
-                                                                    : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
-                                                            )}
-                                                        >
-                                                            {label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        />
-                                    </div>
-
-                                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-                                        <div className='flex flex-col gap-1.5'>
-                                            <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
-                                                Ingreso mensual
-                                            </label>
-                                            <div className='flex items-center gap-2 bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5'>
-                                                <span className='text-orve-teal/50 text-sm font-medium'>$</span>
-                                                <input
-                                                    type='number'
-                                                    min='0'
-                                                    placeholder='0'
-                                                    {...register('monthlyIncome', { required: true, min: 0 })}
-                                                    className='flex-1 bg-transparent text-orve-darker-teal text-sm font-medium outline-none placeholder:text-orve-teal/30'
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className='flex flex-col gap-1.5'>
-                                            <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
-                                                Referencia de direccion
-                                            </label>
-                                            <input
-                                                type='text'
-                                                placeholder='Ej. Colonia Escalon, calle La Reforma #123'
-                                                {...register('addressReference', { required: true })}
-                                                className='bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5 text-sm text-orve-darker-teal outline-none placeholder:text-orve-teal/30'
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className='flex flex-col gap-3'>
-                                        <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
-                                            Su ubicacion actual
-                                        </label>
-                                        <Controller
-                                            control={control}
-                                            name='location'
-                                            rules={{ validate: (v) => Boolean(v?.address) || 'Marque su ubicación en el mapa' }}
-                                            render={({ field }) => (
-                                                <LocationPicker
-                                                    defaultCoordinates={field.value?.coordinates}
-                                                    defaultAddress={field.value?.address}
-                                                    onChange={field.onChange}
-                                                />
-                                            )}
-                                        />
-                                    </div>
 
                                     <div className='flex flex-col gap-1.5'>
                                         <label className='text-xs font-medium text-orve-teal/80 uppercase tracking-wide'>
