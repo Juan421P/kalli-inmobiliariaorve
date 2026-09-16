@@ -27,8 +27,8 @@ const useOffers = () => {
             setCurrentPage(page)
             if (data.metrics) setMetrics(data.metrics)
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar las ofertas.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar las ofertas.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -54,8 +54,8 @@ const useOffers = () => {
             await fetchOffers(currentPage, search, typeFilter)
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar el estado.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar el estado.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -71,8 +71,8 @@ const useOffers = () => {
             await fetchOffers(currentPage, search, typeFilter)
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo eliminar la oferta.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo eliminar la oferta.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

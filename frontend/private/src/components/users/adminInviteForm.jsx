@@ -86,9 +86,38 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
     const [touched, setTouched] = useState({})
     const [avatar,  setAvatar]  = useState({ file: null, preview: null })
 
+    // Un validador por campo: se usa tanto para revisar uno solo apenas cambia
+    // (feedback inmediato) como para revisarlos todos de un golpe antes de
+    // mandar la invitación al backend.
+    const fieldValidators = {
+        name: (f) => !f.name.trim() ? 'El nombre es requerido.' : null,
+        lastname: (f) => !f.lastname.trim() ? 'El apellido es requerido.' : null,
+        email: (f) => {
+            if (!f.email.trim()) return 'El correo es requerido.'
+            if (!/\S+@\S+\.\S+/.test(f.email)) return 'Correo inválido.'
+            return null
+        },
+        phone: (f) => {
+            if (!f.phone.trim()) return 'El teléfono es requerido.'
+            if (!/^\d{4}-\d{4}$/.test(f.phone)) return 'El teléfono debe tener el formato 0000-0000.'
+            return null
+        },
+        documentNumber: (f) => !f.documentNumber.trim() ? 'El número de documento es requerido.' : null,
+    }
+
+    // Revisa un solo campo contra el valor recién tecleado (que puede no estar
+    // en el state todavía) y actualiza su error en el momento.
+    const validateField = (key, formOverride = form) => {
+        const message = fieldValidators[key]?.(formOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key, nextForm)
     }
 
     const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
@@ -100,15 +129,17 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
         form.phone.trim() &&
         form.documentNumber.trim()
 
+    // Revisa TODOS los campos contra el estado actual, sin importar cuáles ya
+    // se habían tocado. Es el chequeo final justo antes de hablar con el
+    // backend: nada se manda si algo, aunque nadie lo haya tocado, está mal.
     const validate = () => {
         const e = {}
-        if (!form.name.trim())           e.name           = 'El nombre es requerido.'
-        if (!form.lastname.trim())       e.lastname       = 'El apellido es requerido.'
-        if (!form.email.trim())          e.email          = 'El correo es requerido.'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Correo inválido.'
-        if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
-        if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form)
+            if (message) e[key] = message
+        }
         setErrors(e)
+        setTouched(Object.fromEntries(Object.keys(fieldValidators).map((k) => [k, true])))
         return Object.keys(e).length === 0
     }
 

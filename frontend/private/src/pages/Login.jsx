@@ -47,10 +47,16 @@ const Login = () => {
                     const { collaborator } = await collaboratorsService.login(data.email, data.password)
                     login({ role: 'collaborator', user: collaborator })
                 } catch (collaboratorError) {
-                    const message =
-                        collaboratorError.response?.data?.message ||
-                        adminError.response?.data?.message ||
-                        'Credenciales inválidas'
+                    // Si el correo/contraseña son simplemente incorrectos, tanto el intento
+                    // como admin como el de colaborador van a fallar con 401 y ese es el
+                    // mensaje que se quiere mostrar. Pero si lo que falló fue la conexión
+                    // con el backend (servidor caído, sin internet, CORS, etc.) ninguno de
+                    // los dos intentos tiene nada que ver con "credenciales" y hay que
+                    // decirlo explícitamente en vez de dejar pasar un 401 genérico.
+                    const noResponseFromServer = !adminError.response && !collaboratorError.response
+                    const message = noResponseFromServer
+                        ? collaboratorError.friendlyMessage
+                        : (collaboratorError.friendlyMessage || adminError.friendlyMessage)
                     toast.error('Error al iniciar sesión', message)
                     return
                 }

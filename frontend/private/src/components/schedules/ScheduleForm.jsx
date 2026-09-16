@@ -94,17 +94,30 @@ const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading })
         }
     }, [editingSlot])
 
-    const validate = () => {
-        if (!from || !to) {
+    const validate = (fromVal = from, toVal = to) => {
+        if (!fromVal || !toVal) {
             setError('Seleccioná ambos campos de tiempo.')
             return false
         }
-        if (from >= to) {
+        if (fromVal >= toVal) {
             setError('La hora de inicio debe ser menor a la hora de fin.')
             return false
         }
         setError('')
         return true
+    }
+
+    // Valida contra el valor que se acaba de elegir (no el viejo del state) para
+    // que el error de "hora inicio > hora fin" aparezca apenas se elige la hora
+    // que lo provoca, no hasta que se le dé clic a "Agregar"/"Guardar".
+    const handleFromChange = (value) => {
+        setFrom(value)
+        if (value && to) validate(value, to)
+    }
+
+    const handleToChange = (value) => {
+        setTo(value)
+        if (from && value) validate(from, value)
     }
 
     const handleSubmit = () => {
@@ -147,13 +160,13 @@ const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading })
                     |
                 </div>
 
-                <TimePicker label='Desde' value={from} onChange={setFrom} />
+                <TimePicker label='Desde' value={from} onChange={handleFromChange} />
 
                 <span className='hidden sm:flex items-end pb-3 text-orve-teal/30 text-sm font-medium select-none'>
                     →
                 </span>
 
-                <TimePicker label='Hasta' value={to} onChange={setTo} />
+                <TimePicker label='Hasta' value={to} onChange={handleToChange} />
 
                 {/* Acciones */}
                 <div className='flex gap-2 shrink-0 self-end'>

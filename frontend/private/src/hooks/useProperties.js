@@ -34,8 +34,8 @@ const useProperties = () => {
             setCurrentPage(page)
             if (data.metrics) setMetrics(data.metrics)
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar las propiedades.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar las propiedades.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -64,8 +64,8 @@ const useProperties = () => {
             await fetchProperties(1, '', 'all', 'all', 'all')
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo agregar la propiedad.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo agregar la propiedad.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -81,8 +81,8 @@ const useProperties = () => {
             await fetchProperties(currentPage, search, filterType, filterListing, filterStatus)
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar la propiedad.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar la propiedad.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -98,8 +98,8 @@ const useProperties = () => {
             await fetchProperties(currentPage, search, filterType, filterListing, filterStatus)
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo eliminar la propiedad.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo eliminar la propiedad.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

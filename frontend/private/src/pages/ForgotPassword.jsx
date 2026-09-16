@@ -156,7 +156,13 @@ const ForgotPassword = () => {
                         setEmailTouched(true)
                         setEmailError('No existe ningún usuario registrado con este correo.')
                     } else {
-                        const msg = collaboratorError.response?.data?.message || adminError.response?.data?.message || 'No se pudo enviar el código'
+                        // Igual que en el login: si ninguno de los dos intentos llegó a
+                        // tener respuesta del servidor, es un problema de conexión, no de
+                        // credenciales, y hay que decirlo así.
+                        const noResponseFromServer = !adminError.response && !collaboratorError.response
+                        const msg = noResponseFromServer
+                            ? collaboratorError.friendlyMessage
+                            : (collaboratorError.friendlyMessage || adminError.friendlyMessage)
                         toast.error('Error', msg)
                     }
                     return
@@ -186,8 +192,7 @@ const ForgotPassword = () => {
             setCodeTouched(false)
             toast.success('Código reenviado', 'Revise su correo electrónico.')
         } catch (error) {
-            const msg = error.response?.data?.message || 'No se pudo reenviar el código'
-            toast.error('Error', msg)
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -203,9 +208,8 @@ const ForgotPassword = () => {
             setVerifiedToken(token)
             setStep(STEP.PASSWORD)
         } catch (error) {
-            const msg = error.response?.data?.message || 'Código incorrecto o expirado'
             setCodeTouched(true)
-            setCodeError(msg)
+            setCodeError(error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -221,8 +225,7 @@ const ForgotPassword = () => {
             toast.success('Contraseña actualizada', 'Ya puede iniciar sesión con su nueva contraseña.')
             navigate('/')
         } catch (error) {
-            const msg = error.response?.data?.message || 'No se pudo actualizar la contraseña'
-            toast.error('Error', msg)
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }

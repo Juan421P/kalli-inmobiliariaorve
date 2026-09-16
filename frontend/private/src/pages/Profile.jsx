@@ -31,15 +31,29 @@ const Profile = () => {
         login({ role: freshRole, user: freshUser })
     }
 
+    const fieldValidators = {
+        name: (f) => !f.name.trim() ? 'El nombre es requerido.' : null,
+        lastname: (f) => !f.lastname.trim() ? 'El apellido es requerido.' : null,
+    }
+
+    const validateField = (key, formOverride = form) => {
+        const message = fieldValidators[key]?.(formOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        validateField(key, nextForm)
     }
 
     const validate = () => {
         const e = {}
-        if (!form.name.trim()) e.name = 'El nombre es requerido.'
-        if (!form.lastname.trim()) e.lastname = 'El apellido es requerido.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form)
+            if (message) e[key] = message
+        }
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -53,8 +67,8 @@ const Profile = () => {
             await service.put(user.id, { name: form.name.trim(), lastname: form.lastname.trim() })
             await refreshUser()
             toast.success('Perfil actualizado correctamente.')
-        } catch {
-            toast.error('Error', 'No se pudo actualizar el perfil.')
+        } catch (error) {
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsSaving(false)
         }
@@ -69,8 +83,8 @@ const Profile = () => {
             await service.uploadPicture(user.id, file)
             await refreshUser()
             toast.success('Foto de perfil actualizada.')
-        } catch {
-            toast.error('Error', 'No se pudo actualizar la foto de perfil.')
+        } catch (error) {
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsUploadingPicture(false)
         }

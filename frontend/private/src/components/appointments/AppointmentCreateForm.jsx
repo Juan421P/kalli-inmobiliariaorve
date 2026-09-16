@@ -70,6 +70,18 @@ const parseLocalDate = (dateStr) => {
     return new Date(y, m - 1, d)
 }
 
+// Hoy a medianoche local, para comparar solo la fecha (sin la hora) contra la
+// fecha propuesta y así permitir agendar "hoy" pero no un día que ya pasó
+const startOfToday = () => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+}
+
+// Un año hacia adelante como tope razonable para que no se cuele una fecha
+// tipeada mal (ej. un año con dígito de más)
+const MAX_MONTHS_AHEAD = 12
+
 const formFromInitialData = (initialData) => initialData ? {
     buyer:            initialData.buyer?._id ?? '',
     property:         initialData.property?._id ?? '',
@@ -95,6 +107,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
     const isEditing = Boolean(initialData)
     const [form,     setForm]     = useState(() => formFromInitialData(initialData))
     const [errors,   setErrors]   = useState({})
+    const [touched,  setTouched]  = useState({})
     const [clients,    setClients]    = useState([])
     const [properties, setProperties] = useState([])
     const [schedules,  setSchedules]  = useState([])
@@ -115,8 +128,8 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                 setClients(clientsData)
                 setProperties(propertiesData)
                 setSchedules(schedulesData)
-            } catch {
-                toast.error('Error', 'No se pudieron cargar los clientes, propiedades u horarios.')
+            } catch (error) {
+                toast.error('No se pudieron cargar los clientes, propiedades u horarios.', error.friendlyMessage)
             } finally {
                 setIsLoadingOptions(false)
             }
@@ -130,30 +143,93 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         return schedules.find((s) => s.day === day)?.intervals ?? []
     }, [form.proposedDate, schedules])
 
+    // Un validador por campo para poder revisar uno solo (al salir del campo,
+    // "en vivo") o todos de una vez (justo antes de enviar al backend). Recibe
+    // el form completo más location/slot porque algunos campos dependen de más
+    // de un estado (ej. el horario depende de la fecha elegida).
+    const fieldValidators = {
+        buyer: (f) => !f.buyer ? 'Seleccione un cliente.' : null,
+        property: (f) => !f.property ? 'Seleccione una propiedad.' : null,
+        proposedDate: (f) => {
+            if (!f.proposedDate) return 'Seleccione una fecha.'
+            const parsed = parseLocalDate(f.proposedDate)
+            if (!parsed || isNaN(parsed.getTime())) return 'La fecha ingresada no es válida.'
+            if (parsed < startOfToday()) return 'La fecha no puede ser anterior a hoy.'
+            const maxDate = new Date()
+            maxDate.setMonth(maxDate.getMonth() + MAX_MONTHS_AHEAD)
+            if (parsed > maxDate) return 'La fecha es demasiado lejana. Elija una fecha más cercana.'
+            return null
+        },
+        slot: (_f, loc, s) => !s ? 'Seleccione un horario disponible.' : null,
+        location: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
+        addressReference: (f) => !f.addressReference.trim() ? 'La referencia de dirección es requerida.' : null,
+        monthlyIncome: (f) => {
+            if (!f.monthlyIncome) return 'El ingreso mensual es requerido.'
+            if (isNaN(Number(f.monthlyIncome)) || Number(f.monthlyIncome) <= 0) return 'Ingrese un monto válido, mayor a 0.'
+            return null
+        },
+        reason: (f) => !f.reason.trim() ? 'El motivo es requerido.' : null,
+    }
+
+    // Valida un solo campo contra el estado actual y actualiza su error en el
+    // momento — así el error sale apenas la persona sale del campo mal
+    // llenado, no hasta que le da clic a "Guardar".
+    const validateField = (key, formOverride = form, locOverride = location, slotOverride = slot) => {
+        const message = fieldValidators[key]?.(formOverride, locOverride, slotOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
+    const touchField = (key) => {
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key)
+    }
+
+    // Corre TODOS los validadores contra el estado actual. Se usa antes de
+    // mandar la petición al backend, sin importar si el campo ya fue "tocado"
+    // o no, para no dejar pasar nada que no se haya revisado todavía.
+    const validateAll = () => {
+        const e = {}
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, location, slot)
+            if (message) e[key] = message
+        }
+        setErrors(e)
+        setTouched(Object.fromEntries(Object.keys(fieldValidators).map((k) => [k, true])))
+        return Object.keys(e).length === 0
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        // Se valida contra el valor nuevo de una vez, sin esperar a que el campo
+        // pierda el foco — así el error (o su corrección) se refleja apenas se
+        // escribe, no hasta salir del campo o darle a "Guardar".
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key, nextForm)
     }
 
     // Si cambia la fecha, el horario elegido antes ya no aplica necesariamente
     const handleDateChange = (value) => {
-        setField('proposedDate', value)
+        const nextForm = { ...form, proposedDate: value }
+        setForm(nextForm)
         setSlot(null)
+        setTouched((prev) => ({ ...prev, proposedDate: true }))
+        validateField('proposedDate', nextForm)
+        // el horario queda sin elegir de nuevo, así que se marca requerido otra vez
+        setErrors((prev) => ({ ...prev, slot: touched.slot ? 'Seleccione un horario disponible.' : null }))
     }
 
-    const validate = () => {
-        const e = {}
-        if (!form.buyer)                     e.buyer = 'Seleccione un cliente.'
-        if (!form.property)                  e.property = 'Seleccione una propiedad.'
-        if (!form.proposedDate)              e.proposedDate = 'Seleccione una fecha.'
-        if (!slot)                           e.slot = 'Seleccione un horario disponible.'
-        if (!location.address)               e.location = 'Marque y verifique la ubicación en el mapa.'
-        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
-        if (!form.monthlyIncome)             e.monthlyIncome = 'El ingreso mensual es requerido.'
-        else if (Number(form.monthlyIncome) < 0) e.monthlyIncome = 'Debe ser un valor positivo.'
-        if (!form.reason.trim())             e.reason = 'El motivo es requerido.'
-        setErrors(e)
-        return Object.keys(e).length === 0
+    const handleLocationChange = (loc) => {
+        setLocation(loc)
+        setTouched((prev) => ({ ...prev, location: true }))
+        validateField('location', form, loc)
+    }
+
+    const handleSlotSelect = (iv) => {
+        setSlot(iv)
+        setTouched((prev) => ({ ...prev, slot: true }))
+        setErrors((prev) => ({ ...prev, slot: null }))
     }
 
     const submit = async () => {
@@ -163,11 +239,14 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
             setLocation({ coordinates: null, address: '', components: null })
             setSlot(null)
             setErrors({})
+            setTouched({})
         }
     }
 
     const handleSaveClick = () => {
-        if (!validate()) return
+        // Verificación final y completa de TODOS los campos justo antes de
+        // hablar con el backend, sin importar cuáles se hayan tocado ya.
+        if (!validateAll()) return
         if (isEditing) setDialogOpen(true)
         else submit()
     }
@@ -292,7 +371,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                     <LocationPicker
                         defaultCoordinates={location.coordinates}
                         defaultAddress={location.address}
-                        onChange={setLocation}
+                        onChange={handleLocationChange}
                     />
                     <FieldError>{errors.location}</FieldError>
                 </div>

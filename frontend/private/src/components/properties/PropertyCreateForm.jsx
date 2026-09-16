@@ -188,29 +188,64 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
     const [errors,   setErrors]   = useState({})
     const [location, setLocation] = useState({ coordinates: null, address: '', components: null })
 
-    const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+    // Un validador por campo, para poder revisar uno solo apenas cambia (feedback
+    // inmediato mientras se escribe) o todos de un golpe justo antes de mandar la
+    // petición al backend. `f`, `loc` e `imgs` se pasan explícitos en vez de leer
+    // el estado de afuera para poder validar contra el valor recién tecleado,
+    // que todavía no se refleja en el state cuando se dispara el evento.
+    const fieldValidators = {
+        title: (f) => !f.title.trim() ? 'El título es requerido.' : null,
+        description: (f) => !f.description.trim() ? 'La descripción es requerida.' : null,
+        price: (f) => {
+            if (!f.price) return 'El precio es requerido.'
+            if (isNaN(parseFloat(f.price)) || parseFloat(f.price) <= 0) return 'Ingrese un precio válido, mayor a 0.'
+            return null
+        },
+        area_number: (f) => {
+            if (f.property_type === 'land') return null
+            if (!f.area_number || parseFloat(f.area_number) <= 0) return 'El área es requerida y debe ser mayor a 0.'
+            return null
+        },
+        address: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
+        images: (_f, _loc, imgs) => imgs.length < 3 ? 'Se requieren al menos 3 imágenes.' : null,
     }
 
-    const validate = () => {
+    // Corre el validador de un solo campo contra el valor más reciente (que puede
+    // no estar en el state todavía) y actualiza su error al instante — así el
+    // error sale apenas se escribe algo inválido, no hasta que se le da a "Guardar".
+    const validateField = (key, formOverride = form, locOverride = location, imgsOverride = images) => {
+        const message = fieldValidators[key]?.(formOverride, locOverride, imgsOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
+    // Revisa TODOS los campos contra el estado actual, sin importar si ya se
+    // habían tocado o no. Es la verificación final antes de hablar con el
+    // backend: nada se manda si algo, aunque sea un campo que nadie tocó, quedó
+    // sin llenar o con un valor inválido.
+    const validateAll = () => {
         const e = {}
-        if (!form.title.trim())       e.title       = 'El título es requerido.'
-        if (!form.description.trim()) e.description = 'La descripción es requerida.'
-        if (!form.price)              e.price       = 'El precio es requerido.'
-        else if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0)
-                                      e.price       = 'Ingrese un precio válido.'
-        if (!location.address)        e.address     = 'Marque y verifique la ubicación en el mapa.'
-        if (form.property_type !== 'land') {
-            if (!form.area_number || parseFloat(form.area_number) <= 0) e.area_number = 'El área es requerida.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, location, images)
+            if (message) e[key] = message
         }
-        if (images.length < 3) e.images = 'Se requieren al menos 3 imágenes.'
         setErrors(e)
         return Object.keys(e).length === 0
     }
 
+    const setField = (key, value) => {
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        // Si el campo tiene un validador (título, precio, área...) se revisa de
+        // una vez contra el valor nuevo, en vez de solo limpiar el error a
+        // ciegas: si sigue estando mal (ej. precio en 0) el mensaje se queda.
+        if (fieldValidators[key]) validateField(key, nextForm)
+        // property_type puede afectar si area_number es requerida o no
+        if (key === 'property_type') validateField('area_number', nextForm)
+    }
+
     const handleSubmit = () => {
-        if (!validate()) return
+        if (!validateAll()) return
         onSubmit({
             title:              form.title.trim(),
             description:        form.description.trim(),
@@ -409,7 +444,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                         <LocationPicker
                             onChange={(loc) => {
                                 setLocation(loc)
-                                if (loc.address) setErrors((prev) => ({ ...prev, address: null }))
+                                validateField('address', form, loc)
                             }}
                         />
                     </FieldGroup>
@@ -418,7 +453,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                     <FieldGroup>
                         <FieldLegend className='text-orve-teal'>Imágenes</FieldLegend>
                         {errors.images && <p className='text-xs text-orve-red -mt-2'>{errors.images}</p>}
-                        <ImageUploader images={images} onChange={(imgs) => { setImages(imgs); if (imgs.length >= 3) setErrors((prev) => ({ ...prev, images: null })) }} />
+                        <ImageUploader images={images} onChange={(imgs) => { setImages(imgs); validateField('images', form, location, imgs) }} />
                         <p className='text-xs text-orve-teal/40 -mt-1'>Mínimo 3 imágenes requeridas</p>
                     </FieldGroup>
                 </FieldSet>

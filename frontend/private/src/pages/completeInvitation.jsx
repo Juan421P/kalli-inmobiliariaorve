@@ -91,8 +91,7 @@ const CompleteInvitation = ({ role }) => {
             toast.success('Cuenta activada', 'Bienvenido a ORVE.')
             navigate('/dashboard', { replace: true })
         } catch (error) {
-            const msg = error.response?.data?.message || 'No se pudo completar el registro. El enlace pudo haber expirado.'
-            toast.error('Error', msg)
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }

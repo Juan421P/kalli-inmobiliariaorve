@@ -35,8 +35,8 @@ const AssignCollaboratorDialog = ({ appointment: apt, onAssign, isLoading }) => 
             try {
                 const data = await appointmentOptionsService.listCollaborators()
                 setCollaborators(data)
-            } catch {
-                toast.error('Error', 'No se pudieron cargar los colaboradores.')
+            } catch (error) {
+                toast.error('No se pudieron cargar los colaboradores.', error.friendlyMessage)
             } finally {
                 setIsLoadingOptions(false)
             }

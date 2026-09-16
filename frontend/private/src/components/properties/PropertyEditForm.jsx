@@ -209,31 +209,59 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const existingPictures = initialData?.pictures ?? []
     const [removedIds, setRemovedIds] = useState([])
     const [newImages,  setNewImages]  = useState([])
-    const toggleRemove = (pictureId) => setRemovedIds((prev) =>
-        prev.includes(pictureId) ? prev.filter((id) => id !== pictureId) : [...prev, pictureId]
-    )
-    const remainingCount = existingPictures.filter((p) => !removedIds.includes(p.picture_id)).length + newImages.length
+    const remainingCount = (ids = removedIds, imgs = newImages) =>
+        existingPictures.filter((p) => !ids.includes(p.picture_id)).length + imgs.length
 
-    const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+    // Un validador por campo para poder revisar uno solo apenas cambia (feedback
+    // inmediato) o todos de un golpe justo antes de mandar la petición.
+    const fieldValidators = {
+        title: (f) => !f.title.trim() ? 'El título es requerido.' : null,
+        description: (f) => !f.description.trim() ? 'La descripción es requerida.' : null,
+        price: (f) => {
+            if (!f.price) return 'El precio es requerido.'
+            if (isNaN(parseFloat(f.price)) || parseFloat(f.price) <= 0) return 'Ingrese un precio válido, mayor a 0.'
+            return null
+        },
+        address: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
+        images: (_f, _loc, count) => count < 3 ? 'Debe quedar al menos 3 imágenes.' : null,
     }
 
-    const validate = () => {
+    // Revisa un solo campo contra el valor más reciente (puede no estar en el
+    // state todavía) y actualiza su error al instante.
+    const validateField = (key, formOverride = form, locOverride = location, countOverride = remainingCount()) => {
+        const message = fieldValidators[key]?.(formOverride, locOverride, countOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
+    const toggleRemove = (pictureId) => {
+        const nextIds = removedIds.includes(pictureId)
+            ? removedIds.filter((id) => id !== pictureId)
+            : [...removedIds, pictureId]
+        setRemovedIds(nextIds)
+        validateField('images', form, location, remainingCount(nextIds, newImages))
+    }
+
+    const setField = (key, value) => {
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        if (fieldValidators[key]) validateField(key, nextForm)
+    }
+
+    // Revisa TODOS los campos contra el estado actual, sin importar si ya se
+    // habían tocado o no. Nada se manda al backend sin pasar por acá primero.
+    const validateAll = () => {
         const e = {}
-        if (!form.title.trim())       e.title       = 'El título es requerido.'
-        if (!form.description.trim()) e.description = 'La descripción es requerida.'
-        if (!form.price)              e.price       = 'El precio es requerido.'
-        else if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0)
-                                      e.price       = 'Ingrese un precio válido.'
-        if (!location.address)        e.address     = 'Marque y verifique la ubicación en el mapa.'
-        if (remainingCount < 3)       e.images      = 'Debe quedar al menos 3 imágenes.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, location, remainingCount())
+            if (message) e[key] = message
+        }
         setErrors(e)
         return Object.keys(e).length === 0
     }
 
     const handleSaveClick = () => {
-        if (!validate()) return
+        if (!validateAll()) return
         setDialogOpen(true)
     }
 
@@ -437,7 +465,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                             defaultAddress={initAddress}
                             onChange={(loc) => {
                                 setLocation(loc)
-                                if (loc.address) setErrors((prev) => ({ ...prev, address: null }))
+                                validateField('address', form, loc)
                             }}
                         />
                     </FieldGroup>
@@ -459,7 +487,13 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                 />
                             </div>
                         )}
-                        <NewImageUploader images={newImages} onChange={setNewImages} />
+                        <NewImageUploader
+                            images={newImages}
+                            onChange={(imgs) => {
+                                setNewImages(imgs)
+                                validateField('images', form, location, remainingCount(removedIds, imgs))
+                            }}
+                        />
                     </FieldGroup>
                 </FieldSet>
             </div>

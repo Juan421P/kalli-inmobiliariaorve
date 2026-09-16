@@ -19,8 +19,8 @@ const useAdmins = () => {
             const data = await AdminService.getAll()
             setAdmins(data.admins ?? [])
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar los administradores.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar los administradores.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -60,8 +60,8 @@ const useAdmins = () => {
             await fetchAdmins()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo invitar al administrador.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo invitar al administrador.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

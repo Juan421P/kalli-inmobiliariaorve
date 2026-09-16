@@ -23,8 +23,8 @@ const CatalogPage = ({ title, subtitle, itemLabel, inputPlaceholder, service }) 
                 // Buscamos el primer array dentro de la respuesta
                 const list = Object.values(data).find(Array.isArray) ?? []
                 setItems(list)
-            } catch {
-                toast.error('Error al cargar', `No se pudieron cargar los ${title.toLowerCase()}.`)
+            } catch (error) {
+                toast.error(`No se pudieron cargar los ${title.toLowerCase()}.`, error.friendlyMessage)
             } finally {
                 setIsLoading(false)
             }
