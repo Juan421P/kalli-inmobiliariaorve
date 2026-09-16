@@ -151,12 +151,6 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         slot: (_f, loc, s) => !s ? 'Seleccione un horario disponible.' : null,
         location: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
         addressReference: (f) => !f.addressReference.trim() ? 'La referencia de dirección es requerida.' : null,
-        monthlyIncome: (f) => {
-            if (!f.monthlyIncome) return 'El ingreso mensual es requerido.'
-            if (isNaN(Number(f.monthlyIncome)) || Number(f.monthlyIncome) <= 0) return 'Ingrese un monto válido, mayor a 0.'
-            return null
-        },
-        reason: (f) => !f.reason.trim() ? 'El motivo es requerido.' : null,
     }
 
     // Valida un solo campo contra el estado actual y actualiza su error en el
@@ -202,18 +196,16 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         const nextForm = { ...form, proposedDate: value }
         setForm(nextForm)
         setSlot(null)
+        setTouched((prev) => ({ ...prev, proposedDate: true }))
+        validateField('proposedDate', nextForm)
+        // el horario queda sin elegir de nuevo, así que se marca requerido otra vez
+        setErrors((prev) => ({ ...prev, slot: touched.slot ? 'Seleccione un horario disponible.' : null }))
     }
 
-    const validate = () => {
-        const e = {}
-        if (!form.buyer)                     e.buyer = 'Seleccione un cliente.'
-        if (!form.property)                  e.property = 'Seleccione una propiedad.'
-        if (!form.proposedDate)              e.proposedDate = 'Seleccione una fecha.'
-        if (!slot)                           e.slot = 'Seleccione un horario disponible.'
-        if (!location.address)               e.location = 'Marque y verifique la ubicación en el mapa.'
-        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
-        setErrors(e)
-        return Object.keys(e).length === 0
+    const handleLocationChange = (loc) => {
+        setLocation(loc)
+        setTouched((prev) => ({ ...prev, location: true }))
+        validateField('location', form, loc)
     }
 
     const submit = async () => {

@@ -86,29 +86,36 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
     const [touched, setTouched] = useState({})
     const [avatar,  setAvatar]  = useState({ file: null, preview: null })
 
-    // Un validador por campo: sirve tanto para revisar uno solo apenas cambia
+    // Un validador por campo: se usa tanto para revisar uno solo apenas cambia
     // (feedback inmediato) como para revisarlos todos de un golpe antes de
-    // mandar la invitación al backend.
+    // mandar la invitación al backend. `f` es el form y `av` el archivo de
+    // avatar — se pasan explícitos para poder validar contra el valor recién
+    // elegido, que puede no estar en el state todavía.
     const fieldValidators = {
+        avatar: (_f, av) => !av ? 'La foto es requerida.' : null,
         name: (f) => !f.name.trim() ? 'El nombre es requerido.' : null,
         lastname: (f) => !f.lastname.trim() ? 'El apellido es requerido.' : null,
         email: (f) => {
             if (!f.email.trim()) return 'El correo es requerido.'
-            if (!/\S+@\S+\.\S+/.test(f.email)) return 'Correo inválido.'
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Ingrese un correo válido.'
             return null
         },
         phone: (f) => {
             if (!f.phone.trim()) return 'El teléfono es requerido.'
-            if (!/^\d{4}-\d{4}$/.test(f.phone)) return 'El teléfono debe tener el formato 0000-0000.'
+            if (!/^\d{4}-\d{4}$/.test(f.phone)) return 'Formato: 0000-0000'
             return null
         },
-        documentNumber: (f) => !f.documentNumber.trim() ? 'El número de documento es requerido.' : null,
+        documentNumber: (f) => {
+            if (!f.documentNumber.trim()) return 'El número de documento es requerido.'
+            if (f.documentType === 'dui' && !/^\d{8}-\d$/.test(f.documentNumber)) return 'El DUI debe tener el formato 00000000-0'
+            return null
+        },
     }
 
-    // Revisa un solo campo contra el valor recién tecleado (que puede no estar
-    // en el state todavía) y actualiza su error en el momento.
-    const validateField = (key, formOverride = form) => {
-        const message = fieldValidators[key]?.(formOverride) ?? null
+    // Revisa un solo campo contra el valor recién tecleado/elegido (que puede
+    // no estar en el state todavía) y actualiza su error en el momento.
+    const validateField = (key, formOverride = form, avatarOverride = avatar.file) => {
+        const message = fieldValidators[key]?.(formOverride, avatarOverride) ?? null
         setErrors((prev) => ({ ...prev, [key]: message }))
         return message
     }
@@ -118,6 +125,9 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
         setForm(nextForm)
         setTouched((prev) => ({ ...prev, [key]: true }))
         validateField(key, nextForm)
+        // el formato de DUI depende de documentType, así que si cambia hay que
+        // re-revisar documentNumber contra el tipo nuevo
+        if (key === 'documentType') validateField('documentNumber', nextForm)
     }
 
     const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
@@ -132,17 +142,15 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
         form.documentNumber.trim() && isDuiValid &&
         avatar.file
 
+    // Revisa TODOS los campos (y la foto) contra el estado actual, sin
+    // importar cuáles ya se habían tocado. Chequeo final antes de hablar con
+    // el backend: nada se manda si algo, aunque nadie lo haya tocado, está mal.
     const validate = () => {
         const e = {}
-        if (!avatar.file)                e.avatar         = 'La foto es requerida.'
-        if (!form.name.trim())           e.name           = 'El nombre es requerido.'
-        if (!form.lastname.trim())       e.lastname       = 'El apellido es requerido.'
-        if (!form.email.trim())          e.email          = 'El correo es requerido.'
-        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Ingrese un correo válido.'
-        if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
-        else if (!/^\d{4}-\d{4}$/.test(form.phone)) e.phone = 'Formato: 0000-0000'
-        if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
-        else if (!isDuiValid)            e.documentNumber = 'El DUI debe tener el formato 00000000-0'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, avatar.file)
+            if (message) e[key] = message
+        }
         setErrors(e)
         setTouched(Object.fromEntries(Object.keys(fieldValidators).map((k) => [k, true])))
         return Object.keys(e).length === 0
@@ -177,7 +185,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                         preview={avatar.preview}
                         onChange={(file, preview) => {
                             setAvatar({ file, preview })
-                            setErrors((prev) => ({ ...prev, avatar: null }))
+                            validateField('avatar', form, file)
                         }}
                         error={errors.avatar}
                     />
