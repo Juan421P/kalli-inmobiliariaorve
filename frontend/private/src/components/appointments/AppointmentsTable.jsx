@@ -1,4 +1,4 @@
-import { Home, MoreHorizontal, Pencil, CheckCircle2, XCircle } from 'lucide-react'
+import { Home, MoreHorizontal, Pencil, CheckCircle2, XCircle, CalendarDays } from 'lucide-react'
 import {
     Table,
     TableBody,
@@ -41,7 +41,7 @@ const AppointmentsTable = ({
             <Empty className='border-orve-teal/10'>
                 <EmptyHeader>
                     <EmptyMedia variant='icon'>
-                        <span className='text-xl'>📅</span>
+                        <CalendarDays className='w-5 h-5 text-orve-teal/60' />
                     </EmptyMedia>
                     <EmptyTitle className='text-orve-teal'>Sin citas</EmptyTitle>
                     <EmptyDescription>No hay citas que coincidan con la búsqueda.</EmptyDescription>

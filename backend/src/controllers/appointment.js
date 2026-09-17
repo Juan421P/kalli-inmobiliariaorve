@@ -6,7 +6,7 @@ const controller = {
     get: catchAsync(async (req, res) => {
         const filter = {};
         if (req.query.status) filter.status = req.query.status;
-        const appointments = await service.getAll(filter);
+        const appointments = await service.getAll(filter, req.user);
         return res.status(200).json({ appointments });
     }),
 

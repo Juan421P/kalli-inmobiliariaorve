@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import SearchableSelect from '@/components/ui/searchable-select'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,7 +31,6 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { appointmentOptionsService } from '@/services/AppointmentsService'
-import LocationPicker from '@/components/properties/LocationPicker'
 import { cn } from '@/lib/utils'
 import toast from '@/lib/toast'
 
@@ -44,7 +44,6 @@ const EMPTY_FORM = {
     buyer:            '',
     property:         '',
     proposedDate:     '',
-    addressReference: '',
     notes:            '',
 }
 
@@ -77,15 +76,8 @@ const formFromInitialData = (initialData) => initialData ? {
     buyer:            initialData.buyer?._id ?? '',
     property:         initialData.property?._id ?? '',
     proposedDate:     toDateInputValue(initialData.scheduled_date ?? initialData.proposed_dates?.[0]),
-    addressReference: initialData.current_address?.reference ?? '',
     notes:            initialData.notes ?? '',
 } : EMPTY_FORM
-
-const initialLocation = (initialData) => ({
-    coordinates: initialData?.current_address?.location?.coordinates ?? null,
-    address:     initialData?.current_address?.address ?? '',
-    components:  null,
-})
 
 const initialSlot = (initialData) => initialData?.time
     ? { start_time: initialData.time.start_time, end_time: initialData.time.end_time }
@@ -101,7 +93,6 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
     const [schedules,  setSchedules]  = useState([])
     const [isLoadingOptions, setIsLoadingOptions] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
-    const [location, setLocation] = useState(() => initialLocation(initialData))
     const [slot,     setSlot]     = useState(() => initialSlot(initialData))
 
     useEffect(() => {
@@ -133,8 +124,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
 
     // Un validador por campo para poder revisar uno solo (al salir del campo,
     // "en vivo") o todos de una vez (justo antes de enviar al backend). Recibe
-    // el form completo más location/slot porque algunos campos dependen de más
-    // de un estado (ej. el horario depende de la fecha elegida).
+    // el form completo más slot porque el horario depende de la fecha elegida.
     const fieldValidators = {
         buyer: (f) => !f.buyer ? 'Seleccione un cliente.' : null,
         property: (f) => !f.property ? 'Seleccione una propiedad.' : null,
@@ -148,16 +138,14 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
             if (parsed > maxDate) return 'La fecha es demasiado lejana. Elija una fecha más cercana.'
             return null
         },
-        slot: (_f, loc, s) => !s ? 'Seleccione un horario disponible.' : null,
-        location: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
-        addressReference: (f) => !f.addressReference.trim() ? 'La referencia de dirección es requerida.' : null,
+        slot: (_f, s) => !s ? 'Seleccione un horario disponible.' : null,
     }
 
     // Valida un solo campo contra el estado actual y actualiza su error en el
     // momento — así el error sale apenas la persona sale del campo mal
     // llenado, no hasta que le da clic a "Guardar".
-    const validateField = (key, formOverride = form, locOverride = location, slotOverride = slot) => {
-        const message = fieldValidators[key]?.(formOverride, locOverride, slotOverride) ?? null
+    const validateField = (key, formOverride = form, slotOverride = slot) => {
+        const message = fieldValidators[key]?.(formOverride, slotOverride) ?? null
         setErrors((prev) => ({ ...prev, [key]: message }))
         return message
     }
@@ -173,7 +161,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
     const validateAll = () => {
         const e = {}
         for (const key of Object.keys(fieldValidators)) {
-            const message = fieldValidators[key](form, location, slot)
+            const message = fieldValidators[key](form, slot)
             if (message) e[key] = message
         }
         setErrors(e)
@@ -202,17 +190,10 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         setErrors((prev) => ({ ...prev, slot: touched.slot ? 'Seleccione un horario disponible.' : null }))
     }
 
-    const handleLocationChange = (loc) => {
-        setLocation(loc)
-        setTouched((prev) => ({ ...prev, location: true }))
-        validateField('location', form, loc)
-    }
-
     const submit = async () => {
-        const ok = await onSubmit({ ...form, location, slot })
+        const ok = await onSubmit({ ...form, slot })
         if (ok && !isEditing) {
             setForm(EMPTY_FORM)
-            setLocation({ coordinates: null, address: '', components: null })
             setSlot(null)
             setErrors({})
             setTouched({})
@@ -241,16 +222,18 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                     <Field>
                         <FieldLabel>
                             <FieldTitle className='text-orve-teal/70'>Cliente</FieldTitle>
-                            <Select value={form.buyer} onValueChange={(v) => setField('buyer', v)} disabled={isLoadingOptions}>
-                                <SelectTrigger className='w-full bg-white/70'>
-                                    <SelectValue placeholder={isLoadingOptions ? 'Cargando...' : 'Seleccione un cliente'} />
-                                </SelectTrigger>
-                                <SelectContent position='popper' className='bg-white border border-input shadow-md'>
-                                    {clients.map((c) => (
-                                        <SelectItem key={c._id} value={c._id}>{c.name} {c.lastname} — {c.email}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                items={clients}
+                                value={form.buyer}
+                                onValueChange={(v) => setField('buyer', v)}
+                                disabled={isLoadingOptions}
+                                getValue={(c) => c._id}
+                                getLabel={(c) => `${c.name} ${c.lastname} — ${c.email}`}
+                                placeholder={isLoadingOptions ? 'Cargando...' : 'Seleccione un cliente'}
+                                searchPlaceholder='Buscar por nombre o correo...'
+                                emptyText='No se encontró ningún cliente.'
+                                className='bg-white/70'
+                            />
                         </FieldLabel>
                         <FieldError>{errors.buyer}</FieldError>
                     </Field>
@@ -322,34 +305,6 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                         )}
                         <FieldError>{errors.slot}</FieldError>
                     </Field>
-                </div>
-            </FieldGroup>
-
-            <FieldSeparator />
-
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Dirección actual del cliente</FieldLegend>
-
-                <Field>
-                    <FieldLabel>
-                        <FieldTitle className='text-orve-teal/70'>Referencia</FieldTitle>
-                        <Input
-                            value={form.addressReference}
-                            onChange={(e) => setField('addressReference', e.target.value)}
-                            placeholder='Ej. Cerca de la gasolinera central'
-                            className='bg-white/70'
-                        />
-                    </FieldLabel>
-                    <FieldError>{errors.addressReference}</FieldError>
-                </Field>
-
-                <div className='mt-2'>
-                    <LocationPicker
-                        defaultCoordinates={location.coordinates}
-                        defaultAddress={location.address}
-                        onChange={handleLocationChange}
-                    />
-                    <FieldError>{errors.location}</FieldError>
                 </div>
             </FieldGroup>
 

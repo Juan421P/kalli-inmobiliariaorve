@@ -39,8 +39,15 @@ async function assertTimeIsAvailable(proposedDates, time) {
 
 const service = {
 
-    async getAll(filter = {}) {
-        return await model.find(filter).populate(populateOptions).sort({ createdAt: -1 });
+    // Un colaborador solo debe ver las citas que un admin le asignó a él -no
+    // todas las que existen, eso es cosa del admin-. Se aplica acá, en vez de
+    // en el controller, para que ninguna otra ruta que reutilice este método
+    // se le olvide filtrar.
+    async getAll(filter = {}, actor) {
+        const scopedFilter = actor?.role === 'collaborator'
+            ? { ...filter, collaborator: actor.id }
+            : filter;
+        return await model.find(scopedFilter).populate(populateOptions).sort({ createdAt: -1 });
     },
 
     async getById(id) {

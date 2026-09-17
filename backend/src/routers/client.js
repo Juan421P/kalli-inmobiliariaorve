@@ -2,7 +2,7 @@ import express from 'express';
 import controller from '../controllers/client.js';
 import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
-import { requireAdmin } from '../middleware/auth/require_admin.js';
+import { requireStaff } from '../middleware/auth/require_staff.js';
 import { requireSelf } from '../middleware/auth/require_self.js';
 import { requireSelfOrAdmin } from '../middleware/auth/require_self_or_admin.js';
 import { validatePayload } from '../middleware/validate_payload.js';
@@ -14,7 +14,7 @@ const client = express.Router();
 client.route('/')
     .get(
         requireAuth,
-        requireAdmin,
+        requireStaff,
         controller.get
     );
 
