@@ -18,6 +18,14 @@ import {
 
 const inputBase = 'w-full pl-9 pr-10 py-3 text-sm bg-orve-teal/5 border border-orve-teal/15 rounded-xl outline-none transition-colors placeholder:text-orve-teal/30 focus:border-orve-teal/40'
 
+// Tienen que calzar con auth.password y auth.code en el backend
+// (backend/src/schemas/fields/primitives.js, auth.js) — este flujo pasa por
+// el mismo /client/password-recovery/change-password que "olvidé mi
+// contraseña", así que las reglas de acá tienen que ser las mismas.
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+const PASSWORD_MAX = 20
+const CODE_REGEX = /^[a-zA-Z0-9]+$/
+
 /**
  * Pestaña "Seguridad" del perfil.
  * Cambio de contraseña: flujo 2 pasos (envío de código OTP al correo → verificar + nueva contraseña).
@@ -58,10 +66,10 @@ const ChangePasswordSection = ({ email }) => {
     const getStrength = (pwd) => {
         if (!pwd) return 0
         let s = 0
-        if (pwd.length >= 8) s++
-        if (/[A-Z]/.test(pwd)) s++
+        if (pwd.length >= 8 && pwd.length <= PASSWORD_MAX) s++
+        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++
         if (/[0-9]/.test(pwd)) s++
-        if (/[^A-Za-z0-9]/.test(pwd)) s++
+        if (/[@$!%*?&]/.test(pwd)) s++
         return s
     }
     const strength = getStrength(newPassword)
@@ -83,8 +91,8 @@ const ChangePasswordSection = ({ email }) => {
                 setJustResent(true)
                 setTimeout(() => setJustResent(false), 4000)
             }
-        } catch {
-            setServerError('No se pudo enviar el código. Intente de nuevo.')
+        } catch (err) {
+            setServerError(err.friendlyMessage)
         } finally {
             setSending(false)
         }
@@ -98,11 +106,14 @@ const ChangePasswordSection = ({ email }) => {
             setPhase('success')
             reset()
         } catch (err) {
+            // Para código inválido o contraseñas que no coinciden se prefiere un
+            // mensaje fijo y claro; cualquier otro caso (incluido el rate
+            // limiter) usa el mensaje real en vez de un genérico.
             const status = err?.response?.status
             setServerError(
                 status === 403 ? 'Código incorrecto o expirado.' :
                 status === 400 ? 'Las contraseñas no coinciden.' :
-                'Error al actualizar la contraseña.'
+                err.friendlyMessage
             )
         }
     }
@@ -144,14 +155,33 @@ const ChangePasswordSection = ({ email }) => {
                     <div className='flex flex-col gap-1'>
                         <label className='text-xs text-gray-500 font-medium'>Código recibido por correo</label>
                         <input
-                            {...register('code', { required: true, minLength: 6, maxLength: 6 })}
+                            {...register('code', { required: true, minLength: 6, maxLength: 6, pattern: { value: CODE_REGEX, message: 'Solo letras y números.' } })}
                             placeholder='ej: a1b2c3'
                             className='w-full px-4 py-3 text-sm bg-orve-teal/5 border border-orve-teal/15 rounded-xl outline-none focus:border-orve-teal/40 tracking-widest font-mono placeholder:tracking-normal placeholder:font-sans'
                         />
                     </div>
 
-                    <PasswordField label='Nueva contraseña'          name='newPassword'     register={register} error={errors.newPassword}     rules={{ required: true, minLength: { value: 8, message: 'Mínimo 8 caracteres' } }} />
-                    <PasswordField label='Confirmar nueva contraseña' name='confirmPassword' register={register} error={errors.confirmPassword} rules={{ required: true, validate: v => v === newPassword || 'Las contraseñas no coinciden' }} />
+                    <PasswordField
+                        label='Nueva contraseña'
+                        name='newPassword'
+                        register={register}
+                        error={errors.newPassword}
+                        maxLength={PASSWORD_MAX}
+                        rules={{
+                            required: true,
+                            validate: (v) =>
+                                (v.length >= 8 && v.length <= PASSWORD_MAX && PASSWORD_REGEX.test(v))
+                                || 'Debe tener entre 8 y 20 caracteres, con mayúscula, minúscula, número y carácter especial (@$!%*?&).',
+                        }}
+                    />
+                    <PasswordField
+                        label='Confirmar nueva contraseña'
+                        name='confirmPassword'
+                        register={register}
+                        error={errors.confirmPassword}
+                        maxLength={PASSWORD_MAX}
+                        rules={{ required: true, validate: v => v === newPassword || 'Las contraseñas no coinciden' }}
+                    />
 
                     {newPassword.length > 0 && (
                         <div className='flex flex-col gap-1.5'>
@@ -219,8 +249,8 @@ const ActiveSessionsSection = ({ clearSession }) => {
             await ClientService.logoutAllSessions()
             clearSession()
             navigate('/login')
-        } catch {
-            setError('No se pudieron cerrar las sesiones. Intente de nuevo.')
+        } catch (err) {
+            setError(err.friendlyMessage)
             setClosing(false)
         }
     }
@@ -303,8 +333,8 @@ const DeleteAccountSection = () => {
             setStep(0)
             clearSession()
             navigate('/')
-        } catch {
-            setError('No se pudo eliminar la cuenta. Intente de nuevo.')
+        } catch (err) {
+            setError(err.friendlyMessage)
         } finally {
             setDeleting(false)
         }
@@ -376,7 +406,7 @@ const DeleteAccountSection = () => {
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
-const PasswordField = ({ label, name, register, error, rules }) => {
+const PasswordField = ({ label, name, register, error, rules, maxLength }) => {
     const [show, setShow] = useState(false)
     return (
         <div>
@@ -386,6 +416,7 @@ const PasswordField = ({ label, name, register, error, rules }) => {
                     {...register(name, rules)}
                     type={show ? 'text' : 'password'}
                     placeholder={label}
+                    maxLength={maxLength}
                     className={cn(inputBase, error && 'border-orve-red/40')}
                 />
                 <button type='button' onClick={() => setShow(v => !v)} className='absolute right-3 top-1/2 -translate-y-1/2 text-orve-teal/40 hover:text-orve-teal/70'>

@@ -11,3 +11,10 @@ export function formatPhoneInput(value) {
   const digits = (value ?? '').replace(/\D/g, '').slice(0, 8);
   return digits.length > 4 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : digits;
 }
+
+// Mismo comportamiento que formatPhoneInput pero para el formato del DUI
+// (00000000-0 que exige el backend): 8 dígitos, guion, y un dígito más.
+export function formatDuiInput(value) {
+  const digits = (value ?? '').replace(/\D/g, '').slice(0, 9);
+  return digits.length > 8 ? `${digits.slice(0, 8)}-${digits.slice(8)}` : digits;
+}

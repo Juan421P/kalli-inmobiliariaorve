@@ -9,8 +9,16 @@ import useLoginForm from '@/hooks/useLoginForm'
 
 const inputBase = 'w-full text-sm bg-gray-100/80 border border-gray-200/80 rounded-xl outline-none transition-colors placeholder:text-xs placeholder:text-gray-400 focus:border-orve-teal/50 focus:bg-white/80'
 
+// Tiene que calzar exacto con auth.password en el backend
+// (backend/src/schemas/fields/primitives.js) — el login pasa por el mismo
+// schema antes de comparar credenciales, así que una contraseña floja acá deja
+// pasar intentos que el backend rechaza con un error de validación en vez de
+// "credenciales incorrectas".
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+const PASSWORD_MAX = 20
+
 const PASSWORD_CHECKS = [
-    { label: 'Mínimo 8 caracteres',      test: (v) => v.length >= 8 },
+    { label: `Entre 8 y ${PASSWORD_MAX} caracteres`, test: (v) => v.length >= 8 && v.length <= PASSWORD_MAX },
     { label: 'Una letra mayúscula',       test: (v) => /[A-Z]/.test(v) },
     { label: 'Una letra minúscula',       test: (v) => /[a-z]/.test(v) },
     { label: 'Un número',                 test: (v) => /\d/.test(v) },
@@ -150,11 +158,12 @@ const LoginForm = () => {
                                     {...passwordForm.register('newPassword', {
                                         required: true,
                                         validate: (v) =>
-                                            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v)
+                                            (v.length <= PASSWORD_MAX && PASSWORD_REGEX.test(v))
                                             || 'La contraseña no cumple los requisitos.',
                                     })}
                                     type={showNewPass ? 'text' : 'password'}
                                     placeholder='Nueva contraseña'
+                                    maxLength={PASSWORD_MAX}
                                     className={cn(inputBase, 'pl-10 pr-10 py-3')}
                                 />
                                 <button type='button' onClick={() => setShowNewPass(v => !v)}
@@ -273,9 +282,13 @@ const LoginForm = () => {
                         <input
                             {...register('password', {
                                 required: 'La contraseña es requerida.',
-                                minLength: {
-                                    value: 6,
-                                    message: 'La contraseña debe tener al menos 6 caracteres.',
+                                maxLength: {
+                                    value: PASSWORD_MAX,
+                                    message: `La contraseña no puede superar los ${PASSWORD_MAX} caracteres.`,
+                                },
+                                pattern: {
+                                    value: PASSWORD_REGEX,
+                                    message: 'Debe incluir mayúscula, minúscula, número y carácter especial (@$!%*?&).',
                                 },
                             })}
                             type={showPassword ? 'text' : 'password'}

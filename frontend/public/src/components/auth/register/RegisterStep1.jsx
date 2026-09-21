@@ -4,8 +4,18 @@ import { cn } from '@/lib/utils'
 
 const inputBase = 'w-full text-sm bg-gray-100/80 border border-gray-200/80 rounded-xl outline-none transition-colors placeholder:text-xs placeholder:text-gray-400 focus:border-orve-teal/50 focus:bg-white/80'
 
+// Tienen que calzar con user.name/user.lastname (shortText) y auth.password en
+// el backend (backend/src/schemas/fields/primitives.js) — si allá cambian el
+// máximo o el regex y acá no, el registro deja pasar cosas que el backend
+// va a rechazar igual.
+const SHORT_TEXT_MAX = 20
+const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/
+const EMAIL_MAX = 255
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+const PASSWORD_MAX = 20
+
 const PASSWORD_CHECKS = [
-    { label: 'Mínimo 8 caracteres',      test: (v) => v.length >= 8 },
+    { label: `Entre 8 y ${PASSWORD_MAX} caracteres`, test: (v) => v.length >= 8 && v.length <= PASSWORD_MAX },
     { label: 'Una letra mayúscula',       test: (v) => /[A-Z]/.test(v) },
     { label: 'Una letra minúscula',       test: (v) => /[a-z]/.test(v) },
     { label: 'Un número',                 test: (v) => /\d/.test(v) },
@@ -30,8 +40,19 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                         <div className='relative'>
                             <User className='absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
                             <input
-                                {...register(name, { required: 'Este campo es requerido.' })}
+                                {...register(name, {
+                                    required: 'Este campo es requerido.',
+                                    maxLength: {
+                                        value: SHORT_TEXT_MAX,
+                                        message: `No puede superar los ${SHORT_TEXT_MAX} caracteres.`,
+                                    },
+                                    pattern: {
+                                        value: SHORT_TEXT_REGEX,
+                                        message: 'Solo letras, números, espacios, guiones y apóstrofes.',
+                                    },
+                                })}
                                 placeholder={placeholder}
+                                maxLength={SHORT_TEXT_MAX}
                                 className={cn(inputBase, 'pl-10 pr-3 py-3', errors[name] && 'border-red-300/70')}
                             />
                         </div>
@@ -52,6 +73,10 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                         <input
                             {...register('email', {
                                 required: 'El correo es requerido.',
+                                maxLength: {
+                                    value: EMAIL_MAX,
+                                    message: `No puede superar los ${EMAIL_MAX} caracteres.`,
+                                },
                                 pattern: {
                                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                                     message: 'Ingrese un correo válido.',
@@ -59,6 +84,7 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                             })}
                             type='email'
                             placeholder='correo@ejemplo.com'
+                            maxLength={EMAIL_MAX}
                             className={cn(inputBase, 'pl-10 pr-3 py-3', errors.email && 'border-red-300/70')}
                         />
                     </div>
@@ -76,11 +102,12 @@ const RegisterStep1 = ({ form, onSubmit }) => {
                             {...register('password', {
                                 required: 'La contraseña es requerida.',
                                 validate: (v) =>
-                                    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v)
+                                    (v.length <= PASSWORD_MAX && PASSWORD_REGEX.test(v))
                                     || 'La contraseña no cumple los requisitos.',
                             })}
                             type={showPass ? 'text' : 'password'}
                             placeholder='Ingrese su contraseña'
+                            maxLength={PASSWORD_MAX}
                             className={cn(inputBase, 'pl-10 pr-10 py-3', errors.password && 'border-red-300/70')}
                         />
                         <button

@@ -11,6 +11,11 @@ const DAY_MAP = {
     4: 'thursday', 5: 'friday', 6: 'saturday',
 }
 
+// Tiene que calzar con longText() en el backend
+// (backend/src/schemas/fields/primitives.js), que es lo que valida `notes`.
+export const REASON_MAX = 1000
+export const REASON_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'"¿¡%/-]+$/
+
 /**
  * Maneja el formulario de "Agendar cita" con react-hook-form: fecha/hora de
  * visita (dependen de los horarios configurados por el negocio), metodo de

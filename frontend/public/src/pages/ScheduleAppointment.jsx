@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
 import useProperty from '@/hooks/useProperty'
-import useAppointmentForm from '@/hooks/useAppointmentForm'
+import useAppointmentForm, { REASON_MAX, REASON_REGEX } from '@/hooks/useAppointmentForm'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
 
 const CONTACT_OPTIONS = [
@@ -33,6 +33,7 @@ const ScheduleAppointment = () => {
         noSchedules,
         isSubmitting,
         isValid,
+        errors,
         register,
         control,
         selectedDate,
@@ -210,9 +211,20 @@ const ScheduleAppointment = () => {
                                         <textarea
                                             rows={2}
                                             placeholder='Contanos por que te interesa esta propiedad'
-                                            {...register('reason', { required: true })}
+                                            maxLength={REASON_MAX}
+                                            {...register('reason', {
+                                                required: true,
+                                                maxLength: REASON_MAX,
+                                                pattern: REASON_REGEX,
+                                            })}
                                             className='bg-white/70 border border-orve-teal/20 rounded-xl px-4 py-2.5 text-sm text-orve-darker-teal outline-none placeholder:text-orve-teal/30 resize-none'
                                         />
+                                        {errors.reason?.type === 'maxLength' && (
+                                            <p className='text-[10px] text-orve-red'>No puede superar los {REASON_MAX} caracteres.</p>
+                                        )}
+                                        {errors.reason?.type === 'pattern' && (
+                                            <p className='text-[10px] text-orve-red'>Contiene caracteres no permitidos.</p>
+                                        )}
                                     </div>
 
                                     <div className='h-px bg-orve-teal/10' />
