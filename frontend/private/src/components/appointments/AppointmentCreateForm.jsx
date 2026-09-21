@@ -47,6 +47,12 @@ const EMPTY_FORM = {
     notes:            '',
 }
 
+// Tiene que calzar con longText() en el backend
+// (backend/src/schemas/fields/primitives.js), que es lo que valida `notes`
+// tanto al crear como al actualizar una cita.
+const NOTES_MAX = 1000
+const NOTES_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'"¿¡%/-]+$/
+
 const toDateInputValue = (dateStr) => {
     if (!dateStr) return ''
     return new Date(dateStr).toISOString().slice(0, 10)
@@ -139,6 +145,12 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
             return null
         },
         slot: (_f, s) => !s ? 'Seleccione un horario disponible.' : null,
+        notes: (f) => {
+            if (!f.notes.trim()) return null
+            if (f.notes.trim().length > NOTES_MAX) return `No puede superar los ${NOTES_MAX} caracteres.`
+            if (!NOTES_REGEX.test(f.notes.trim())) return 'Contiene caracteres no permitidos.'
+            return null
+        },
     }
 
     // Valida un solo campo contra el estado actual y actualiza su error en el
@@ -318,9 +330,11 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                             value={form.notes}
                             onChange={(e) => setField('notes', e.target.value)}
                             placeholder='Notas internas sobre la cita'
+                            maxLength={NOTES_MAX}
                             className='bg-white/70'
                         />
                     </FieldLabel>
+                    <FieldError>{errors.notes}</FieldError>
                 </Field>
             </FieldGroup>
 

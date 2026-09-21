@@ -153,6 +153,7 @@ const Schedules = () => {
                         editingSlot={editingSlot}
                         onCancelEdit={() => setEditingSlot(null)}
                         isLoading={isSubmitting}
+                        schedules={schedules}
                     />
 
                     {isLoading ? (

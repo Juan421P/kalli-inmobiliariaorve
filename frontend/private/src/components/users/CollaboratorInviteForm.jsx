@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { formatPhoneInput } from '@/lib/utils'
+import { formatPhoneInput, formatDuiInput } from '@/lib/utils'
 import {
     Field,
     FieldLabel,
@@ -31,6 +31,15 @@ const EMPTY_FORM = {
     documentType:   'dui',
     documentNumber: '',
 }
+
+// Tienen que calzar exacto con user.name/user.lastname en el backend
+// (backend/src/schemas/fields/primitives.js: shortText) — si allá cambian el
+// máximo o el regex y acá no, el formulario deja pasar cosas que el backend
+// va a rechazar igual.
+const SHORT_TEXT_MAX = 20
+const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/
+const DOCUMENT_NUMBER_MAX = 50
+const EMAIL_MAX = 255
 
 const AvatarUpload = ({ preview, onChange, error }) => {
     const inputRef = useRef(null)
@@ -93,10 +102,21 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
     // elegido, que puede no estar en el state todavía.
     const fieldValidators = {
         avatar: (_f, av) => !av ? 'La foto es requerida.' : null,
-        name: (f) => !f.name.trim() ? 'El nombre es requerido.' : null,
-        lastname: (f) => !f.lastname.trim() ? 'El apellido es requerido.' : null,
+        name: (f) => {
+            if (!f.name.trim()) return 'El nombre es requerido.'
+            if (f.name.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.name.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
+        lastname: (f) => {
+            if (!f.lastname.trim()) return 'El apellido es requerido.'
+            if (f.lastname.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.lastname.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
         email: (f) => {
             if (!f.email.trim()) return 'El correo es requerido.'
+            if (f.email.trim().length > EMAIL_MAX) return `No puede superar los ${EMAIL_MAX} caracteres.`
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Ingrese un correo válido.'
             return null
         },
@@ -108,6 +128,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
         documentNumber: (f) => {
             if (!f.documentNumber.trim()) return 'El número de documento es requerido.'
             if (f.documentType === 'dui' && !/^\d{8}-\d$/.test(f.documentNumber)) return 'El DUI debe tener el formato 00000000-0'
+            if (f.documentType !== 'dui' && f.documentNumber.trim().length > DOCUMENT_NUMBER_MAX) return `No puede superar los ${DOCUMENT_NUMBER_MAX} caracteres.`
             return null
         },
     }
@@ -133,13 +154,18 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
     const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
 
     const isDuiValid = form.documentType !== 'dui' || /^\d{8}-\d$/.test(form.documentNumber)
+    const isNameValid = (v) => v.trim() && v.trim().length <= SHORT_TEXT_MAX && SHORT_TEXT_REGEX.test(v.trim())
+    const isDocumentNumberValid =
+        form.documentNumber.trim() &&
+        isDuiValid &&
+        (form.documentType === 'dui' || form.documentNumber.trim().length <= DOCUMENT_NUMBER_MAX)
 
     const isFormReady =
-        form.name.trim() &&
-        form.lastname.trim() &&
-        form.email.trim() && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+        isNameValid(form.name) &&
+        isNameValid(form.lastname) &&
+        form.email.trim() && form.email.trim().length <= EMAIL_MAX && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
         /^\d{4}-\d{4}$/.test(form.phone) &&
-        form.documentNumber.trim() && isDuiValid &&
+        isDocumentNumberValid &&
         avatar.file
 
     // Revisa TODOS los campos (y la foto) contra el estado actual, sin
@@ -206,6 +232,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('name', e.target.value)}
                                 onBlur={() => touchField('name')}
                                 placeholder='Nombre'
+                                maxLength={SHORT_TEXT_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -225,6 +252,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('lastname', e.target.value)}
                                 onBlur={() => touchField('lastname')}
                                 placeholder='Apellido'
+                                maxLength={SHORT_TEXT_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -271,6 +299,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('email', e.target.value)}
                                 onBlur={() => touchField('email')}
                                 placeholder='correo@ejemplo.com'
+                                maxLength={EMAIL_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -311,9 +340,10 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                             </FieldTitle>
                             <Input
                                 value={form.documentNumber}
-                                onChange={(e) => setField('documentNumber', e.target.value)}
+                                onChange={(e) => setField('documentNumber', form.documentType === 'dui' ? formatDuiInput(e.target.value) : e.target.value)}
                                 onBlur={() => touchField('documentNumber')}
                                 placeholder={form.documentType === 'dui' ? '00000000-0' : 'Número de documento'}
+                                maxLength={form.documentType === 'dui' ? 10 : DOCUMENT_NUMBER_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>

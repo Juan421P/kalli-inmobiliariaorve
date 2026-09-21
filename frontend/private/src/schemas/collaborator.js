@@ -1,8 +1,17 @@
 import { z } from 'zod';
+// Tiene que calzar exacto con auth.password en el backend
+// (backend/src/schemas/fields/primitives.js) — el login pasa por este mismo
+// schema antes de comparar credenciales, así que si es más laxo que el
+// backend, una contraseña mal tecleada (pero de 8+ caracteres) no da
+// "credenciales incorrectas" sino un error de validación confuso.
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
 const c = z.object({
     name: z.string().min(1, 'name is required'),
     lastname: z.string().min(1, 'lastname is required'),
-    password: z.string().min(8, 'password must be at least 8 characters long'),
+    password: z.string()
+        .min(8, 'la contraseña debe tener al menos 8 caracteres')
+        .max(20, 'la contraseña no puede superar los 20 caracteres')
+        .regex(PASSWORD_REGEX, 'la contraseña debe incluir mayúscula, minúscula, número y carácter especial (@$!%*?&)'),
     email: z.string().email('invalid email format'),
     document: z.object({
         type: z.enum(['dui', 'pasaporte', 'residencia']),

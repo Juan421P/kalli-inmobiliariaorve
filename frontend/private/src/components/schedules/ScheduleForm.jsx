@@ -73,8 +73,8 @@ const TimePicker = ({ label, value, onChange }) => {
     )
 }
 
-// ScheduleForm 
-const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading }) => {
+// ScheduleForm
+const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading, schedules = [] }) => {
     const [day,   setDay]   = useState('Lunes')
     const [from,  setFrom]  = useState('')
     const [to,    setTo]    = useState('')
@@ -94,7 +94,18 @@ const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading })
         }
     }, [editingSlot])
 
-    const validate = (fromVal = from, toVal = to) => {
+    // El backend rechaza intervalos que se traslapan dentro del mismo día
+    // (backend/src/schemas/fields/schedule_availability.js), así que hay que
+    // revisarlo también acá antes de mandar la petición. Al editar, el slot que
+    // se está editando no cuenta como traslape consigo mismo.
+    const overlaps = (dayVal, fromVal, toVal) => {
+        const daySlots = schedules.find((s) => s.day === dayVal)?.slots ?? []
+        return daySlots
+            .filter((s) => s._id !== editingSlot?.slotId)
+            .some((s) => fromVal < s.to && s.from < toVal)
+    }
+
+    const validate = (dayVal = day, fromVal = from, toVal = to) => {
         if (!fromVal || !toVal) {
             setError('Seleccioná ambos campos de tiempo.')
             return false
@@ -103,21 +114,30 @@ const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading })
             setError('La hora de inicio debe ser menor a la hora de fin.')
             return false
         }
+        if (overlaps(dayVal, fromVal, toVal)) {
+            setError('Este horario se traslapa con uno que ya existe ese día.')
+            return false
+        }
         setError('')
         return true
     }
 
     // Valida contra el valor que se acaba de elegir (no el viejo del state) para
-    // que el error de "hora inicio > hora fin" aparezca apenas se elige la hora
-    // que lo provoca, no hasta que se le dé clic a "Agregar"/"Guardar".
+    // que el error (hora inicio > fin, o traslape) aparezca apenas se elige la
+    // hora que lo provoca, no hasta que se le dé clic a "Agregar"/"Guardar".
+    const handleDayChange = (value) => {
+        setDay(value)
+        if (from && to) validate(value, from, to)
+    }
+
     const handleFromChange = (value) => {
         setFrom(value)
-        if (value && to) validate(value, to)
+        if (value && to) validate(day, value, to)
     }
 
     const handleToChange = (value) => {
         setTo(value)
-        if (from && value) validate(from, value)
+        if (from && value) validate(day, from, value)
     }
 
     const handleSubmit = () => {
@@ -143,7 +163,7 @@ const ScheduleForm = ({ onAdd, onUpdate, editingSlot, onCancelEdit, isLoading })
                     <span className='text-xs font-semibold text-orve-teal/60 uppercase tracking-widest'>
                         Día
                     </span>
-                    <Select value={day} onValueChange={setDay} disabled={isEditing}>
+                    <Select value={day} onValueChange={handleDayChange} disabled={isEditing}>
                         <SelectTrigger className='w-36 bg-white/80 border-input text-orve-darker-teal font-medium shadow-sm'>
                             <SelectValue />
                         </SelectTrigger>
