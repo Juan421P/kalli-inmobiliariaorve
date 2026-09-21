@@ -50,8 +50,7 @@ const useOfferForm = ({ property, publicId, userId }) => {
             toast.success('¡Oferta enviada! Un agente se pondrá en contacto contigo.')
             navigate(`/property/${publicId}`)
         } catch (err) {
-            const msg = err?.response?.data?.message ?? 'No se pudo enviar la oferta. Intenta de nuevo.'
-            toast.error(msg)
+            toast.error(err.friendlyMessage)
         } finally {
             setIsSubmitting(false)
         }
