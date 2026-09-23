@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
+import SearchableSelect from '@/components/ui/searchable-select'
 import {
     AlertDialog,
     AlertDialogAction,
@@ -30,15 +31,8 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { appointmentOptionsService } from '@/services/AppointmentsService'
-import LocationPicker from '@/components/properties/LocationPicker'
 import { cn } from '@/lib/utils'
 import toast from '@/lib/toast'
-
-const FUNDS_SOURCES = [
-    { value: 'own',  label: 'Fondos propios' },
-    { value: 'loan', label: 'Préstamo' },
-    { value: 'mixed', label: 'Mixto' },
-]
 
 // El backend guarda los días en inglés; Date.getDay() -> 0 = domingo
 const DAY_MAP = {
@@ -50,12 +44,14 @@ const EMPTY_FORM = {
     buyer:            '',
     property:         '',
     proposedDate:     '',
-    fundsSource:      'own',
-    monthlyIncome:    '',
-    reason:           '',
-    addressReference: '',
     notes:            '',
 }
+
+// Tiene que calzar con longText() en el backend
+// (backend/src/schemas/fields/primitives.js), que es lo que valida `notes`
+// tanto al crear como al actualizar una cita.
+const NOTES_MAX = 1000
+const NOTES_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'"¿¡%/-]+$/
 
 const toDateInputValue = (dateStr) => {
     if (!dateStr) return ''
@@ -70,22 +66,24 @@ const parseLocalDate = (dateStr) => {
     return new Date(y, m - 1, d)
 }
 
+// Hoy a medianoche local, para comparar solo la fecha (sin la hora) contra la
+// fecha propuesta y así permitir agendar "hoy" pero no un día que ya pasó
+const startOfToday = () => {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
+}
+
+// Un año hacia adelante como tope razonable para que no se cuele una fecha
+// tipeada mal (ej. un año con dígito de más)
+const MAX_MONTHS_AHEAD = 12
+
 const formFromInitialData = (initialData) => initialData ? {
     buyer:            initialData.buyer?._id ?? '',
     property:         initialData.property?._id ?? '',
     proposedDate:     toDateInputValue(initialData.scheduled_date ?? initialData.proposed_dates?.[0]),
-    fundsSource:      initialData.qualification?.funds_source ?? 'own',
-    monthlyIncome:    initialData.qualification?.monthly_income?.toString() ?? '',
-    reason:           initialData.qualification?.reason ?? '',
-    addressReference: initialData.current_address?.reference ?? '',
     notes:            initialData.notes ?? '',
 } : EMPTY_FORM
-
-const initialLocation = (initialData) => ({
-    coordinates: initialData?.current_address?.location?.coordinates ?? null,
-    address:     initialData?.current_address?.address ?? '',
-    components:  null,
-})
 
 const initialSlot = (initialData) => initialData?.time
     ? { start_time: initialData.time.start_time, end_time: initialData.time.end_time }
@@ -95,12 +93,12 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
     const isEditing = Boolean(initialData)
     const [form,     setForm]     = useState(() => formFromInitialData(initialData))
     const [errors,   setErrors]   = useState({})
+    const [touched,  setTouched]  = useState({})
     const [clients,    setClients]    = useState([])
     const [properties, setProperties] = useState([])
     const [schedules,  setSchedules]  = useState([])
     const [isLoadingOptions, setIsLoadingOptions] = useState(true)
     const [dialogOpen, setDialogOpen] = useState(false)
-    const [location, setLocation] = useState(() => initialLocation(initialData))
     const [slot,     setSlot]     = useState(() => initialSlot(initialData))
 
     useEffect(() => {
@@ -115,8 +113,8 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                 setClients(clientsData)
                 setProperties(propertiesData)
                 setSchedules(schedulesData)
-            } catch {
-                toast.error('Error', 'No se pudieron cargar los clientes, propiedades u horarios.')
+            } catch (error) {
+                toast.error('No se pudieron cargar los clientes, propiedades u horarios.', error.friendlyMessage)
             } finally {
                 setIsLoadingOptions(false)
             }
@@ -130,44 +128,94 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
         return schedules.find((s) => s.day === day)?.intervals ?? []
     }, [form.proposedDate, schedules])
 
+    // Un validador por campo para poder revisar uno solo (al salir del campo,
+    // "en vivo") o todos de una vez (justo antes de enviar al backend). Recibe
+    // el form completo más slot porque el horario depende de la fecha elegida.
+    const fieldValidators = {
+        buyer: (f) => !f.buyer ? 'Seleccione un cliente.' : null,
+        property: (f) => !f.property ? 'Seleccione una propiedad.' : null,
+        proposedDate: (f) => {
+            if (!f.proposedDate) return 'Seleccione una fecha.'
+            const parsed = parseLocalDate(f.proposedDate)
+            if (!parsed || isNaN(parsed.getTime())) return 'La fecha ingresada no es válida.'
+            if (parsed < startOfToday()) return 'La fecha no puede ser anterior a hoy.'
+            const maxDate = new Date()
+            maxDate.setMonth(maxDate.getMonth() + MAX_MONTHS_AHEAD)
+            if (parsed > maxDate) return 'La fecha es demasiado lejana. Elija una fecha más cercana.'
+            return null
+        },
+        slot: (_f, s) => !s ? 'Seleccione un horario disponible.' : null,
+        notes: (f) => {
+            if (!f.notes.trim()) return null
+            if (f.notes.trim().length > NOTES_MAX) return `No puede superar los ${NOTES_MAX} caracteres.`
+            if (!NOTES_REGEX.test(f.notes.trim())) return 'Contiene caracteres no permitidos.'
+            return null
+        },
+    }
+
+    // Valida un solo campo contra el estado actual y actualiza su error en el
+    // momento — así el error sale apenas la persona sale del campo mal
+    // llenado, no hasta que le da clic a "Guardar".
+    const validateField = (key, formOverride = form, slotOverride = slot) => {
+        const message = fieldValidators[key]?.(formOverride, slotOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
+    const touchField = (key) => {
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key)
+    }
+
+    // Corre TODOS los validadores contra el estado actual. Se usa antes de
+    // mandar la petición al backend, sin importar si el campo ya fue "tocado"
+    // o no, para no dejar pasar nada que no se haya revisado todavía.
+    const validateAll = () => {
+        const e = {}
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, slot)
+            if (message) e[key] = message
+        }
+        setErrors(e)
+        setTouched(Object.fromEntries(Object.keys(fieldValidators).map((k) => [k, true])))
+        return Object.keys(e).length === 0
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        // Se valida contra el valor nuevo de una vez, sin esperar a que el campo
+        // pierda el foco — así el error (o su corrección) se refleja apenas se
+        // escribe, no hasta salir del campo o darle a "Guardar".
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key, nextForm)
     }
 
     // Si cambia la fecha, el horario elegido antes ya no aplica necesariamente
     const handleDateChange = (value) => {
-        setField('proposedDate', value)
+        const nextForm = { ...form, proposedDate: value }
+        setForm(nextForm)
         setSlot(null)
-    }
-
-    const validate = () => {
-        const e = {}
-        if (!form.buyer)                     e.buyer = 'Seleccione un cliente.'
-        if (!form.property)                  e.property = 'Seleccione una propiedad.'
-        if (!form.proposedDate)              e.proposedDate = 'Seleccione una fecha.'
-        if (!slot)                           e.slot = 'Seleccione un horario disponible.'
-        if (!location.address)               e.location = 'Marque y verifique la ubicación en el mapa.'
-        if (!form.addressReference.trim())   e.addressReference = 'La referencia de dirección es requerida.'
-        if (!form.monthlyIncome)             e.monthlyIncome = 'El ingreso mensual es requerido.'
-        else if (Number(form.monthlyIncome) < 0) e.monthlyIncome = 'Debe ser un valor positivo.'
-        if (!form.reason.trim())             e.reason = 'El motivo es requerido.'
-        setErrors(e)
-        return Object.keys(e).length === 0
+        setTouched((prev) => ({ ...prev, proposedDate: true }))
+        validateField('proposedDate', nextForm)
+        // el horario queda sin elegir de nuevo, así que se marca requerido otra vez
+        setErrors((prev) => ({ ...prev, slot: touched.slot ? 'Seleccione un horario disponible.' : null }))
     }
 
     const submit = async () => {
-        const ok = await onSubmit({ ...form, location, slot })
+        const ok = await onSubmit({ ...form, slot })
         if (ok && !isEditing) {
             setForm(EMPTY_FORM)
-            setLocation({ coordinates: null, address: '', components: null })
             setSlot(null)
             setErrors({})
+            setTouched({})
         }
     }
 
     const handleSaveClick = () => {
-        if (!validate()) return
+        // Verificación final y completa de TODOS los campos justo antes de
+        // hablar con el backend, sin importar cuáles se hayan tocado ya.
+        if (!validateAll()) return
         if (isEditing) setDialogOpen(true)
         else submit()
     }
@@ -186,16 +234,18 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                     <Field>
                         <FieldLabel>
                             <FieldTitle className='text-orve-teal/70'>Cliente</FieldTitle>
-                            <Select value={form.buyer} onValueChange={(v) => setField('buyer', v)} disabled={isLoadingOptions}>
-                                <SelectTrigger className='w-full bg-white/70'>
-                                    <SelectValue placeholder={isLoadingOptions ? 'Cargando...' : 'Seleccione un cliente'} />
-                                </SelectTrigger>
-                                <SelectContent position='popper' className='bg-white border border-input shadow-md'>
-                                    {clients.map((c) => (
-                                        <SelectItem key={c._id} value={c._id}>{c.name} {c.lastname} — {c.email}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                items={clients}
+                                value={form.buyer}
+                                onValueChange={(v) => setField('buyer', v)}
+                                disabled={isLoadingOptions}
+                                getValue={(c) => c._id}
+                                getLabel={(c) => `${c.name} ${c.lastname} — ${c.email}`}
+                                placeholder={isLoadingOptions ? 'Cargando...' : 'Seleccione un cliente'}
+                                searchPlaceholder='Buscar por nombre o correo...'
+                                emptyText='No se encontró ningún cliente.'
+                                className='bg-white/70'
+                            />
                         </FieldLabel>
                         <FieldError>{errors.buyer}</FieldError>
                     </Field>
@@ -273,86 +323,6 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
             <FieldSeparator />
 
             <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Dirección actual del cliente</FieldLegend>
-
-                <Field>
-                    <FieldLabel>
-                        <FieldTitle className='text-orve-teal/70'>Referencia</FieldTitle>
-                        <Input
-                            value={form.addressReference}
-                            onChange={(e) => setField('addressReference', e.target.value)}
-                            placeholder='Ej. Cerca de la gasolinera central'
-                            className='bg-white/70'
-                        />
-                    </FieldLabel>
-                    <FieldError>{errors.addressReference}</FieldError>
-                </Field>
-
-                <div className='mt-2'>
-                    <LocationPicker
-                        defaultCoordinates={location.coordinates}
-                        defaultAddress={location.address}
-                        onChange={setLocation}
-                    />
-                    <FieldError>{errors.location}</FieldError>
-                </div>
-            </FieldGroup>
-
-            <FieldSeparator />
-
-            <FieldGroup>
-                <FieldLegend className='text-orve-teal'>Calificación financiera</FieldLegend>
-
-                <div className='grid grid-cols-1 sm:grid-cols-2 gap-5'>
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Fuente de fondos</FieldTitle>
-                            <Select value={form.fundsSource} onValueChange={(v) => setField('fundsSource', v)}>
-                                <SelectTrigger className='w-full bg-white/70'>
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent position='popper' className='bg-white border border-input shadow-md'>
-                                    {FUNDS_SOURCES.map((f) => (
-                                        <SelectItem key={f.value} value={f.value}>{f.label}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </FieldLabel>
-                    </Field>
-
-                    <Field>
-                        <FieldLabel>
-                            <FieldTitle className='text-orve-teal/70'>Ingreso mensual (USD)</FieldTitle>
-                            <Input
-                                type='number'
-                                min='0'
-                                value={form.monthlyIncome}
-                                onChange={(e) => setField('monthlyIncome', e.target.value)}
-                                placeholder='0.00'
-                                className='bg-white/70'
-                            />
-                        </FieldLabel>
-                        <FieldError>{errors.monthlyIncome}</FieldError>
-                    </Field>
-                </div>
-
-                <Field>
-                    <FieldLabel>
-                        <FieldTitle className='text-orve-teal/70'>Motivo</FieldTitle>
-                        <Textarea
-                            value={form.reason}
-                            onChange={(e) => setField('reason', e.target.value)}
-                            placeholder='Ej. Busca su primera casa propia.'
-                            className='bg-white/70'
-                        />
-                    </FieldLabel>
-                    <FieldError>{errors.reason}</FieldError>
-                </Field>
-            </FieldGroup>
-
-            <FieldSeparator />
-
-            <FieldGroup>
                 <FieldLegend className='text-orve-teal'>Notas (opcional)</FieldLegend>
                 <Field>
                     <FieldLabel>
@@ -360,9 +330,11 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                             value={form.notes}
                             onChange={(e) => setField('notes', e.target.value)}
                             placeholder='Notas internas sobre la cita'
+                            maxLength={NOTES_MAX}
                             className='bg-white/70'
                         />
                     </FieldLabel>
+                    <FieldError>{errors.notes}</FieldError>
                 </Field>
             </FieldGroup>
 

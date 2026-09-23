@@ -1,7 +1,7 @@
 import api from './apiClient';
 
 export const scheduleAvailabilityService = {
-    get: () => api.get('/scheduleAvailability'),
+    get: () => api.get('/schedule-availability'),
 };
 
 export const appointmentService = {

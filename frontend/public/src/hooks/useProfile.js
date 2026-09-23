@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import useAuth from '@/hooks/useAuth'
 import clientService from '@/services/Client'
 
@@ -7,6 +7,33 @@ const tabs = [
     { key: 'activity',  label: 'Actividad' },
     { key: 'security',  label: 'Seguridad' },
 ]
+
+// Tienen que calzar con user.name/user.lastname/user.phone en el backend
+// (backend/src/schemas/fields/primitives.js) — PUT /client/:id valida esto
+// mismo del lado del servidor.
+const SHORT_TEXT_MAX = 20
+const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/
+const PHONE_REGEX = /^\d{4}-\d{4}$/
+
+const validatePersonal = (p) => {
+    const errors = {}
+    const name = p.name.trim()
+    const lastname = p.lastname.trim()
+    const phone = p.phone.trim()
+
+    if (!name) errors.name = 'El nombre es requerido.'
+    else if (name.length > SHORT_TEXT_MAX) errors.name = `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+    else if (!SHORT_TEXT_REGEX.test(name)) errors.name = 'Solo letras, números, espacios, guiones y apóstrofes.'
+
+    if (!lastname) errors.lastname = 'El apellido es requerido.'
+    else if (lastname.length > SHORT_TEXT_MAX) errors.lastname = `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+    else if (!SHORT_TEXT_REGEX.test(lastname)) errors.lastname = 'Solo letras, números, espacios, guiones y apóstrofes.'
+
+    if (!phone) errors.phone = 'El teléfono es requerido.'
+    else if (!PHONE_REGEX.test(phone)) errors.phone = 'Formato: 0000-0000'
+
+    return errors
+}
 
 /**
  * Lógica del perfil del cliente.
@@ -60,27 +87,29 @@ const useProfile = () => {
             .finally(() => setIsLoading(false))
     }, [user?.id])
 
+    const personalErrors = useMemo(() => validatePersonal(personal), [personal])
+    const personalIsValid = Object.keys(personalErrors).length === 0
+
     // Solo name, lastname y phone son editables: PUT /client/:id los limita
     // (schemas.update es .strict()). El correo y el documento se muestran pero
     // no se envian, el backend los rechaza.
     const savePersonal = useCallback(async () => {
+        if (!personalIsValid) return
         setSavingPersonal(true)
         setPersonalError(null)
         try {
             await clientService.update(user.id, {
-                name:     personal.name,
-                lastname: personal.lastname,
-                phone:    personal.phone,
+                name:     personal.name.trim(),
+                lastname: personal.lastname.trim(),
+                phone:    personal.phone.trim(),
             })
             setEditingPersonal(false)
         } catch (err) {
-            setPersonalError(
-                err?.response?.data?.message ?? 'No se pudieron guardar los cambios.'
-            )
+            setPersonalError(err.friendlyMessage)
         } finally {
             setSavingPersonal(false)
         }
-    }, [personal, user?.id])
+    }, [personal, personalIsValid, user?.id])
 
     return {
         user, role,
@@ -88,7 +117,7 @@ const useProfile = () => {
         isLoading,
         personal, setPersonal,
         editingPersonal, setEditingPersonal, savingPersonal, savePersonal,
-        personalError,
+        personalError, personalErrors, personalIsValid,
         identification,
     }
 }

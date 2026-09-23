@@ -10,6 +10,11 @@ class PropertyService extends Service {
         const response = await this.api.get(`${this.endpoint}/public/${publicId}`)
         return response.data
     }
+
+    async incrementView(id) {
+        const response = await this.api.put(`${this.endpoint}/${id}/view`)
+        return response.data
+    }
 }
 
 export default new PropertyService()

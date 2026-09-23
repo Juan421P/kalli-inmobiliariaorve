@@ -15,16 +15,25 @@ import { collaboratorsService } from '@/services/CollaboratorsService'
 import toast from '@/lib/toast'
 
 const filterEmail = (v) => v.replace(/[^a-zA-Z0-9@.\-_+]/g, '')
-const filterPassword = (v) => v.replace(/\s/g, '')
+// Solo deja pasar lo que el regex de auth.password en el backend admite
+// (backend/src/schemas/fields/primitives.js) — así el checklist nunca puede
+// mostrar todo en verde con un caracter que el backend igual va a rechazar.
+const filterPassword = (v) => v.replace(/[^A-Za-z0-9@$!%*?&]/g, '')
 const filterCode = (v) => v.replace(/[^a-fA-F0-9]/g, '').slice(0, 6)
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const PASSWORD_MAX = 20
+
+// Tiene que reflejar exactamente el regex de auth.password en el backend
+// (backend/src/schemas/fields/primitives.js); si allá cambian los requisitos de
+// la contraseña y acá no, el checklist va a mentir
 const PASSWORD_RULES = [
-    { key: 'length', label: 'Al menos 8 caracteres',        test: (p) => p.length >= 8 },
-    { key: 'upper',  label: 'Al menos una letra mayúscula', test: (p) => /[A-Z]/.test(p) },
-    { key: 'lower',  label: 'Al menos una letra minúscula', test: (p) => /[a-z]/.test(p) },
-    { key: 'number', label: 'Al menos un número',           test: (p) => /[0-9]/.test(p) },
+    { key: 'length',  label: `Entre 8 y ${PASSWORD_MAX} caracteres`,      test: (p) => p.length >= 8 && p.length <= PASSWORD_MAX },
+    { key: 'upper',   label: 'Al menos una letra mayúscula',              test: (p) => /[A-Z]/.test(p) },
+    { key: 'lower',   label: 'Al menos una letra minúscula',              test: (p) => /[a-z]/.test(p) },
+    { key: 'number',  label: 'Al menos un número',                       test: (p) => /[0-9]/.test(p) },
+    { key: 'special', label: 'Al menos un carácter especial (@$!%*?&)',   test: (p) => /[@$!%*?&]/.test(p) },
 ]
 
 const RuleCheck = ({ passed, label }) => (
@@ -156,7 +165,13 @@ const ForgotPassword = () => {
                         setEmailTouched(true)
                         setEmailError('No existe ningún usuario registrado con este correo.')
                     } else {
-                        const msg = collaboratorError.response?.data?.message || adminError.response?.data?.message || 'No se pudo enviar el código'
+                        // Igual que en el login: si ninguno de los dos intentos llegó a
+                        // tener respuesta del servidor, es un problema de conexión, no de
+                        // credenciales, y hay que decirlo así.
+                        const noResponseFromServer = !adminError.response && !collaboratorError.response
+                        const msg = noResponseFromServer
+                            ? collaboratorError.friendlyMessage
+                            : (collaboratorError.friendlyMessage || adminError.friendlyMessage)
                         toast.error('Error', msg)
                     }
                     return
@@ -186,8 +201,7 @@ const ForgotPassword = () => {
             setCodeTouched(false)
             toast.success('Código reenviado', 'Revise su correo electrónico.')
         } catch (error) {
-            const msg = error.response?.data?.message || 'No se pudo reenviar el código'
-            toast.error('Error', msg)
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -203,9 +217,8 @@ const ForgotPassword = () => {
             setVerifiedToken(token)
             setStep(STEP.PASSWORD)
         } catch (error) {
-            const msg = error.response?.data?.message || 'Código incorrecto o expirado'
             setCodeTouched(true)
-            setCodeError(msg)
+            setCodeError(error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -221,8 +234,7 @@ const ForgotPassword = () => {
             toast.success('Contraseña actualizada', 'Ya puede iniciar sesión con su nueva contraseña.')
             navigate('/')
         } catch (error) {
-            const msg = error.response?.data?.message || 'No se pudo actualizar la contraseña'
-            toast.error('Error', msg)
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -395,6 +407,7 @@ const ForgotPassword = () => {
                                         placeholder='Ingrese su nueva contraseña'
                                         value={newPwd}
                                         onChange={(e) => setNewPwd(filterPassword(e.target.value))}
+                                        maxLength={PASSWORD_MAX}
                                         className={cn('pl-12 pr-12 bg-orve-teal/20', inputBase)}
                                     />
                                     <button
@@ -442,6 +455,7 @@ const ForgotPassword = () => {
                                         onChange={(e) => { setConfirmTouched(true); setConfirmPwd(filterPassword(e.target.value)) }}
                                         onBlur={() => setConfirmTouched(true)}
                                         onKeyDown={(e) => e.key === 'Enter' && handleChangePassword()}
+                                        maxLength={PASSWORD_MAX}
                                         className={cn(
                                             'pl-12 pr-12',
                                             inputBase,

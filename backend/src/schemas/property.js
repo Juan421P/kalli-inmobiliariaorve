@@ -23,7 +23,7 @@ export const schemas = {
         district: text().optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
-        { message: 'at least one region field is required' }
+        { message: 'debe indicar al menos un campo de región' }
     ),
 
     create: z.object({
@@ -72,6 +72,6 @@ export const schemas = {
         collaborator: database.id.optional(),
         remove_pictures: pictureIdArray.optional(),
     }).strict()
-        .refine(data => Object.keys(data).length > 0, { message: 'at least one field must be updated' })
-        .refine(data => !(data.location && !data.address), { path: ['address'], message: 'address is required whenever location changes' }),
+        .refine(data => Object.keys(data).length > 0, { message: 'debe actualizar al menos un campo' })
+        .refine(data => !(data.location && !data.address), { path: ['address'], message: 'la dirección es obligatoria cuando se cambia la ubicación' }),
 };

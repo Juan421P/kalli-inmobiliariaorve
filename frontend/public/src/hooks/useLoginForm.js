@@ -38,7 +38,7 @@ const useLoginForm = () => {
             login({ role: data.role ?? 'client', user: data.user ?? data.client })
             navigate('/')
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'Credenciales incorrectas. Intente de nuevo.')
+            setServerError(err.friendlyMessage)
         }
     }
 
@@ -49,11 +49,14 @@ const useLoginForm = () => {
             setForgotStep(2)
         } catch (err) {
             const status = err?.response?.status
-            if (status === 401 || status === 403 || status === 404) {
-                setServerError('No encontramos una cuenta con ese correo electrónico.')
-            } else {
-                setServerError('Ocurrió un error. Intente de nuevo más tarde.')
-            }
+            // Para "no existe cuenta con este correo" se prefiere un mensaje fijo
+            // en vez del que mande el backend, para no filtrar detalles de más;
+            // cualquier otro caso (incluido el rate limiter) usa el mensaje real.
+            setServerError(
+                status === 401 || status === 403 || status === 404
+                    ? 'No encontramos una cuenta con ese correo electrónico.'
+                    : err.friendlyMessage
+            )
         }
     }
 
@@ -63,7 +66,7 @@ const useLoginForm = () => {
             await ClientService.verifyRecoveryCode({ code: code.toLowerCase() })
             setForgotStep(3)
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'Código incorrecto o expirado.')
+            setServerError(err.friendlyMessage)
         }
     }
 
@@ -73,7 +76,7 @@ const useLoginForm = () => {
             await ClientService.resetPassword({ newPassword, confirmPassword })
             resetForgot()
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'No se pudo cambiar la contraseña. Intente de nuevo.')
+            setServerError(err.friendlyMessage)
         }
     }
 

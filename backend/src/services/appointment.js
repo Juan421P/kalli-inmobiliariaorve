@@ -29,7 +29,7 @@ async function assertTimeIsAvailable(proposedDates, time) {
             iv => toMinutes(iv.start_time) <= start && end <= toMinutes(iv.end_time)
         );
         if (!fits) throw new ValidationError(
-            `no availability on ${dayName} for the requested time window`, {
+            `no hay disponibilidad el día ${dayName} para el horario solicitado`, {
             code: 'TIME_NOT_AVAILABLE',
             field: 'time',
             day: dayName
@@ -39,14 +39,21 @@ async function assertTimeIsAvailable(proposedDates, time) {
 
 const service = {
 
-    async getAll(filter = {}) {
-        return await model.find(filter).populate(populateOptions).sort({ createdAt: -1 });
+    // Un colaborador solo debe ver las citas que un admin le asignó a él -no
+    // todas las que existen, eso es cosa del admin-. Se aplica acá, en vez de
+    // en el controller, para que ninguna otra ruta que reutilice este método
+    // se le olvide filtrar.
+    async getAll(filter = {}, actor) {
+        const scopedFilter = actor?.role === 'collaborator'
+            ? { ...filter, collaborator: actor.id }
+            : filter;
+        return await model.find(scopedFilter).populate(populateOptions).sort({ createdAt: -1 });
     },
 
     async getById(id) {
         const appointment = await model.findById(id).populate(populateOptions);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
@@ -67,23 +74,27 @@ const service = {
 
         const propertyExists = await propertyModel.exists({ _id: property });
         if (!propertyExists) throw new NotFoundError(
-            'property not found', { code: 'PROPERTY_NOT_FOUND', resource: 'property', id: property });
+            'la propiedad no existe', { code: 'PROPERTY_NOT_FOUND', resource: 'property', id: property });
 
         await assertTimeIsAvailable(proposedDates, time);
 
         const appointment = await model.create({
             buyer: buyerId,
             property,
-            qualification: {
-                funds_source: qualification.fundsSource,
-                monthly_income: qualification.monthlyIncome,
-                reason: qualification.reason,
-            },
-            current_address: {
-                location: currentAddress.location,
-                address: currentAddress.address,
-                reference: currentAddress.reference,
-            },
+            ...(qualification && {
+                qualification: {
+                    funds_source: qualification.fundsSource,
+                    monthly_income: qualification.monthlyIncome,
+                    reason: qualification.reason,
+                },
+            }),
+            ...(currentAddress && {
+                current_address: {
+                    location: currentAddress.location,
+                    address: currentAddress.address,
+                    reference: currentAddress.reference,
+                },
+            }),
             proposed_dates: proposedDates,
             notes,
             time: { start_time: time.startTime, end_time: time.endTime },
@@ -99,13 +110,13 @@ const service = {
     }) {
         const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
         });
         if (!['pending', 'assigned'].includes(appointment.status)) throw new ConflictError(
-            'appointment can only be edited before it is scheduled', {
+            'la cita solo puede editarse antes de ser agendada', {
             code: 'APPOINTMENT_NOT_EDITABLE',
             resource: 'appointment',
             id,
@@ -132,13 +143,13 @@ const service = {
     async assign(id, { collaborator }) {
         const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
         });
         if (!['pending', 'assigned'].includes(appointment.status)) throw new ConflictError(
-            'a collaborator can only be assigned before scheduling', {
+            'solo se puede asignar un colaborador antes de agendar la cita', {
             code: 'INVALID_STATUS_TRANSITION',
             resource: 'appointment',
             id,
@@ -148,7 +159,7 @@ const service = {
 
         const collaboratorExists = await collaboratorModel.exists({ _id: collaborator });
         if (!collaboratorExists) throw new NotFoundError(
-            'collaborator not found', {
+            'colaborador no encontrado', {
             code: 'COLLABORATOR_NOT_FOUND',
             resource: 'collaborator',
             id: collaborator
@@ -163,13 +174,13 @@ const service = {
     async schedule(id, { scheduled_date: scheduledDate }) {     
           const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
         });
         if (appointment.status !== 'assigned') throw new ConflictError(
-            'an appointment must be assigned before it can be scheduled', {
+            'la cita debe tener un colaborador asignado antes de poder agendarse', {
             code: 'INVALID_STATUS_TRANSITION',
             resource: 'appointment',
             id,
@@ -181,7 +192,7 @@ const service = {
             d => d.getTime() === new Date(scheduledDate).getTime()
         );
         if (!matchesProposed) throw new ValidationError(
-            'scheduled date must match one of the proposed dates', {
+            'la fecha agendada debe coincidir con una de las fechas propuestas', {
             code: 'SCHEDULED_DATE_NOT_PROPOSED',
             field: 'scheduledDate'
         });
@@ -195,13 +206,13 @@ const service = {
     async complete(id) {
         const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
         });
         if (appointment.status !== 'scheduled') throw new ConflictError(
-            'only a scheduled appointment can be completed', {
+            'solo una cita agendada puede marcarse como completada', {
             code: 'INVALID_STATUS_TRANSITION',
             resource: 'appointment',
             id,
@@ -217,13 +228,13 @@ const service = {
     async cancel(id) {
         const appointment = await model.findById(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id
         });
         if (['completed', 'cancelled'].includes(appointment.status)) throw new ConflictError(
-            'a completed or already-cancelled appointment cannot be cancelled', {
+            'una cita completada o ya cancelada no puede cancelarse de nuevo', {
             code: 'INVALID_STATUS_TRANSITION',
             resource: 'appointment',
             id,
@@ -239,7 +250,7 @@ const service = {
     async delete(id) {
         const appointment = await model.findByIdAndDelete(id);
         if (!appointment) throw new NotFoundError(
-            'appointment not found', {
+            'cita no encontrada', {
             code: 'APPOINTMENT_NOT_FOUND',
             resource: 'appointment',
             id

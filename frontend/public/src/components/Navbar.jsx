@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Globe, Menu, User } from 'lucide-react';
+import { ChevronDown, Menu, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import orveLogo from '@/assets/orve-logo.svg';
@@ -133,14 +133,6 @@ const Navbar = () => {
                     ))}
                 </div>
                 <div className='flex items-center gap-3 ml-auto'>
-                    <button className={cn(
-                        'hidden md:flex items-center gap-1 text-sm font-medium transition-colors',
-                        transparent ? 'text-white/80 hover:text-white' : 'text-orve-teal/60 hover:text-orve-teal'
-                    )}>
-                        <Globe className='w-4 h-4' />
-                        Español
-                        <ChevronDown className='w-3.5 h-3.5 opacity-70' />
-                    </button>
                     <div className={cn(
                         'flex items-center gap-1 rounded-full px-2 py-1.5 cursor-pointer transition-colors',
                         transparent

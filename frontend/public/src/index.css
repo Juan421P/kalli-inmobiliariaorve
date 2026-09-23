@@ -6,6 +6,29 @@
 /*@import "@fontsource-variable/inter";*/
 :root {
 	--radius: 0.5rem;
+
+	/* Tokens de color de shadcn: sin esto, utilidades como bg-popover,
+	   bg-card, bg-background, etc. apuntan a variables sin definir y los
+	   componentes (diálogos, popovers, tarjetas...) se renderizan
+	   transparentes. Paleta alineada a los colores de ORVE de arriba. */
+	--background: #ffffff;
+	--foreground: #2B2B2B;
+	--card: #ffffff;
+	--card-foreground: #2B2B2B;
+	--popover: #ffffff;
+	--popover-foreground: #2B2B2B;
+	--primary: #507177;
+	--primary-foreground: #ffffff;
+	--secondary: #F3F4F6;
+	--secondary-foreground: #2B2B2B;
+	--muted: #F3F4F6;
+	--muted-foreground: #6B7280;
+	--accent: #EAF1F1;
+	--accent-foreground: #405C62;
+	--destructive: #D05B5B;
+	--border: #E5E7EB;
+	--input: #E5E7EB;
+	--ring: #507177;
 }
 
 @theme {
@@ -91,6 +114,44 @@
 		scrollbar-width: thin;
 		scrollbar-color: color-mix(in srgb, #507177 35%, transparent) transparent;
 	}
+}
+
+/* Chrome del popup de Leaflet (PropertiesMap) alineado a la paleta ORVE */
+.leaflet-popup-content-wrapper {
+	padding: 0;
+	border-radius: var(--radius-xl);
+	box-shadow: 0 8px 24px rgba(43, 43, 43, 0.18);
+}
+
+.leaflet-popup-content {
+	margin: 0;
+	width: auto !important;
+}
+
+.leaflet-popup-tip-container {
+	filter: drop-shadow(0 4px 3px rgba(43, 43, 43, 0.1));
+}
+
+.leaflet-popup-close-button {
+	color: color-mix(in srgb, #507177 55%, transparent) !important;
+	font-size: 18px !important;
+	padding: 7px 8px 0 0 !important;
+}
+
+.leaflet-popup-close-button:hover {
+	color: #405C62 !important;
+	background: transparent !important;
+}
+
+/* leaflet.css fuerza .leaflet-container a { color: #0078A8 }, con mayor
+   especificidad que las utilidades de Tailwind; se sobreescribe puntualmente
+   para el CTA del popup en vez de tocar todos los links del mapa. */
+.leaflet-popup-content a.popup-cta {
+	color: #fff;
+}
+
+.leaflet-popup-content a.popup-cta:hover {
+	color: #fff;
 }
 
 @keyframes toast-shrink {

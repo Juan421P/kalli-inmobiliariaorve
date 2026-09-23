@@ -15,7 +15,7 @@ const service = {
     async create({ name }) {
         const exists = await model.findOne({ name });
         if (exists) throw new ConflictError(
-            'tag already exists', {
+            'ya existe una etiqueta con ese nombre', {
             code: 'TAG_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -26,7 +26,7 @@ const service = {
     async update(id, { name }) {
         const exists = await model.findOne({ name, _id: { $ne: id } });
         if (exists) throw new ConflictError(
-            'tag already exists', {
+            'ya existe una etiqueta con ese nombre', {
             code: 'TAG_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -38,7 +38,7 @@ const service = {
             { new: true, runValidators: true }
         );
         if (!tag) throw new NotFoundError(
-            'tag not found', {
+            'etiqueta no encontrada', {
             code: 'TAG_NOT_FOUND',
             resource: 'tag',
             id
@@ -49,7 +49,7 @@ const service = {
     async delete(id) {
         const tag = await model.findByIdAndDelete(id);
         if (!tag) throw new NotFoundError(
-            'tag not found', {
+            'etiqueta no encontrada', {
             code: 'TAG_NOT_FOUND',
             resource: 'tag',
             id
@@ -60,7 +60,7 @@ const service = {
     async merge({ principal, references }) {
         const principalExists = await model.exists({ _id: principal });
         if (!principalExists) throw new NotFoundError(
-            'principal tag not found', {
+            'la etiqueta principal no fue encontrada', {
             code: 'TAG_NOT_FOUND',
             resource: 'tag',
             id: principal
@@ -71,7 +71,7 @@ const service = {
             const foundIds = referenceDocs.map(doc => String(doc._id));
             const missing = references.filter(id => !foundIds.includes(id));
             throw new NotFoundError(
-                'one or more amenities to absorb were not found', {
+                'una o más etiquetas a absorber no fueron encontradas', {
                 code: 'TAG_NOT_FOUND',
                 resource: 'tag',
                 missing_ids: missing

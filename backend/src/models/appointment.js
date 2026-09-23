@@ -15,33 +15,32 @@ const schema = new Schema({
         required: true
     },
 
+    // Opcionales: el formulario público de "Agendar cita" ya no pide estos
+    // datos (ver frontend hooks/useAppointmentForm.js); el staff los completa
+    // después, desde el panel privado, al calificar al interesado.
     qualification: {
         funds_source: {
             type: String,
-            required: true,
             enum: ['own', 'loan', 'mixed']
         },
         monthly_income: {
             type: Number,
-            required: true,
             min: 0
         },
         reason: {
             type: String,
-            required: true,
             trim: true
         }
     },
 
     current_address: {
         location: {
-            type: { type: String, enum: ['Point'], required: true },
-            coordinates: { type: [Number], required: true }
+            type: { type: String, enum: ['Point'] },
+            coordinates: { type: [Number], default: undefined }
         },
         address: { type: String },
         reference: {
             type: String,
-            required: true,
             trim: true
         }
     },
@@ -75,12 +74,12 @@ const schema = new Schema({
         start_time: {
             type: String,
             required: true,
-            validate: { validator: v => timeRegex.test(v), message: 'start time format is invalid, use hh:mm AM/PM (example: 09:00 AM)' }
+            validate: { validator: v => timeRegex.test(v), message: 'el formato de la hora de inicio no es válido, use hh:mm AM/PM (ejemplo: 09:00 AM)' }
         },
         end_time: {
             type: String,
             required: true,
-            validate: { validator: v => timeRegex.test(v), message: 'end time format is invalid, use hh:mm AM/PM (example: 05:00 PM)' }
+            validate: { validator: v => timeRegex.test(v), message: 'el formato de la hora de fin no es válido, use hh:mm AM/PM (ejemplo: 05:00 PM)' }
         }
     }
 }, {

@@ -37,6 +37,6 @@ export const schemas = {
         rental_months: z.enum(rental_months).optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
-        { message: 'at least one field must be updated' }
+        { message: 'debe actualizar al menos un campo' }
     ),
 };

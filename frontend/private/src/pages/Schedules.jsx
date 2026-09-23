@@ -23,8 +23,8 @@ const Schedules = () => {
             try {
                 const data = await scheduleService.get()
                 setSchedules(data.schedules ?? [])
-            } catch {
-                toast.error('Error al cargar', 'No se pudieron cargar los horarios.')
+            } catch (error) {
+                toast.error('No se pudieron cargar los horarios.', error.friendlyMessage)
             } finally {
                 setIsLoading(false)
             }
@@ -45,8 +45,8 @@ const Schedules = () => {
                 )
             )
             toast.success('Horario agregado correctamente.')
-        } catch {
-            toast.error('Error', 'No se pudo agregar el horario.')
+        } catch (error) {
+            toast.error('No se pudo agregar el horario.', error.friendlyMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -80,8 +80,8 @@ const Schedules = () => {
             )
             setEditingSlot(null)
             toast.success('Horario actualizado correctamente.')
-        } catch {
-            toast.error('Error', 'No se pudo actualizar el horario.')
+        } catch (error) {
+            toast.error('No se pudo actualizar el horario.', error.friendlyMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -99,8 +99,8 @@ const Schedules = () => {
                 }))
             )
             toast.success('Horario eliminado.')
-        } catch {
-            toast.error('Error', 'No se pudo eliminar el horario.')
+        } catch (error) {
+            toast.error('No se pudo eliminar el horario.', error.friendlyMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -121,8 +121,8 @@ const Schedules = () => {
                 )
             )
             toast.success(`Horarios de ${dayEntry.day} eliminados.`)
-        } catch {
-            toast.error('Error', 'No se pudieron eliminar los horarios.')
+        } catch (error) {
+            toast.error('No se pudieron eliminar los horarios.', error.friendlyMessage)
         } finally {
             setIsSubmitting(false)
         }
@@ -153,6 +153,7 @@ const Schedules = () => {
                         editingSlot={editingSlot}
                         onCancelEdit={() => setEditingSlot(null)}
                         isLoading={isSubmitting}
+                        schedules={schedules}
                     />
 
                     {isLoading ? (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, Lock, Hash, FileText, ArrowLeft, UserPlus, ShieldCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, formatPhoneInput, formatDuiInput } from '@/lib/utils'
 
 const DOCUMENT_TYPES = ['DUI', 'Pasaporte', 'Residencia']
 
@@ -10,11 +10,17 @@ const DOCUMENT_HINTS = {
     Residencia: { placeholder: 'Número de residencia',     hint: 'Número de carnet de resid.' },
 }
 
+// Tiene que calzar con user.document en el backend
+// (backend/src/schemas/fields/primitives.js): 50 caracteres máx. para
+// pasaporte/residencia, formato estricto 00000000-0 para DUI.
+const DOCUMENT_NUMBER_MAX = 50
+
 const validateDocument = (value, type) => {
     if (!value?.trim()) return 'El número de documento es requerido.'
     if (type === 'DUI') {
         return /^\d{8}-\d$/.test(value) || 'El DUI debe tener el formato 00000000-0'
     }
+    if (value.trim().length > DOCUMENT_NUMBER_MAX) return `No puede superar los ${DOCUMENT_NUMBER_MAX} caracteres.`
     return value.trim().length >= 3 || 'Ingrese un número de documento válido.'
 }
 
@@ -22,8 +28,20 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
     const [showConfirm, setShowConfirm] = useState(false)
     const { register, watch, trigger, formState: { errors, isSubmitting, isValid } } = form
 
+    const phoneField = register('phone', {
+        required: 'El teléfono es requerido.',
+        pattern: {
+            value: /^\d{4}-?\d{4}$/,
+            message: 'Formato: 0000-0000',
+        },
+    })
+
     const documentType = watch('document_type', '')
     const docHint = DOCUMENT_HINTS[documentType] ?? { placeholder: 'Ingrese su número de documento', hint: null }
+
+    const documentNumberField = register('document_number', {
+        validate: (v) => validateDocument(v, documentType),
+    })
 
     // Revalida el número de documento cuando cambia el tipo
     useEffect(() => {
@@ -50,15 +68,14 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
                             <span className='text-[10px] text-orve-teal/50 font-medium'>+503</span>
                         </div>
                         <input
-                            {...register('phone', {
-                                required: 'El teléfono es requerido.',
-                                pattern: {
-                                    value: /^\d{4}-?\d{4}$/,
-                                    message: 'Formato: 0000-0000',
-                                },
-                            })}
+                            {...phoneField}
+                            onChange={(e) => {
+                                e.target.value = formatPhoneInput(e.target.value)
+                                phoneField.onChange(e)
+                            }}
                             type='tel'
                             placeholder='0000-0000'
+                            maxLength={9}
                             className={cn(
                                 'flex-1 pl-2 pr-3 py-2.5 text-xs bg-transparent outline-none placeholder:text-orve-teal/30',
                                 errors.phone && 'placeholder:text-orve-red/50'
@@ -106,10 +123,13 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
                     <div className='relative'>
                         <Hash className='absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-orve-teal/40' />
                         <input
-                            {...register('document_number', {
-                                validate: (v) => validateDocument(v, documentType),
-                            })}
+                            {...documentNumberField}
+                            onChange={(e) => {
+                                if (documentType === 'DUI') e.target.value = formatDuiInput(e.target.value)
+                                documentNumberField.onChange(e)
+                            }}
                             placeholder={docHint.placeholder}
+                            maxLength={documentType === 'DUI' ? 10 : DOCUMENT_NUMBER_MAX}
                             className={cn(
                                 'w-full pl-8 pr-3 py-2.5 text-xs bg-orve-teal/5 border rounded-xl outline-none transition-colors placeholder:text-orve-teal/30',
                                 errors.document_number

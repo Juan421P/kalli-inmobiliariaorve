@@ -1,6 +1,6 @@
 import AppError from './app.js';
 class InternalServerError extends AppError {
-    constructor(message = 'internal server error', meta = null) {
+    constructor(message = 'error interno del servidor', meta = null) {
         super(message, 500, meta);
     }
 }

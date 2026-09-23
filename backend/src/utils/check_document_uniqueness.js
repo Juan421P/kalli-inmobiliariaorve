@@ -29,7 +29,7 @@ export const checkDocumentUniqueness = async (documentNumber, { excludeId, exclu
     // Si el documento ya existe en cualquier colección, tira error de conflicto
     if (matches.length > 0) {
         throw new ConflictError(
-            'document number already registered',
+            'ya existe una cuenta registrada con este número de documento',
             {
                 code: 'DOCUMENT_NUMBER_ALREADY_EXISTS',
                 field: 'document.number',

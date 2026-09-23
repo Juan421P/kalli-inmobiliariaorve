@@ -21,8 +21,8 @@ const useCollaborators = () => {
             const data = await collaboratorsService.getAll()
             setCollaborators(data.collaborators ?? [])
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar los colaboradores.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar los colaboradores.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -68,8 +68,8 @@ const useCollaborators = () => {
             await fetchCollaborators()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo invitar al colaborador.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo invitar al colaborador.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -85,8 +85,8 @@ const useCollaborators = () => {
             await fetchCollaborators()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar el colaborador.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar el colaborador.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

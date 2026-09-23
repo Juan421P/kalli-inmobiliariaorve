@@ -53,6 +53,14 @@ const AREA_UNITS = [
     { value: 'v2', label: 'v²' },
 ]
 
+// Tienen que calzar con text()/longText() en el backend
+// (backend/src/schemas/fields/primitives.js) — si allá cambian el máximo o el
+// regex y acá no, el formulario deja pasar cosas que el backend va a rechazar.
+const TITLE_MAX = 255
+const TITLE_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,()#'":-]+$/
+const DESCRIPTION_MAX = 1000
+const DESCRIPTION_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'"¿¡%/-]+$/
+
 const NumberStepper = ({ value, onChange, min = 0 }) => (
     <div className='flex items-center gap-2'>
         <button
@@ -66,7 +74,12 @@ const NumberStepper = ({ value, onChange, min = 0 }) => (
             type='number'
             min={min}
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+                const raw = e.target.value
+                if (raw === '') { onChange(''); return }
+                const parsed = parseInt(raw, 10)
+                onChange(isNaN(parsed) ? '' : Math.max(min, parsed).toString())
+            }}
             className='w-12 bg-white/70 text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none'
         />
         <button
@@ -209,31 +222,73 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
     const existingPictures = initialData?.pictures ?? []
     const [removedIds, setRemovedIds] = useState([])
     const [newImages,  setNewImages]  = useState([])
-    const toggleRemove = (pictureId) => setRemovedIds((prev) =>
-        prev.includes(pictureId) ? prev.filter((id) => id !== pictureId) : [...prev, pictureId]
-    )
-    const remainingCount = existingPictures.filter((p) => !removedIds.includes(p.picture_id)).length + newImages.length
+    const remainingCount = (ids = removedIds, imgs = newImages) =>
+        existingPictures.filter((p) => !ids.includes(p.picture_id)).length + imgs.length
 
-    const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+    // Un validador por campo para poder revisar uno solo apenas cambia (feedback
+    // inmediato) o todos de un golpe justo antes de mandar la petición.
+    const fieldValidators = {
+        title: (f) => {
+            if (!f.title.trim()) return 'El título es requerido.'
+            if (f.title.trim().length > TITLE_MAX) return `No puede superar los ${TITLE_MAX} caracteres.`
+            if (!TITLE_REGEX.test(f.title.trim())) return 'Contiene caracteres no permitidos.'
+            return null
+        },
+        description: (f) => {
+            if (!f.description.trim()) return 'La descripción es requerida.'
+            if (f.description.trim().length > DESCRIPTION_MAX) return `No puede superar los ${DESCRIPTION_MAX} caracteres.`
+            if (!DESCRIPTION_REGEX.test(f.description.trim())) return 'Contiene caracteres no permitidos.'
+            return null
+        },
+        price: (f) => {
+            if (!f.price) return 'El precio es requerido.'
+            if (isNaN(parseFloat(f.price)) || parseFloat(f.price) <= 0) return 'Ingrese un precio válido, mayor a 0.'
+            return null
+        },
+        area_number: (f) => (!f.area_number || parseFloat(f.area_number) <= 0) ? 'El área es requerida y debe ser mayor a 0.' : null,
+        bedrooms: (f) => (f.bedrooms && parseInt(f.bedrooms) < 0) ? 'No puede ser negativo.' : null,
+        bathrooms: (f) => (f.bathrooms && parseInt(f.bathrooms) < 0) ? 'No puede ser negativo.' : null,
+        parking_spaces: (f) => (f.parking_spaces && parseInt(f.parking_spaces) < 0) ? 'No puede ser negativo.' : null,
+        address: (_f, loc) => !loc.address ? 'Marque y verifique la ubicación en el mapa.' : null,
+        images: (_f, _loc, count) => count < 3 ? 'Debe quedar al menos 3 imágenes.' : null,
     }
 
-    const validate = () => {
+    // Revisa un solo campo contra el valor más reciente (puede no estar en el
+    // state todavía) y actualiza su error al instante.
+    const validateField = (key, formOverride = form, locOverride = location, countOverride = remainingCount()) => {
+        const message = fieldValidators[key]?.(formOverride, locOverride, countOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
+    const toggleRemove = (pictureId) => {
+        const nextIds = removedIds.includes(pictureId)
+            ? removedIds.filter((id) => id !== pictureId)
+            : [...removedIds, pictureId]
+        setRemovedIds(nextIds)
+        validateField('images', form, location, remainingCount(nextIds, newImages))
+    }
+
+    const setField = (key, value) => {
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        if (fieldValidators[key]) validateField(key, nextForm)
+    }
+
+    // Revisa TODOS los campos contra el estado actual, sin importar si ya se
+    // habían tocado o no. Nada se manda al backend sin pasar por acá primero.
+    const validateAll = () => {
         const e = {}
-        if (!form.title.trim())       e.title       = 'El título es requerido.'
-        if (!form.description.trim()) e.description = 'La descripción es requerida.'
-        if (!form.price)              e.price       = 'El precio es requerido.'
-        else if (isNaN(parseFloat(form.price)) || parseFloat(form.price) <= 0)
-                                      e.price       = 'Ingrese un precio válido.'
-        if (!location.address)        e.address     = 'Marque y verifique la ubicación en el mapa.'
-        if (remainingCount < 3)       e.images      = 'Debe quedar al menos 3 imágenes.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, location, remainingCount())
+            if (message) e[key] = message
+        }
         setErrors(e)
         return Object.keys(e).length === 0
     }
 
     const handleSaveClick = () => {
-        if (!validate()) return
+        if (!validateAll()) return
         setDialogOpen(true)
     }
 
@@ -282,6 +337,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                 <Input
                                     value={form.title}
                                     onChange={(e) => setField('title', e.target.value)}
+                                    maxLength={TITLE_MAX}
                                     className='bg-white/70'
                                 />
                             </FieldLabel>
@@ -330,6 +386,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                 <Textarea
                                     value={form.description}
                                     onChange={(e) => setField('description', e.target.value)}
+                                    maxLength={DESCRIPTION_MAX}
                                     className='bg-white/70 min-h-24 resize-none'
                                 />
                             </FieldLabel>
@@ -380,6 +437,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                         </Select>
                                     </div>
                                 </FieldLabel>
+                                <FieldError>{errors.area_number}</FieldError>
                             </Field>
                         </div>
 
@@ -437,7 +495,7 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                             defaultAddress={initAddress}
                             onChange={(loc) => {
                                 setLocation(loc)
-                                if (loc.address) setErrors((prev) => ({ ...prev, address: null }))
+                                validateField('address', form, loc)
                             }}
                         />
                     </FieldGroup>
@@ -459,7 +517,13 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                                 />
                             </div>
                         )}
-                        <NewImageUploader images={newImages} onChange={setNewImages} />
+                        <NewImageUploader
+                            images={newImages}
+                            onChange={(imgs) => {
+                                setNewImages(imgs)
+                                validateField('images', form, location, remainingCount(removedIds, imgs))
+                            }}
+                        />
                     </FieldGroup>
                 </FieldSet>
             </div>

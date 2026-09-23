@@ -46,6 +46,13 @@ const AuthProvider = ({ children }) => {
         }
     }
 
+    // Limpia solo el estado local, sin llamar a /client/logout. Necesario
+    // para flujos donde el backend ya invalidó la cookie por su cuenta (ej.
+    // "cerrar todas las sesiones"): llamar a logout() ahí pegaría otra vez a
+    // una ruta que exige auth con una cookie que ya no existe, y esa petición
+    // fallaría con 401 aunque el cierre de sesión ya haya funcionado.
+    const clearSession = () => setAuth(null)
+
     return (
         <AuthContext.Provider value={{
             user: auth?.user ?? null,
@@ -54,6 +61,7 @@ const AuthProvider = ({ children }) => {
             isRehydrating,
             login,
             logout,
+            clearSession,
             updateUser,
         }}>
             {children}

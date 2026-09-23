@@ -1,6 +1,6 @@
 import AppError from './app.js';
 class ConflictError extends AppError {
-    constructor(message = 'conflict', meta = null) {
+    constructor(message = 'conflicto con un recurso existente', meta = null) {
         super(message, 409, meta);
     }
 }

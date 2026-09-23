@@ -12,7 +12,7 @@ const SellProperty = () => (
             style={{ backgroundImage: `url(${coolBg})` }}
         />
         <Navbar />
-        <div className='pt-14'>
+        <div className='pt-24'>
             <PropertyFormSection
                 title='Puesta en venta de propiedad'
                 description='Para poner su propiedad en venta, es necesario completar y firmar el formulario de Toma de Propiedad.'

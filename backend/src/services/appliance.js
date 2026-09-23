@@ -15,7 +15,7 @@ const service = {
     async create({ name }) {
         const exists = await model.findOne({ name });
         if (exists) throw new ConflictError(
-            'appliance already exists', {
+            'ya existe un electrodoméstico con ese nombre', {
             code: 'APPLIANCE_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -26,7 +26,7 @@ const service = {
     async update(id, { name }) {
         const exists = await model.findOne({ name, _id: { $ne: id } });
         if (exists) throw new ConflictError(
-            'appliance already exists', {
+            'ya existe un electrodoméstico con ese nombre', {
             code: 'APPLIANCE_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -38,7 +38,7 @@ const service = {
             { new: true, runValidators: true }
         );
         if (!appliance) throw new NotFoundError(
-            'appliance not found', {
+            'electrodoméstico no encontrado', {
             code: 'APPLIANCE_NOT_FOUND',
             resource: 'appliance',
             id
@@ -49,7 +49,7 @@ const service = {
     async delete(id) {
         const appliance = await model.findByIdAndDelete(id);
         if (!appliance) throw new NotFoundError(
-            'appliance not found', {
+            'electrodoméstico no encontrado', {
             code: 'APPLIANCE_NOT_FOUND',
             resource: 'appliance',
             id
@@ -60,7 +60,7 @@ const service = {
     async merge({ principal, references }) {
         const principalExists = await model.exists({ _id: principal });
         if (!principalExists) throw new NotFoundError(
-            'principal appliance not found', {
+            'el electrodoméstico principal no fue encontrado', {
             code: 'APPLIANCE_NOT_FOUND',
             resource: 'appliance',
             id: principal
@@ -71,7 +71,7 @@ const service = {
             const foundIds = referenceDocs.map(doc => String(doc._id));
             const missing = references.filter(id => !foundIds.includes(id));
             throw new NotFoundError(
-                'one or more amenities to absorb were not found', {
+                'uno o más electrodomésticos a absorber no fueron encontrados', {
                 code: 'APPLIANCE_NOT_FOUND',
                 resource: 'appliance',
                 missing_ids: missing

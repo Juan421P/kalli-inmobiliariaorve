@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import Chip from '@/components/ui/Chip';
 import Skeleton from '@/components/ui/Skeleton';
 import EmptyState from '@/components/EmptyState';
+import LocationPicker from '@/components/LocationPicker';
 import useProperty from '@/hooks/useProperty';
 import useAppointmentForm from '@/hooks/useAppointmentForm';
 import useToast from '@/hooks/useToast';
@@ -176,10 +177,24 @@ const ScheduleAppointmentScreen = () => {
                             rules={{ required: true }}
                             render={({ field: { value, onChange } }) => (
                                 <Input
-                                    label='Dirección actual'
+                                    label='Referencia de dirección'
                                     placeholder='Ej. Colonia Escalón, calle La Reforma #123'
                                     value={value}
                                     onChangeText={onChange}
+                                />
+                            )}
+                        />
+
+                        <Text style={styles.label}>Su ubicación actual</Text>
+                        <Controller
+                            control={control}
+                            name='location'
+                            rules={{ validate: (v) => Boolean(v?.address) || 'Marque su ubicación en el mapa' }}
+                            render={({ field: { value, onChange } }) => (
+                                <LocationPicker
+                                    defaultCoordinates={value?.coordinates}
+                                    defaultAddress={value?.address}
+                                    onChange={onChange}
                                 />
                             )}
                         />

@@ -11,15 +11,20 @@ const DAY_MAP = {
     4: 'thursday', 5: 'friday', 6: 'saturday',
 }
 
+// Tiene que calzar con longText() en el backend
+// (backend/src/schemas/fields/primitives.js), que es lo que valida `notes`.
+export const REASON_MAX = 1000
+export const REASON_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'"¿¡%/-]+$/
+
 /**
  * Maneja el formulario de "Agendar cita" con react-hook-form: fecha/hora de
- * visita (dependen de los horarios configurados por el negocio), ubicacion
- * actual (mapa + geocodificacion), datos de calificacion del interesado
- * (origen de fondos, ingreso, motivo, direccion) y metodo de contacto
- * preferido. Los campos que son botones tipo "chip", el mapa o el calendario
- * (fecha, hora, fondos, contacto, ubicacion) se exponen via `control` para
- * que la pagina los maneje con <Controller>; ingreso/motivo/direccion son
- * inputs nativos y se registran normal con `register`.
+ * visita (dependen de los horarios configurados por el negocio), metodo de
+ * contacto preferido y motivo de la visita. Los datos de calificacion del
+ * interesado (origen de fondos, ingreso, direccion) ya no se piden en este
+ * formulario -el staff los completa despues, desde el panel privado-, asi
+ * que se mandan como opcionales al backend. Fecha/hora/contacto son botones
+ * tipo "chip" o el calendario y se exponen via `control` para <Controller>;
+ * el motivo es un input nativo registrado normal con `register`.
  *
  * @param {object} property - propiedad sobre la que se agenda (de useProperty)
  * @param {string} publicId - public_id de la propiedad, para navegar de vuelta
@@ -47,16 +52,11 @@ const useAppointmentForm = ({ property, publicId }) => {
             selectedDate: null,
             selectedSlot: null,
             contactMethod: null,
-            fundsSource: null,
-            monthlyIncome: '',
             reason: '',
-            addressReference: '',
-            location: { coordinates: null, address: '', components: null },
         },
     })
 
     const selectedDate = watch('selectedDate')
-    const location = watch('location')
 
     // Disponibilidad de horarios: viene de un endpoint aparte (configurado
     // por el negocio), independiente de la propiedad puntual.
@@ -101,16 +101,7 @@ const useAppointmentForm = ({ property, publicId }) => {
                     endTime:   values.selectedSlot.end_time,
                 },
                 proposed_dates:  [values.selectedDate.toISOString()],
-                qualification:   {
-                    fundsSource:   values.fundsSource,
-                    monthlyIncome: Number(values.monthlyIncome),
-                    reason:        values.reason.trim(),
-                },
-                current_address: {
-                    location:  { type: 'Point', coordinates: values.location.coordinates },
-                    address:   values.location.address,
-                    reference: values.addressReference.trim(),
-                },
+                notes: values.reason.trim(),
             })
             toast.success('¡Cita solicitada correctamente!')
             navigate(`/property/${publicId}`)
@@ -132,7 +123,6 @@ const useAppointmentForm = ({ property, publicId }) => {
         selectedDate,
         slotsForDate,
         disabledDays,
-        location,
         handleDateChange,
         handleSubmit: handleSubmit(onSubmit),
     }

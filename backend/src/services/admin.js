@@ -15,6 +15,7 @@ import InternalServerError from '../errors/internal_server.js';
 import NotFoundError from '../errors/not_found.js';
 import ValidationError from '../errors/validation.js';
 import { checkDocumentUniqueness } from '../utils/check_document_uniqueness.js';
+import { findEmailInOtherRole, roleLabel } from '../utils/check_cross_role_login.js';
 import CloudinaryError from '../errors/cloudinary.js';
 import NodemailerError from '../errors/nodemailer.js';
 
@@ -27,7 +28,7 @@ const service = {
     async getById(id) {
         const admin = await model.findById(id);
         if (!admin) throw new NotFoundError(
-            'admin not found',
+            'administrador no encontrado',
             { code: 'ADMIN_NOT_FOUND', resource: 'admin', id }
         );
         return admin;
@@ -35,10 +36,23 @@ const service = {
 
     async invite({ name, lastname, email, document, phone, picture, picture_id }) {
         const exists = await model.findOne({ email });
-        if (exists) throw new ConflictError(
-            'admin already exists',
-            { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
-        );
+        if (exists) {
+            if (!exists.verified_email) {
+                await model.findByIdAndDelete(exists._id);
+            } else {
+                throw new ConflictError(
+                    'ya existe una cuenta de administrador registrada con este correo electrónico',
+                    { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
+                );
+            }
+        }
+        // si una invitación anterior (sin completar) se quedó con el mismo número
+        // de documento, se descarta ese registro huérfano antes de validar
+        // unicidad, para que no bloquee la invitación real
+        const existingByDocument = await model.findOne({ 'document.number': document.number });
+        if (existingByDocument && !existingByDocument.verified_email) {
+            await model.findByIdAndDelete(existingByDocument._id);
+        }
         // lo mismo que dice en el service de clientes qué pereza volver a escribirlo
         await checkDocumentUniqueness(document.number);
         const admin = await model.create({
@@ -63,7 +77,7 @@ const service = {
         } catch (error) {
             console.log('Mail.send() failed', error);
             throw new NodemailerError(
-                'failed to send invitation email',
+                'no se pudo enviar el correo de invitación',
                 { email: admin.email }
             )
         }
@@ -76,17 +90,16 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired invitation token',
-                { code: 'INVALID_INVITATION_TOKEN' }
+                'el enlace de invitación es inválido o ha expirado'
             );
         }
         const admin = await model.findById(decoded.id);
         if (!admin) throw new NotFoundError(
-            'admin does not exist',
+            'el administrador no existe',
             { code: 'ADMIN_NOT_FOUND', resource: 'admin', id: decoded.id }
         );
         if (admin.verified_email) throw new ConflictError(
-            'invitation already completed',
+            'esta invitación ya fue completada anteriormente',
             { code: 'INVITATION_ALREADY_COMPLETED', resource: 'admin', id: admin._id }
         );
         admin.password = password;
@@ -108,7 +121,7 @@ const service = {
     async update(id, updates) {
         const admin = await model.findByIdAndUpdate(id, updates, { new: true });
         if (!admin) throw new NotFoundError(
-            'admin not found',
+            'administrador no encontrado',
             { code: 'ADMIN_NOT_FOUND', resource: 'admin', id }
         );
         return admin;
@@ -117,7 +130,7 @@ const service = {
     async delete(id) {
         const admin = await model.findByIdAndDelete(id);
         if (!admin) throw new NotFoundError(
-            'admin not found',
+            'administrador no encontrado',
             { code: 'ADMIN_NOT_FOUND', resource: 'admin', id }
         );
         return { id, deleted: true };
@@ -126,7 +139,7 @@ const service = {
     async uploadPicture(id, { picture, picture_id }) {
         const admin = await model.findById(id);
         if (!admin) throw new NotFoundError(
-            'admin not found',
+            'administrador no encontrado',
             { code: 'ADMIN_NOT_FOUND', resource: 'admin', id }
         );
         if (admin.picture_id) {
@@ -134,7 +147,7 @@ const service = {
                 await cloudinary.uploader.destroy(admin.picture_id);
             } catch (err) {
                 throw new CloudinaryError(
-                    'failed to remove previous picture',
+                    'no se pudo eliminar la foto de perfil anterior',
                     { previous_picture_id: admin.picture_id }
                 );
             }
@@ -151,12 +164,11 @@ const service = {
 
     async requestRecoveryCode({ email }) {
         if (!email?.trim()) throw new ValidationError(
-            'email is required',
+            'el correo electrónico es obligatorio',
             { code: 'EMAIL_REQUIRED', field: 'email' });
         const admin = await model.findOne({ email });
         if (!admin) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'no existe ninguna cuenta de administrador con ese correo electrónico'
         );
         const code = crypto.randomBytes(3).toString('hex');
         const token = jwt.sign({ email, code, verified_email: false }, '15m');
@@ -169,7 +181,7 @@ const service = {
             );
         } catch (err) {
             throw new NodemailerError(
-                'failed to send recovery email',
+                'no se pudo enviar el correo de recuperación',
                 { email }
             );
         }
@@ -178,11 +190,10 @@ const service = {
 
     async verifyRecoveryCode({ token, code }) {
         if (!token) throw new AuthenticationError(
-            'session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
         if (!code?.trim()) throw new ValidationError(
-            'code is required',
+            'el código es obligatorio',
             { code: 'CODE_REQUIRED', field: 'code' }
         );
         let decoded;
@@ -190,12 +201,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (decoded.code !== code) throw new AuthorizationError(
-            'incorrect code',
+            'el código ingresado es incorrecto',
             { code: 'INVALID_RECOVERY_CODE', field: 'code' }
         );
         const newToken = jwt.sign({ email: decoded.email, verified_email: true }, '15m');
@@ -203,17 +213,17 @@ const service = {
     },
 
     async changePassword({ token, new_password, confirm_password }) {
-        if (!token) throw new AuthenticationError('session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+        if (!token) throw new AuthenticationError(
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
-        if (!new_password) throw new ValidationError('password is required',
+        if (!new_password) throw new ValidationError('la contraseña es obligatoria',
             { code: 'PASSWORD_REQUIRED', field: 'new_password' }
         );
-        if (!confirm_password) throw new ValidationError('confirm_password is required',
+        if (!confirm_password) throw new ValidationError('debe confirmar la contraseña',
             { code: 'CONFIRM_PASSWORD_REQUIRED', field: 'confirm_password' }
         );
         if (new_password !== confirm_password) throw new ValidationError(
-            'passwords do not match',
+            'las contraseñas no coinciden',
             { code: 'PASSWORDS_DO_NOT_MATCH', fields: ['new_password', 'confirm_password'] }
         );
         let decoded;
@@ -221,12 +231,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (!decoded.verified_email) throw new AuthorizationError(
-            'account not verified for password change',
+            'debe verificar el código de recuperación antes de cambiar la contraseña',
             { code: 'RECOVERY_NOT_VERIFIED', email: decoded.email }
         );
         const hash = await bcrypt.hash(new_password, 10);
@@ -236,25 +245,27 @@ const service = {
             { new: true }
         );
         if (!admin) throw new NotFoundError(
-            'admin not found',
+            'administrador no encontrado',
             { code: 'ADMIN_NOT_FOUND', email: decoded.email }
         );
-        return { id: admin._id, message: 'password updated successfully' };
+        return { id: admin._id, message: 'contraseña actualizada correctamente' };
     },
 
     async login({ email, password }) {
         const admin = await model.findOne({ email }).select('+password');
-        if (!admin) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
-        );
+        if (!admin) {
+            const otherRole = await findEmailInOtherRole(email, 'admin');
+            if (otherRole) throw new AuthenticationError(
+                `este correo pertenece a una cuenta de ${roleLabel(otherRole)}, inicie sesión desde la sección correspondiente`
+            );
+            throw new AuthenticationError('correo electrónico o contraseña incorrectos');
+        }
         const isMatch = await admin.comparePassword(password);
         if (!isMatch) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'correo electrónico o contraseña incorrectos'
         );
         if (!admin.verified_email) throw new AuthorizationError(
-            'email not yet verified',
+            'debe verificar su correo electrónico antes de iniciar sesión',
             { code: 'EMAIL_NOT_VERIFIED', field: 'email' }
         );
         const token = jwt.sign({ id: admin._id, role: 'admin' }, '30d');

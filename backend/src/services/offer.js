@@ -78,7 +78,7 @@ const service = {
     async getById(id) {
         const offer = await model.findById(id);
         if (!offer) throw new NotFoundError(
-            'offer not found', {
+            'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
             resource: 'offer',
             id
@@ -92,20 +92,20 @@ const service = {
 
         const propertyDoc = await propertyModel.findById(property);
         if (!propertyDoc) throw new NotFoundError(
-            'property not found', {
+            'la propiedad no existe', {
             code: 'PROPERTY_NOT_FOUND',
             resource: 'property',
             id: property
         });
         if (propertyDoc.status !== 'available') throw new ConflictError(
-            'property is not available for offers', {
+            'la propiedad no está disponible para recibir ofertas', {
             code: 'PROPERTY_NOT_AVAILABLE',
             resource: 'property',
             id: property,
             current_status: propertyDoc.status
         });
         if (String(propertyDoc.owner) === buyerId) throw new ConflictError(
-            'cannot make an offer on your own property', {
+            'no puede hacer una oferta sobre su propia propiedad', {
             code: 'CANNOT_OFFER_ON_OWN_PROPERTY',
             resource: 'property',
             id: property
@@ -117,7 +117,7 @@ const service = {
             status: { $in: ACTIVE_STATUSES }
         });
         if (duplicate) throw new ConflictError(
-            'an active offer already exists for this buyer and property', {
+            'ya existe una oferta activa de este comprador para esta propiedad', {
             code: 'ACTIVE_OFFER_ALREADY_EXISTS',
             resource: 'offer',
             id: duplicate._id
@@ -137,13 +137,13 @@ const service = {
     async counter(id, { actor, price }) {
         const offer = await model.findById(id);
         if (!offer) throw new NotFoundError(
-            'offer not found', {
+            'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
             resource: 'offer',
             id
         });
         if (CLOSED_STATUSES.includes(offer.status)) throw new ConflictError(
-            'cannot counter a closed offer', {
+            'no se puede contraofertar una oferta ya cerrada', {
             code: 'OFFER_ALREADY_CLOSED',
             resource: 'offer',
             id,
@@ -152,11 +152,11 @@ const service = {
 
         const side = await determineSide(actor, offer);
         if (!side) throw new AuthorizationError(
-            'you do not have standing to counter this offer', {
+            'usted no tiene autoridad para contraofertar en esta oferta', {
             code: 'FORBIDDEN_NOT_A_PARTY'
         });
         if (offer.last_actor === side) throw new ConflictError(
-            'you must wait for the other party to respond', {
+            'debe esperar a que la otra parte responda', {
             code: 'AWAITING_OTHER_PARTY',
             resource: 'offer',
             id
@@ -173,13 +173,13 @@ const service = {
     async resolve(id, { actor, status }) {
         const offer = await model.findById(id);
         if (!offer) throw new NotFoundError(
-            'offer not found', {
+            'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
             resource: 'offer',
             id
         });
         if (CLOSED_STATUSES.includes(offer.status)) throw new ConflictError(
-            'offer is already closed', {
+            'la oferta ya está cerrada', {
             code: 'OFFER_ALREADY_CLOSED',
             resource: 'offer',
             id,
@@ -188,7 +188,7 @@ const service = {
 
         const side = await determineSide(actor, offer);
         if (!side) throw new AuthorizationError(
-            'you do not have standing to resolve this offer', {
+            'usted no tiene autoridad para resolver esta oferta', {
             code: 'FORBIDDEN_NOT_A_PARTY'
         });
 
@@ -197,7 +197,7 @@ const service = {
         // dos puede tomar una decisión que dependa del otro
         const requiredSide = status === 'withdrawn' ? 'buyer' : 'seller';
         if (side !== requiredSide) throw new AuthorizationError(
-            `only the ${requiredSide} side can mark an offer as ${status}`, {
+            `solo la parte ${requiredSide === 'buyer' ? 'compradora' : 'vendedora'} puede marcar una oferta como ${status}`, {
             code: 'FORBIDDEN_WRONG_SIDE',
             required_side: requiredSide
         });
@@ -215,17 +215,17 @@ const service = {
     async update(id, { actor, moveInDate, rentalMonths }) {
         const offer = await model.findById(id);
         if (!offer) throw new NotFoundError(
-            'offer not found', {
+            'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
             resource: 'offer',
             id
         });
         if (String(offer.buyer) !== actor.id) throw new AuthorizationError(
-            'only the buyer can edit these details', {
+            'solo el comprador puede editar estos datos', {
             code: 'FORBIDDEN_NOT_BUYER'
         });
         if (offer.status !== 'pending') throw new ConflictError(
-            'offer details can only be edited while pending', {
+            'los datos de la oferta solo pueden editarse mientras está pendiente', {
             code: 'OFFER_NOT_EDITABLE',
             resource: 'offer',
             id,
@@ -241,7 +241,7 @@ const service = {
     async delete(id) {
         const offer = await model.findByIdAndDelete(id);
         if (!offer) throw new NotFoundError(
-            'offer not found', {
+            'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
             resource: 'offer',
             id

@@ -71,12 +71,12 @@ const PropertiesMap = ({ properties }) => {
                         icon={createCustomIcon()}
                     >
                         <Popup>
-                            <div className='text-xs'>
-                                <p className='font-semibold text-orve-darker-teal truncate max-w-36'>{p.title}</p>
-                                <p className='text-orve-teal font-bold mt-0.5'>{formatPrice(p.price)}</p>
+                            <div className='w-40 p-1'>
+                                <p className='font-semibold text-orve-darker-teal text-sm truncate'>{p.title}</p>
+                                <p className='text-orve-teal font-bold text-sm mt-1'>{formatPrice(p.price)}</p>
                                 <Link
                                     to={`/property/${p.public_id}`}
-                                    className='text-orve-teal underline text-[10px]'
+                                    className='popup-cta inline-block mt-2.5 text-xs font-medium bg-orve-teal hover:bg-orve-darker-teal transition-colors px-3 py-1.5 rounded-lg'
                                 >
                                     Ver propiedad
                                 </Link>

@@ -1,11 +1,30 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Lock, Eye, EyeOff, Monitor, CheckCircle2, Trash2, MoreVertical, Mail, ArrowRight } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { cn } from '@/lib/utils'
 import useAuth from '@/hooks/useAuth'
 import ClientService from '@/services/Client'
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 const inputBase = 'w-full pl-9 pr-10 py-3 text-sm bg-orve-teal/5 border border-orve-teal/15 rounded-xl outline-none transition-colors placeholder:text-orve-teal/30 focus:border-orve-teal/40'
+
+// Tienen que calzar con auth.password y auth.code en el backend
+// (backend/src/schemas/fields/primitives.js, auth.js) — este flujo pasa por
+// el mismo /client/password-recovery/change-password que "olvidé mi
+// contraseña", así que las reglas de acá tienen que ser las mismas.
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+const PASSWORD_MAX = 20
+const CODE_REGEX = /^[a-zA-Z0-9]+$/
 
 /**
  * Pestaña "Seguridad" del perfil.
@@ -13,17 +32,16 @@ const inputBase = 'w-full pl-9 pr-10 py-3 text-sm bg-orve-teal/5 border border-o
  * Esto es necesario porque el backend requiere la cookie c_recovery del flujo de recovery.
  */
 const ProfileSecurity = () => {
-    const { user, logout } = useAuth()
+    const { user, clearSession } = useAuth()
 
     return (
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
             <div className='flex flex-col gap-6'>
                 <ChangePasswordSection email={user?.email} />
-                <AccessMethodsSection />
+                <EmailVerificationSection email={user?.email} />
             </div>
             <div className='flex flex-col gap-6'>
-                <ActiveSessionsSection logout={logout} />
-                <EmailVerificationSection email={user?.email} />
+                <ActiveSessionsSection clearSession={clearSession} />
                 <DeleteAccountSection />
             </div>
         </div>
@@ -37,6 +55,7 @@ const ChangePasswordSection = ({ email }) => {
     const [phase, setPhase] = useState('idle')
     const [serverError, setServerError] = useState(null)
     const [sending, setSending] = useState(false)
+    const [justResent, setJustResent] = useState(false)
 
     const { register, handleSubmit, watch, reset, formState: { errors, isSubmitting, isValid } } = useForm({
         mode: 'onChange',
@@ -47,25 +66,33 @@ const ChangePasswordSection = ({ email }) => {
     const getStrength = (pwd) => {
         if (!pwd) return 0
         let s = 0
-        if (pwd.length >= 8) s++
-        if (/[A-Z]/.test(pwd)) s++
+        if (pwd.length >= 8 && pwd.length <= PASSWORD_MAX) s++
+        if (/[A-Z]/.test(pwd) && /[a-z]/.test(pwd)) s++
         if (/[0-9]/.test(pwd)) s++
-        if (/[^A-Za-z0-9]/.test(pwd)) s++
+        if (/[@$!%*?&]/.test(pwd)) s++
         return s
     }
     const strength = getStrength(newPassword)
     const strengthLabel = ['', 'Débil', 'Media', 'Buena', 'Fuerte'][strength]
     const strengthColor = ['', 'bg-orve-red', 'bg-yellow-400', 'bg-blue-400', 'bg-orve-green'][strength]
 
-    const sendCode = async () => {
+    const sendCode = async (isResend = false) => {
         if (!email) return
         setSending(true)
         setServerError(null)
+        setJustResent(false)
         try {
             await ClientService.requestPasswordRecovery({ email })
             setPhase('code_sent')
-        } catch {
-            setServerError('No se pudo enviar el código. Intente de nuevo.')
+            if (isResend) {
+                // El formulario ya está en phase 'code_sent', así que aquí no
+                // cambia nada visible -sin este aviso, reenviar parece no
+                // hacer nada aunque sí dispare la petición.
+                setJustResent(true)
+                setTimeout(() => setJustResent(false), 4000)
+            }
+        } catch (err) {
+            setServerError(err.friendlyMessage)
         } finally {
             setSending(false)
         }
@@ -79,11 +106,14 @@ const ChangePasswordSection = ({ email }) => {
             setPhase('success')
             reset()
         } catch (err) {
+            // Para código inválido o contraseñas que no coinciden se prefiere un
+            // mensaje fijo y claro; cualquier otro caso (incluido el rate
+            // limiter) usa el mensaje real en vez de un genérico.
             const status = err?.response?.status
             setServerError(
                 status === 403 ? 'Código incorrecto o expirado.' :
                 status === 400 ? 'Las contraseñas no coinciden.' :
-                'Error al actualizar la contraseña.'
+                err.friendlyMessage
             )
         }
     }
@@ -105,7 +135,7 @@ const ChangePasswordSection = ({ email }) => {
                         Le enviaremos un código de verificación a <span className='font-semibold text-orve-darker-teal'>{email}</span> para confirmar su identidad.
                     </p>
                     <button
-                        onClick={sendCode}
+                        onClick={() => sendCode(false)}
                         disabled={sending}
                         className='flex items-center gap-2 self-start px-5 py-2.5 rounded-xl bg-orve-darker-teal text-white text-sm font-semibold hover:bg-orve-teal transition-colors disabled:opacity-60'
                     >
@@ -125,14 +155,33 @@ const ChangePasswordSection = ({ email }) => {
                     <div className='flex flex-col gap-1'>
                         <label className='text-xs text-gray-500 font-medium'>Código recibido por correo</label>
                         <input
-                            {...register('code', { required: true, minLength: 6, maxLength: 6 })}
+                            {...register('code', { required: true, minLength: 6, maxLength: 6, pattern: { value: CODE_REGEX, message: 'Solo letras y números.' } })}
                             placeholder='ej: a1b2c3'
                             className='w-full px-4 py-3 text-sm bg-orve-teal/5 border border-orve-teal/15 rounded-xl outline-none focus:border-orve-teal/40 tracking-widest font-mono placeholder:tracking-normal placeholder:font-sans'
                         />
                     </div>
 
-                    <PasswordField label='Nueva contraseña'          name='newPassword'     register={register} error={errors.newPassword}     rules={{ required: true, minLength: { value: 8, message: 'Mínimo 8 caracteres' } }} />
-                    <PasswordField label='Confirmar nueva contraseña' name='confirmPassword' register={register} error={errors.confirmPassword} rules={{ required: true, validate: v => v === newPassword || 'Las contraseñas no coinciden' }} />
+                    <PasswordField
+                        label='Nueva contraseña'
+                        name='newPassword'
+                        register={register}
+                        error={errors.newPassword}
+                        maxLength={PASSWORD_MAX}
+                        rules={{
+                            required: true,
+                            validate: (v) =>
+                                (v.length >= 8 && v.length <= PASSWORD_MAX && PASSWORD_REGEX.test(v))
+                                || 'Debe tener entre 8 y 20 caracteres, con mayúscula, minúscula, número y carácter especial (@$!%*?&).',
+                        }}
+                    />
+                    <PasswordField
+                        label='Confirmar nueva contraseña'
+                        name='confirmPassword'
+                        register={register}
+                        error={errors.confirmPassword}
+                        maxLength={PASSWORD_MAX}
+                        rules={{ required: true, validate: v => v === newPassword || 'Las contraseñas no coinciden' }}
+                    />
 
                     {newPassword.length > 0 && (
                         <div className='flex flex-col gap-1.5'>
@@ -157,8 +206,13 @@ const ChangePasswordSection = ({ email }) => {
                         </button>
                     </div>
 
-                    <button type='button' onClick={sendCode} className='text-xs text-orve-teal/60 hover:text-orve-teal self-start underline'>
-                        Reenviar código
+                    <button
+                        type='button'
+                        onClick={() => sendCode(true)}
+                        disabled={sending}
+                        className='text-xs text-orve-teal/60 hover:text-orve-teal self-start underline disabled:opacity-60'
+                    >
+                        {sending ? 'Reenviando...' : justResent ? 'Código reenviado ✓' : 'Reenviar código'}
                     </button>
                 </form>
             )}
@@ -177,62 +231,60 @@ const ChangePasswordSection = ({ email }) => {
     )
 }
 
-/* ─── Métodos de acceso ───────────────────────────────────────────── */
-
-const AccessMethodsSection = () => (
-    <section>
-        <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2 mb-1'>
-            <svg className='w-4 h-4' viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='2'><rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><rect x='14' y='14' width='7' height='7' rx='1'/></svg>
-            Métodos de acceso
-        </h3>
-        <p className='text-xs text-gray-400 mb-4'>Administre las cuentas conectadas que puede utilizar para iniciar sesión.</p>
-        <div className='flex flex-col gap-1 bg-orve-teal/5 border border-orve-teal/10 rounded-2xl p-3'>
-            {[
-                { name: 'Google', connected: false, icon: <GoogleIcon /> },
-                { name: 'Apple',  connected: false, icon: <AppleIcon /> },
-            ].map(({ name, connected, icon }) => (
-                <div key={name} className='flex items-center gap-3 px-1 py-2'>
-                    <div className='w-6 h-6 flex items-center justify-center shrink-0'>{icon}</div>
-                    <div className='flex-1'>
-                        <p className='text-sm font-medium text-orve-darker-teal'>{name}</p>
-                        <p className='text-[10px] text-gray-400'>{connected ? 'Conectado' : 'Sin conectar'}</p>
-                    </div>
-                    {connected
-                        ? <span className='text-[10px] text-orve-green border border-orve-green/30 px-2 py-0.5 rounded-full font-medium'>Conectado</span>
-                        : <button className='text-[10px] text-orve-teal border border-orve-teal/30 px-3 py-0.5 rounded-full hover:bg-orve-teal/5 transition-colors'>Conectar</button>
-                    }
-                </div>
-            ))}
-        </div>
-    </section>
-)
-
 /* ─── Sesiones activas ────────────────────────────────────────────── */
 
-const ActiveSessionsSection = ({ logout }) => (
-    <section>
-        <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2 mb-1'>
-            <Monitor className='w-4 h-4' />
-            Sesiones activas
-        </h3>
-        <p className='text-xs text-gray-400 mb-4'>
-            Si no reconoce algún dispositivo, cierre la sesión y cambie su contraseña.
-        </p>
-        <div className='flex flex-col gap-1 bg-orve-teal/5 border border-orve-teal/10 rounded-2xl p-3 mb-3'>
-            <div className='flex items-center gap-3 px-1 py-1.5'>
-                <Monitor className='w-4 h-4 text-orve-teal/50 shrink-0' />
-                <div className='flex-1'>
-                    <p className='text-sm font-medium text-orve-darker-teal'>Este dispositivo</p>
-                    <p className='text-[10px] text-gray-400'>Sesión actual · Ahora</p>
+// "Cerrar todas las sesiones" llama a /client/logout-all, que invalida en el
+// backend cualquier token ya emitido (ver require_auth.js) -no solo limpia la
+// cookie de este dispositivo como hacía antes con el logout normal-, así que
+// sí afecta sesiones abiertas en otros dispositivos.
+const ActiveSessionsSection = ({ clearSession }) => {
+    const navigate = useNavigate()
+    const [closing, setClosing] = useState(false)
+    const [error, setError] = useState(null)
+
+    const closeAllSessions = async () => {
+        setClosing(true)
+        setError(null)
+        try {
+            await ClientService.logoutAllSessions()
+            clearSession()
+            navigate('/login')
+        } catch (err) {
+            setError(err.friendlyMessage)
+            setClosing(false)
+        }
+    }
+
+    return (
+        <section>
+            <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2 mb-1'>
+                <Monitor className='w-4 h-4' />
+                Sesiones activas
+            </h3>
+            <p className='text-xs text-gray-400 mb-4'>
+                Si no reconoce algún dispositivo, cierre todas las sesiones y cambie su contraseña.
+            </p>
+            {error && <ErrorMsg>{error}</ErrorMsg>}
+            <div className='flex flex-col gap-1 bg-orve-teal/5 border border-orve-teal/10 rounded-2xl p-3 mb-3 mt-3'>
+                <div className='flex items-center gap-3 px-1 py-1.5'>
+                    <Monitor className='w-4 h-4 text-orve-teal/50 shrink-0' />
+                    <div className='flex-1'>
+                        <p className='text-sm font-medium text-orve-darker-teal'>Este dispositivo</p>
+                        <p className='text-[10px] text-gray-400'>Sesión actual · Ahora</p>
+                    </div>
+                    <span className='text-[10px] text-orve-teal border border-orve-teal/30 px-2 py-0.5 rounded-full font-medium'>Actual</span>
                 </div>
-                <span className='text-[10px] text-orve-teal border border-orve-teal/30 px-2 py-0.5 rounded-full font-medium'>Actual</span>
             </div>
-        </div>
-        <button onClick={logout} className='text-xs font-semibold text-orve-red border border-orve-red/30 hover:bg-orve-red/5 px-4 py-2 rounded-xl transition-colors'>
-            Cerrar todas las sesiones
-        </button>
-    </section>
-)
+            <button
+                onClick={closeAllSessions}
+                disabled={closing}
+                className='text-xs font-semibold text-orve-red border border-orve-red/30 hover:bg-orve-red/5 px-4 py-2 rounded-xl transition-colors disabled:opacity-60'
+            >
+                {closing ? 'Cerrando sesiones...' : 'Cerrar todas las sesiones'}
+            </button>
+        </section>
+    )
+}
 
 /* ─── Verificación de correo ──────────────────────────────────────── */
 
@@ -256,24 +308,105 @@ const EmailVerificationSection = ({ email }) => (
 
 /* ─── Eliminar cuenta ─────────────────────────────────────────────── */
 
-const DeleteAccountSection = () => (
-    <div className='flex items-center justify-between bg-orve-red/5 border border-orve-red/15 rounded-2xl px-4 py-3.5'>
-        <div className='flex items-center gap-3'>
-            <Trash2 className='w-4 h-4 text-orve-red shrink-0' />
-            <div>
-                <p className='text-sm font-bold text-orve-red'>Eliminar cuenta</p>
-                <p className='text-[10px] text-orve-red/60'>Esta acción es permanente y no se puede deshacer.</p>
+// Requiere doble confirmación explícita antes de llamar al backend: un primer
+// diálogo que explica las consecuencias, y un segundo que pide confirmar
+// definitivamente la eliminación (evita borrados accidentales por un solo clic).
+const DeleteAccountSection = () => {
+    const { user, clearSession } = useAuth()
+    const navigate = useNavigate()
+    // step: 0 cerrado, 1 primera confirmación, 2 confirmación definitiva
+    const [step, setStep] = useState(0)
+    const [deleting, setDeleting] = useState(false)
+    const [error, setError] = useState(null)
+
+    const closeDialog = () => {
+        if (deleting) return
+        setStep(0)
+        setError(null)
+    }
+
+    const confirmDelete = async () => {
+        setDeleting(true)
+        setError(null)
+        try {
+            await ClientService.delete(user.id)
+            setStep(0)
+            clearSession()
+            navigate('/')
+        } catch (err) {
+            setError(err.friendlyMessage)
+        } finally {
+            setDeleting(false)
+        }
+    }
+
+    return (
+        <div className='flex items-center justify-between bg-orve-red/5 border border-orve-red/15 rounded-2xl px-4 py-3.5'>
+            <div className='flex items-center gap-3'>
+                <Trash2 className='w-4 h-4 text-orve-red shrink-0' />
+                <div>
+                    <p className='text-sm font-bold text-orve-red'>Eliminar cuenta</p>
+                    <p className='text-[10px] text-orve-red/60'>Esta acción es permanente y no se puede deshacer.</p>
+                </div>
             </div>
+            <button
+                onClick={() => setStep(1)}
+                className='shrink-0 ml-4 text-xs font-semibold text-orve-red border border-orve-red/40 hover:bg-orve-red hover:text-white px-3 py-2 rounded-xl transition-colors'
+            >
+                Eliminar cuenta
+            </button>
+
+            {/* Primera confirmación: explica qué se pierde */}
+            <AlertDialog open={step === 1} onOpenChange={(open) => !open && closeDialog()}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar su cuenta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Se eliminarán permanentemente su perfil, favoritos y el historial asociado a su cuenta. Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={closeDialog}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => { e.preventDefault(); setStep(2) }}
+                            className='bg-orve-red text-white hover:bg-orve-red/90'
+                        >
+                            Continuar
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Segunda confirmación: la que realmente dispara el borrado */}
+            <AlertDialog open={step === 2} onOpenChange={(open) => !open && closeDialog()}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Confirme la eliminación</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Esta es su última oportunidad para cancelar. ¿Confirma definitivamente que desea{' '}
+                            <span className='font-semibold text-orve-red'>ELIMINAR</span> su cuenta?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {error && <ErrorMsg>{error}</ErrorMsg>}
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={closeDialog} disabled={deleting}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={(e) => { e.preventDefault(); confirmDelete() }}
+                            disabled={deleting}
+                            className='bg-orve-red text-white hover:bg-orve-red/90'
+                        >
+                            {deleting ? 'Eliminando...' : 'Sí, eliminar mi cuenta'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
-        <button className='shrink-0 ml-4 text-xs font-semibold text-orve-red border border-orve-red/40 hover:bg-orve-red hover:text-white px-3 py-2 rounded-xl transition-colors'>
-            Eliminar cuenta
-        </button>
-    </div>
-)
+    )
+}
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 
-const PasswordField = ({ label, name, register, error, rules }) => {
+const PasswordField = ({ label, name, register, error, rules, maxLength }) => {
     const [show, setShow] = useState(false)
     return (
         <div>
@@ -283,6 +416,7 @@ const PasswordField = ({ label, name, register, error, rules }) => {
                     {...register(name, rules)}
                     type={show ? 'text' : 'password'}
                     placeholder={label}
+                    maxLength={maxLength}
                     className={cn(inputBase, error && 'border-orve-red/40')}
                 />
                 <button type='button' onClick={() => setShow(v => !v)} className='absolute right-3 top-1/2 -translate-y-1/2 text-orve-teal/40 hover:text-orve-teal/70'>
@@ -296,21 +430,6 @@ const PasswordField = ({ label, name, register, error, rules }) => {
 
 const ErrorMsg = ({ children }) => (
     <p className='text-xs text-orve-red bg-orve-red/5 border border-orve-red/15 px-3 py-2 rounded-xl'>{children}</p>
-)
-
-const GoogleIcon = () => (
-    <svg viewBox='0 0 24 24' className='w-5 h-5'>
-        <path d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z' fill='#4285F4'/>
-        <path d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='#34A853'/>
-        <path d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='#FBBC05'/>
-        <path d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='#EA4335'/>
-    </svg>
-)
-
-const AppleIcon = () => (
-    <svg viewBox='0 0 24 24' className='w-5 h-5' fill='currentColor'>
-        <path d='M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.42c1.29.06 2.2.72 2.96.75.98-.18 1.92-.86 2.98-.79 1.27.09 2.22.56 2.84 1.42-2.6 1.56-2.2 5.26.65 6.24-.62 1.56-1.44 3.12-2.43 5.24zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z'/>
-    </svg>
 )
 
 export default ProfileSecurity

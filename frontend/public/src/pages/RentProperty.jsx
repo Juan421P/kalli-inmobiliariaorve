@@ -12,7 +12,7 @@ const RentProperty = () => (
             style={{ backgroundImage: `url(${coolBg})` }}
         />
         <Navbar />
-        <div className='pt-14'>
+        <div className='pt-24'>
             <PropertyFormSection
                 title='Puesta en renta de propiedad'
                 description='Para poner su propiedad en alquiler, es necesario completar y firmar el Formulario de Arrendamiento.'

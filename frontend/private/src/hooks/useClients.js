@@ -21,8 +21,8 @@ const useClients = () => {
             const data = await clientsService.getAll()
             setClients(data.clients ?? [])
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar los clientes.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar los clientes.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -69,8 +69,8 @@ const useClients = () => {
             await fetchClients()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar el cliente.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar el cliente.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

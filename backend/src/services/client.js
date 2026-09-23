@@ -2,11 +2,13 @@ import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { v2 as cloudinary } from 'cloudinary';
 import model from '../models/client.js';
+import offerModel from '../models/offer.js';
 import { jwt } from '../utils/jwt.js';
 import Mail from '../utils/mail.js';
 import { registration } from '../utils/html/registration.js';
 import { recovery } from '../utils/html/recovery.js';
 import { checkDocumentUniqueness } from '../utils/check_document_uniqueness.js';
+import { findEmailInOtherRole, roleLabel } from '../utils/check_cross_role_login.js';
 import AuthenticationError from '../errors/authentication.js';
 import AuthorizationError from '../errors/authorization.js';
 import ConflictError from '../errors/conflict.js';
@@ -24,10 +26,55 @@ const service = {
     async getById(id) {
         const client = await model.findById(id);
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
         );
         return client;
+    },
+
+    // Feed de "Actividad reciente" del perfil: combina las últimas propiedades
+    // vistas (recently_viewed, ver models/client.js) y las últimas ofertas
+    // hechas por el cliente en un solo arreglo ordenado por fecha, más
+    // reciente primero. `limit` acota cuántos items finales se devuelven.
+    async getActivity(id, { limit = 8 } = {}) {
+        const PROPERTY_FIELDS = 'title public_id pictures listing_type price';
+
+        const [client, offers] = await Promise.all([
+            model.findById(id)
+                .select('recently_viewed')
+                .populate('recently_viewed.property', PROPERTY_FIELDS),
+            offerModel.find({ buyer: id })
+                .sort({ updatedAt: -1 })
+                .limit(limit)
+                .populate('property', PROPERTY_FIELDS),
+        ]);
+        if (!client) throw new NotFoundError(
+            'cliente no encontrado',
+            { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
+        );
+
+        const viewedItems = (client.recently_viewed ?? [])
+            // una propiedad eliminada deja el populate en null; se descarta
+            .filter(entry => entry.property)
+            .map(entry => ({
+                type: 'viewed',
+                at: entry.viewed_at,
+                property: entry.property,
+            }));
+
+        const offerItems = offers
+            .filter(offer => offer.property)
+            .map(offer => ({
+                type: 'offer',
+                at: offer.updatedAt,
+                property: offer.property,
+                status: offer.status,
+                price: offer.price,
+            }));
+
+        return [...viewedItems, ...offerItems]
+            .sort((a, b) => new Date(b.at) - new Date(a.at))
+            .slice(0, limit);
     },
 
     async register({ name, lastname, email, document, phone, picture, pictureId, password }) {
@@ -37,10 +84,18 @@ const service = {
                 await model.findByIdAndDelete(exists._id);
             } else {
                 throw new ConflictError(
-                    'client already exists',
+                    'ya existe una cuenta registrada con este correo electrónico',
                     { code: 'EMAIL_ALREADY_EXISTS', field: 'email', value: email }
                 );
             }
+        }
+        // si un intento anterior (sin verificar) se quedó con el mismo número de
+        // documento -p.ej. el usuario se equivocó de correo y ahora se registra
+        // con el correcto-, se descarta ese registro huérfano antes de validar
+        // unicidad, para que no bloquee el registro real
+        const existingByDocument = await model.findOne({ 'document.number': document.number });
+        if (existingByDocument && !existingByDocument.verified_email) {
+            await model.findByIdAndDelete(existingByDocument._id);
         }
         // igual no serviría si se registran varios usuarios con el mismo número de dui al mismo tiempo o algo así pero esperemos que tal cosa no ocurra porque si no habría que hacer otra colección y ajá no creo que haya otra forma y la verdad qué pereza mil disculpas
         await checkDocumentUniqueness(document.number);
@@ -68,7 +123,7 @@ const service = {
             console.error('[client.register] Mail.sendHtml failed:', err);
             await model.findByIdAndDelete(client._id);
             throw new NodemailerError(
-                'failed to send verification email',
+                'no se pudo enviar el correo de verificación',
                 { email: client.email }
             );
         }
@@ -78,11 +133,11 @@ const service = {
     async resendVerification({ email }) {
         const client = await model.findOne({ email });
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND' }
         );
         if (client.verified_email) throw new ConflictError(
-            'account already verified',
+            'esta cuenta ya fue verificada',
             { code: 'ACCOUNT_ALREADY_VERIFIED' }
         );
         const code = crypto.randomBytes(3).toString('hex');
@@ -97,7 +152,7 @@ const service = {
         } catch (err) {
             console.error('[client.resendVerification] Mail.sendHtml failed:', err);
             throw new NodemailerError(
-                'failed to send verification email',
+                'no se pudo enviar el correo de verificación',
                 { email: client.email }
             );
         }
@@ -110,26 +165,24 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired verification token',
-                { code: 'INVALID_VERIFICATION_TOKEN' }
+                'el código de verificación es inválido o ha expirado'
             );
         }
         if (decoded.code !== code) throw new AuthenticationError(
-            'invalid verification code',
-            { code: 'INVALID_VERIFICATION_CODE', field: 'code' }
+            'el código de verificación es incorrecto'
         );
         const client = await model.findById(decoded.id);
         if (!client) throw new NotFoundError(
-            'client does not exist',
+            'el cliente no existe',
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id: decoded.id }
         );
         if (client.verified_email) throw new ConflictError(
-            'account already verified',
+            'esta cuenta ya fue verificada',
             { code: 'ACCOUNT_ALREADY_VERIFIED', resource: 'client', id: client._id }
         );
         client.verified_email = true;
         await client.save();
-        const session_token = jwt.sign({ id: client._id, role: 'client' }, '30d');
+        const session_token = jwt.sign({ id: client._id, role: 'client', v: client.session_version }, '30d');
 
         return {
             token: session_token,
@@ -146,7 +199,7 @@ const service = {
     async update(id, updates) {
         const client = await model.findByIdAndUpdate(id, updates, { new: true });
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
         );
         return client;
@@ -155,7 +208,7 @@ const service = {
     async delete(id) {
         const client = await model.findByIdAndDelete(id);
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
         );
         return { id, deleted: true };
@@ -164,7 +217,7 @@ const service = {
     async uploadPicture(id, { picture, picture_id }) {
         const client = await model.findById(id);
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
         );
         if (client.picture_id) {
@@ -172,7 +225,7 @@ const service = {
                 await cloudinary.uploader.destroy(client.picture_id);
             } catch (err) {
                 throw new CloudinaryError(
-                    'failed to remove previous picture',
+                    'no se pudo eliminar la foto de perfil anterior',
                     { previous_picture_id: client.picture_id }
                 );
             }
@@ -189,13 +242,12 @@ const service = {
 
     async requestRecoveryCode({ email }) {
         if (!email?.trim()) throw new ValidationError(
-            'email is required',
+            'el correo electrónico es obligatorio',
             { code: 'EMAIL_REQUIRED', field: 'email' }
         );
         const client = await model.findOne({ email });
         if (!client) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'no existe ninguna cuenta con ese correo electrónico'
         );
         const code = crypto.randomBytes(3).toString('hex');
         const token = jwt.sign({ email, code, verified_email: false }, '15m');
@@ -209,7 +261,7 @@ const service = {
         } catch (err) {
             console.error('[client.requestRecoveryCode] Mail.sendHtml failed:', err);
             throw new NodemailerError(
-                'failed to send recovery email',
+                'no se pudo enviar el correo de recuperación',
                 { email }
             );
         }
@@ -218,11 +270,10 @@ const service = {
 
     async verifyRecoveryCode({ token, code }) {
         if (!token) throw new AuthenticationError(
-            'session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
         if (!code?.trim()) throw new ValidationError(
-            'code is required',
+            'el código es obligatorio',
             { code: 'CODE_REQUIRED', field: 'code' }
         );
         let decoded;
@@ -230,12 +281,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (decoded.code !== code) throw new AuthorizationError(
-            'incorrect code',
+            'el código ingresado es incorrecto',
             { code: 'INVALID_RECOVERY_CODE', field: 'code' }
         );
         const newToken = jwt.sign({ email: decoded.email, verified_email: true }, '15m');
@@ -244,19 +294,18 @@ const service = {
 
     async changePassword({ token, new_password, confirm_password }) {
         if (!token) throw new AuthenticationError(
-            'session expired',
-            { code: 'RECOVERY_SESSION_MISSING' }
+            'la sesión de recuperación ha expirado, solicite un nuevo código'
         );
         if (!new_password) throw new ValidationError(
-            'password is required',
+            'la contraseña es obligatoria',
             { code: 'PASSWORD_REQUIRED', field: 'new_password' }
         );
         if (!confirm_password) throw new ValidationError(
-            'confirm_password is required',
+            'debe confirmar la contraseña',
             { code: 'CONFIRM_PASSWORD_REQUIRED', field: 'confirm_password' }
         );
         if (new_password !== confirm_password) throw new ValidationError(
-            'passwords do not match',
+            'las contraseñas no coinciden',
             { code: 'PASSWORDS_DO_NOT_MATCH', fields: ['new_password', 'confirm_password'] }
         );
         let decoded;
@@ -264,12 +313,11 @@ const service = {
             decoded = jwt.verify(token);
         } catch {
             throw new AuthenticationError(
-                'invalid or expired recovery token',
-                { code: 'INVALID_RECOVERY_TOKEN' }
+                'el código de recuperación es inválido o ha expirado'
             );
         }
         if (!decoded.verified_email) throw new AuthorizationError(
-            'account not verified for password change',
+            'debe verificar el código de recuperación antes de cambiar la contraseña',
             { code: 'RECOVERY_NOT_VERIFIED', email: decoded.email }
         );
         const hash = await bcrypt.hash(new_password, 10);
@@ -279,28 +327,30 @@ const service = {
             { new: true }
         );
         if (!client) throw new NotFoundError(
-            'client not found',
+            'cliente no encontrado',
             { code: 'CLIENT_NOT_FOUND', email: decoded.email }
         );
-        return { id: client._id, message: 'password updated successfully' };
+        return { id: client._id, message: 'contraseña actualizada correctamente' };
     },
 
     async login({ email, password }) {
         const client = await model.findOne({ email }).select('+password');
-        if (!client) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
-        );
+        if (!client) {
+            const otherRole = await findEmailInOtherRole(email, 'client');
+            if (otherRole) throw new AuthenticationError(
+                `este correo pertenece a una cuenta de ${roleLabel(otherRole)}, inicie sesión desde la sección correspondiente`
+            );
+            throw new AuthenticationError('correo electrónico o contraseña incorrectos');
+        }
         const isMatch = await client.comparePassword(password);
         if (!isMatch) throw new AuthenticationError(
-            'invalid credentials',
-            { code: 'INVALID_CREDENTIALS' }
+            'correo electrónico o contraseña incorrectos'
         );
         if (!client.verified_email) throw new AuthorizationError(
-            'email not yet verified',
+            'debe verificar su correo electrónico antes de iniciar sesión',
             { code: 'EMAIL_NOT_VERIFIED', field: 'email' }
         );
-        const token = jwt.sign({ id: client._id, role: 'client' }, '30d');
+        const token = jwt.sign({ id: client._id, role: 'client', v: client.session_version }, '30d');
         return {
             token,
             client: {
@@ -314,6 +364,22 @@ const service = {
     },
 
     async logout() { return },
+
+    // Invalida todas las sesiones activas del cliente (incluida la actual):
+    // al subir session_version, cualquier token ya emitido (que lleva el
+    // número anterior) deja de pasar la validación en require_auth.js.
+    async logoutAllSessions(id) {
+        const client = await model.findByIdAndUpdate(
+            id,
+            { $inc: { session_version: 1 } },
+            { new: true }
+        );
+        if (!client) throw new NotFoundError(
+            'cliente no encontrado',
+            { code: 'CLIENT_NOT_FOUND', resource: 'client', id }
+        );
+        return { id: client._id };
+    },
 
 };
 export default service;

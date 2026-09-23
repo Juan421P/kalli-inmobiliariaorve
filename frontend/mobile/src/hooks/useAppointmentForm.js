@@ -34,10 +34,12 @@ const useAppointmentForm = ({ property, publicId }) => {
         defaultValues: {
             selectedDate: null, selectedSlot: null, contactMethod: null,
             fundsSource: null, monthlyIncome: '', reason: '', addressReference: '',
+            location: { coordinates: null, address: '' },
         },
     });
 
     const selectedDate = watch('selectedDate');
+    const location = watch('location');
 
     useEffect(() => {
         scheduleAvailabilityService.get()
@@ -66,24 +68,25 @@ const useAppointmentForm = ({ property, publicId }) => {
         setValue('selectedSlot', null);
     };
 
-    // Arma el payload que espera POST /appointment. current_address.district
-    // deberia ser el id de un distrito real, pero el backend todavia no tiene
-    // esa coleccion/endpoint, asi que se manda un ObjectId placeholder (igual
-    // que en la web) hasta que exista.
+    // Arma el payload que espera POST /appointment (ver backend/src/schemas/fields/appointment.js).
     const onSubmit = async (values) => {
         setIsSubmitting(true);
         try {
             await appointmentService.create({
                 property: property?._id,
-                time: values.selectedSlot._id,
+                time: {
+                    startTime: values.selectedSlot.start_time,
+                    endTime: values.selectedSlot.end_time,
+                },
                 proposed_dates: [values.selectedDate.toISOString()],
                 qualification: {
-                    funds_source: values.fundsSource,
-                    monthly_income: Number(values.monthlyIncome),
+                    fundsSource: values.fundsSource,
+                    monthlyIncome: Number(values.monthlyIncome),
                     reason: values.reason.trim(),
                 },
                 current_address: {
-                    district: '000000000000000000000000',
+                    location: { type: 'Point', coordinates: values.location.coordinates },
+                    address: values.location.address,
                     reference: values.addressReference.trim(),
                 },
             });
@@ -99,7 +102,7 @@ const useAppointmentForm = ({ property, publicId }) => {
     return {
         isLoadingSchedules, noSchedules, isSubmitting, isValid, errors,
         control, watch, setValue,
-        selectedDate, slotsForDate, isDayDisabled, handleDateChange,
+        selectedDate, slotsForDate, isDayDisabled, handleDateChange, location,
         onSubmit: handleSubmit(onSubmit),
     };
 };

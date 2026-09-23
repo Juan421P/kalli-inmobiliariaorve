@@ -23,7 +23,7 @@ const controller = {
 
     completeInvitation: catchAsync(async (req, res) => {
         const { token, admin } = await service.completeInvitation(req.body);
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'admin');
         return res.status(200).json({ message: 'registration completed successfully, logging in', admin });
     }),
 
@@ -39,7 +39,7 @@ const controller = {
 
     uploadPicture: catchAsync(async (req, res) => {
         if (!req.file) throw new ValidationError(
-            'picture is required',
+            'la foto de perfil es obligatoria',
             { code: 'PICTURE_REQUIRED', field: 'picture' }
         );
         await service.uploadPicture(
@@ -74,13 +74,13 @@ const controller = {
     login: catchAsync(async (req, res) => {
         const { email, password } = req.body;
         const { token, admin } = await service.login({ email, password });
-        authCookie.set(res, token);
+        authCookie.set(res, token, 'admin');
         return res.status(200).json({ message: 'login successful', admin });
     }),
 
     logout: catchAsync(async (req, res) => {
         await service.logout();
-        authCookie.clear(res);
+        authCookie.clear(res, 'admin');
         return res.status(200).json({ message: 'logout successful' });
     })
 

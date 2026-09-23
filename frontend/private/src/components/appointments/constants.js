@@ -8,18 +8,7 @@ export const STATUS_MAP = {
 
 export const getStatus = (status) => STATUS_MAP[status] ?? { label: status, className: 'bg-gray-100 text-gray-500 border-gray-200' }
 
-export const FUNDS_SOURCE_LABELS = {
-    own:   'Fondos propios',
-    loan:  'Préstamo',
-    mixed: 'Mixto',
-}
-
 export const formatDate = (dateStr) => {
     if (!dateStr) return '—'
     return new Date(dateStr).toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
-
-export const formatCurrency = (value) =>
-    typeof value === 'number'
-        ? value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })
-        : '—'

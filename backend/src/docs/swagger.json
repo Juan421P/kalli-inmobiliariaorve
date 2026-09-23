@@ -3,7 +3,7 @@
   "info": {
     "title": "Kalli - Inmobiliaria Orve API",
     "version": "1.0.0",
-    "description": "API REST del sistema Kalli - Inmobiliaria Orve. Gestiona propiedades en venta/alquiler, clientes, colaboradores, administradores, citas de visita y ofertas/contraofertas. Todas las rutas estan montadas bajo /api. La sesion se transporta en una cookie httpOnly llamada 'auth' (JWT, 30 dias) o alternativamente en un header Authorization: Bearer <token>. Los tres roles (admin, client, collaborator) comparten el mismo nombre de cookie."
+    "description": "API REST del sistema Kalli - Inmobiliaria Orve. Gestiona propiedades en venta/alquiler, clientes, colaboradores, administradores, citas de visita y ofertas/contraofertas. Todas las rutas estan montadas bajo /api. La sesion se transporta en una cookie httpOnly (JWT, 30 dias) o alternativamente en un header Authorization: Bearer <token>. Cada rol tiene su propio nombre de cookie -auth_admin, auth_client, auth_collaborator- para poder mantener sesiones simultaneas de distintos roles en el mismo navegador."
   },
   "servers": [
     { "url": "http://localhost:4000/api", "description": "Backend local de desarrollo" }
@@ -25,7 +25,7 @@
   ],
   "components": {
     "securitySchemes": {
-      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "auth", "description": "Cookie httpOnly emitida al iniciar sesion. Compartida por los tres roles." },
+      "cookieAuth": { "type": "apiKey", "in": "cookie", "name": "auth_admin | auth_client | auth_collaborator", "description": "Cookie httpOnly emitida al iniciar sesion. Su nombre depende del rol (ver auth_cookie.js), asi que un mismo navegador puede mantener sesiones activas de mas de un rol a la vez." },
       "bearerAuth": { "type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Alternativa a la cookie para clientes/herramientas que no manejan cookies." }
     },
     "schemas": {

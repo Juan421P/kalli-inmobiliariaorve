@@ -40,7 +40,7 @@ const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
             if (status === 409) {
                 setError(`"${trimmedName}" ya está registrado.`)
             } else {
-                toast.error('Ocurrió un error', `No se pudo agregar el ${label.toLowerCase()}.`)
+                toast.error(`No se pudo agregar el ${label.toLowerCase()}.`, err.friendlyMessage)
             }
         } finally {
             setIsLoading(false)
@@ -58,7 +58,11 @@ const CatalogCreateForm = ({ label, placeholder, service, onCreated }) => {
                     <FieldTitle className='text-orve-teal'>{`Nombre de ${label.charAt(0) === 'E' ? 'el' : 'la'} ${label.toLowerCase()}`}</FieldTitle>
                     <Input
                         value={name}
-                        onChange={(e) => { setName(e.target.value); setError(null) }}
+                        onChange={(e) => {
+                            const value = e.target.value
+                            setName(value)
+                            setError(value.trim() ? validate(value.trim()) : null)
+                        }}
                         onKeyDown={handleKeyDown}
                         placeholder={placeholder}
                         disabled={isLoading}

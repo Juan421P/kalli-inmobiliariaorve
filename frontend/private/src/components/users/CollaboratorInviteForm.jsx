@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { Upload, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { formatPhoneInput, formatDuiInput } from '@/lib/utils'
 import {
     Field,
     FieldLabel,
@@ -30,6 +31,15 @@ const EMPTY_FORM = {
     documentType:   'dui',
     documentNumber: '',
 }
+
+// Tienen que calzar exacto con user.name/user.lastname en el backend
+// (backend/src/schemas/fields/primitives.js: shortText) — si allá cambian el
+// máximo o el regex y acá no, el formulario deja pasar cosas que el backend
+// va a rechazar igual.
+const SHORT_TEXT_MAX = 20
+const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/
+const DOCUMENT_NUMBER_MAX = 50
+const EMAIL_MAX = 255
 
 const AvatarUpload = ({ preview, onChange, error }) => {
     const inputRef = useRef(null)
@@ -85,29 +95,90 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
     const [touched, setTouched] = useState({})
     const [avatar,  setAvatar]  = useState({ file: null, preview: null })
 
+    // Un validador por campo: se usa tanto para revisar uno solo apenas cambia
+    // (feedback inmediato) como para revisarlos todos de un golpe antes de
+    // mandar la invitación al backend. `f` es el form y `av` el archivo de
+    // avatar — se pasan explícitos para poder validar contra el valor recién
+    // elegido, que puede no estar en el state todavía.
+    const fieldValidators = {
+        avatar: (_f, av) => !av ? 'La foto es requerida.' : null,
+        name: (f) => {
+            if (!f.name.trim()) return 'El nombre es requerido.'
+            if (f.name.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.name.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
+        lastname: (f) => {
+            if (!f.lastname.trim()) return 'El apellido es requerido.'
+            if (f.lastname.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.lastname.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
+        email: (f) => {
+            if (!f.email.trim()) return 'El correo es requerido.'
+            if (f.email.trim().length > EMAIL_MAX) return `No puede superar los ${EMAIL_MAX} caracteres.`
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) return 'Ingrese un correo válido.'
+            return null
+        },
+        phone: (f) => {
+            if (!f.phone.trim()) return 'El teléfono es requerido.'
+            if (!/^\d{4}-\d{4}$/.test(f.phone)) return 'Formato: 0000-0000'
+            return null
+        },
+        documentNumber: (f) => {
+            if (!f.documentNumber.trim()) return 'El número de documento es requerido.'
+            if (f.documentType === 'dui' && !/^\d{8}-\d$/.test(f.documentNumber)) return 'El DUI debe tener el formato 00000000-0'
+            if (f.documentType !== 'dui' && f.documentNumber.trim().length > DOCUMENT_NUMBER_MAX) return `No puede superar los ${DOCUMENT_NUMBER_MAX} caracteres.`
+            return null
+        },
+    }
+
+    // Revisa un solo campo contra el valor recién tecleado/elegido (que puede
+    // no estar en el state todavía) y actualiza su error en el momento.
+    const validateField = (key, formOverride = form, avatarOverride = avatar.file) => {
+        const message = fieldValidators[key]?.(formOverride, avatarOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        setTouched((prev) => ({ ...prev, [key]: true }))
+        validateField(key, nextForm)
+        // el formato de DUI depende de documentType, así que si cambia hay que
+        // re-revisar documentNumber contra el tipo nuevo
+        if (key === 'documentType') validateField('documentNumber', nextForm)
     }
 
     const touchField = (key) => setTouched((prev) => ({ ...prev, [key]: true }))
 
-    const isFormReady =
-        form.name.trim() &&
-        form.lastname.trim() &&
-        form.email.trim() && /\S+@\S+\.\S+/.test(form.email) &&
-        form.phone.trim() &&
-        form.documentNumber.trim()
+    const isDuiValid = form.documentType !== 'dui' || /^\d{8}-\d$/.test(form.documentNumber)
+    const isNameValid = (v) => v.trim() && v.trim().length <= SHORT_TEXT_MAX && SHORT_TEXT_REGEX.test(v.trim())
+    const isDocumentNumberValid =
+        form.documentNumber.trim() &&
+        isDuiValid &&
+        (form.documentType === 'dui' || form.documentNumber.trim().length <= DOCUMENT_NUMBER_MAX)
 
+    const isFormReady =
+        isNameValid(form.name) &&
+        isNameValid(form.lastname) &&
+        form.email.trim() && form.email.trim().length <= EMAIL_MAX && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) &&
+        /^\d{4}-\d{4}$/.test(form.phone) &&
+        isDocumentNumberValid &&
+        avatar.file
+
+    // Revisa TODOS los campos (y la foto) contra el estado actual, sin
+    // importar cuáles ya se habían tocado. Chequeo final antes de hablar con
+    // el backend: nada se manda si algo, aunque nadie lo haya tocado, está mal.
     const validate = () => {
         const e = {}
-        if (!form.name.trim())           e.name           = 'El nombre es requerido.'
-        if (!form.lastname.trim())       e.lastname       = 'El apellido es requerido.'
-        if (!form.email.trim())          e.email          = 'El correo es requerido.'
-        else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = 'Correo inválido.'
-        if (!form.phone.trim())          e.phone          = 'El teléfono es requerido.'
-        if (!form.documentNumber.trim()) e.documentNumber = 'El número de documento es requerido.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form, avatar.file)
+            if (message) e[key] = message
+        }
         setErrors(e)
+        setTouched(Object.fromEntries(Object.keys(fieldValidators).map((k) => [k, true])))
         return Object.keys(e).length === 0
     }
 
@@ -140,7 +211,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                         preview={avatar.preview}
                         onChange={(file, preview) => {
                             setAvatar({ file, preview })
-                            setErrors((prev) => ({ ...prev, avatar: null }))
+                            validateField('avatar', form, file)
                         }}
                         error={errors.avatar}
                     />
@@ -161,6 +232,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('name', e.target.value)}
                                 onBlur={() => touchField('name')}
                                 placeholder='Nombre'
+                                maxLength={SHORT_TEXT_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -180,6 +252,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('lastname', e.target.value)}
                                 onBlur={() => touchField('lastname')}
                                 placeholder='Apellido'
+                                maxLength={SHORT_TEXT_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -193,12 +266,16 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.phone && !form.phone.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
+                                {touched.phone && form.phone.trim() && !/^\d{4}-\d{4}$/.test(form.phone) && (
+                                    <span className='text-orve-red text-xs font-semibold'>Formato: 0000-0000</span>
+                                )}
                             </FieldTitle>
                             <Input
                                 value={form.phone}
-                                onChange={(e) => setField('phone', e.target.value)}
+                                onChange={(e) => setField('phone', formatPhoneInput(e.target.value))}
                                 onBlur={() => touchField('phone')}
                                 placeholder='0000-0000'
+                                maxLength={9}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -212,7 +289,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.email && !form.email.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
-                                {touched.email && form.email.trim() && !/\S+@\S+\.\S+/.test(form.email) && (
+                                {touched.email && form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email) && (
                                     <span className='text-orve-red text-xs font-semibold'>Formato inválido</span>
                                 )}
                             </FieldTitle>
@@ -222,6 +299,7 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 onChange={(e) => setField('email', e.target.value)}
                                 onBlur={() => touchField('email')}
                                 placeholder='correo@ejemplo.com'
+                                maxLength={EMAIL_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>
@@ -256,12 +334,16 @@ const CollaboratorInviteForm = ({ onSubmit, isLoading }) => {
                                 {touched.documentNumber && !form.documentNumber.trim() && (
                                     <span className='text-orve-red text-xs font-semibold'>Requerido</span>
                                 )}
+                                {touched.documentNumber && form.documentNumber.trim() && !isDuiValid && (
+                                    <span className='text-orve-red text-xs font-semibold'>Formato: 00000000-0</span>
+                                )}
                             </FieldTitle>
                             <Input
                                 value={form.documentNumber}
-                                onChange={(e) => setField('documentNumber', e.target.value)}
+                                onChange={(e) => setField('documentNumber', form.documentType === 'dui' ? formatDuiInput(e.target.value) : e.target.value)}
                                 onBlur={() => touchField('documentNumber')}
-                                placeholder='Número de documento'
+                                placeholder={form.documentType === 'dui' ? '00000000-0' : 'Número de documento'}
+                                maxLength={form.documentType === 'dui' ? 10 : DOCUMENT_NUMBER_MAX}
                                 className='bg-white/70'
                             />
                         </FieldLabel>

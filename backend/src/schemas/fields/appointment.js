@@ -19,7 +19,7 @@ export const currentAddress = z.object({
     reference: z.string().trim().min(1).max(255),
 });
 
-export const proposedDates = z.array(coercedDate()).min(1, 'at least one proposed date is required');
+export const proposedDates = z.array(coercedDate()).min(1, 'debe proponer al menos una fecha');
 
 const TIME_REGEX = /^(0?[1-9]|1[0-2]):[0-5]\d (AM|PM)$/i;
 const timeString = string({ regex: TIME_REGEX });
@@ -29,7 +29,7 @@ export const time = z.object({
     endTime: timeString,
 }).refine(
     data => toMinutes(data.startTime) < toMinutes(data.endTime),
-    { path: ['endTime'], message: 'start time must be earlier than end time' }
+    { path: ['endTime'], message: 'la hora de inicio debe ser anterior a la hora de fin' }
 );
 
 export { day, toMinutes };

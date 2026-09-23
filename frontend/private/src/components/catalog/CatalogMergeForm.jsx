@@ -48,8 +48,8 @@ const CatalogMergeForm = ({ label, items = [], service, onMerged }) => {
             setPrincipalId('')
             setReferenceIds([])
             toast.success(`${label}s mezclados correctamente.`)
-        } catch {
-            toast.error('Ocurrió un error', `No se pudieron mezclar los ${label.toLowerCase()}s.`)
+        } catch (error) {
+            toast.error(`No se pudieron mezclar los ${label.toLowerCase()}s.`, error.friendlyMessage)
         } finally {
             setIsLoading(false)
         }

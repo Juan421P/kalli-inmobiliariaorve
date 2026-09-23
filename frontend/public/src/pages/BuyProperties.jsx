@@ -53,7 +53,7 @@ const BuyProperties = () => {
         <div className='flex flex-col h-screen'>
             <Navbar />
 
-            <div className='flex flex-1 overflow-hidden pt-12'>
+            <div className='flex flex-1 overflow-hidden pt-16'>
                 {/* ── Panel izquierdo ── */}
                 <div className='w-full md:w-[480px] shrink-0 flex flex-col overflow-hidden'>
                     {/* Header */}

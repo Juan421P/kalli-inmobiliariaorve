@@ -20,8 +20,8 @@ const useAppointments = () => {
             const data = await appointmentsService.getAll()
             setAppointments(data.appointments ?? [])
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudieron cargar las citas.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudieron cargar las citas.', err.friendlyMessage)
         } finally {
             setIsLoading(false)
         }
@@ -74,8 +74,8 @@ const useAppointments = () => {
             await fetchAppointments()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar la cita.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar la cita.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -91,8 +91,8 @@ const useAppointments = () => {
             await fetchAppointments()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo crear la cita.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo crear la cita.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -108,8 +108,8 @@ const useAppointments = () => {
             await fetchAppointments()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo actualizar la cita.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo actualizar la cita.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -125,8 +125,8 @@ const useAppointments = () => {
             await fetchAppointments()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo asignar el colaborador.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo asignar el colaborador.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)
@@ -142,8 +142,8 @@ const useAppointments = () => {
             await fetchAppointments()
             return true
         } catch (err) {
-            setError(err.message)
-            toast.error('Error', 'No se pudo confirmar la fecha de la cita.')
+            setError(err.friendlyMessage)
+            toast.error('No se pudo confirmar la fecha de la cita.', err.friendlyMessage)
             return false
         } finally {
             setIsSubmitting(false)

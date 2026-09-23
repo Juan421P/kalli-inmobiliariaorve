@@ -35,21 +35,21 @@ const schema = new Schema({
         country_code: {
             type: String,
             required: true,
-            match: [/^\+[1-9]\d{0,2}$/, 'country code must start with + followed by 1 to 3 digits']
+            match: [/^\+[1-9]\d{0,2}$/, 'el código de país debe iniciar con + seguido de 1 a 3 dígitos']
         },
         number: {
             type: String,
             required: true,
-            match: [/^\d{4}-\d{4}$/, 'phone number must follow the format 0000-0000']
+            match: [/^\d{4}-\d{4}$/, 'el número de teléfono debe seguir el formato 0000-0000']
         }
     },
     email: {
         type: String,
-        required: [true, 'email is required'],
+        required: [true, 'el correo electrónico es obligatorio'],
         unique: true,
         lowercase: true,
         trim: true,
-        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'invalid email address']
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'el correo electrónico no es válido']
     },
     verified_email: {
         type: Boolean,
@@ -75,7 +75,32 @@ const schema = new Schema({
     picture_id: {
         type: String,
         trim: true
-    }
+    },
+    // Se incluye en cada JWT emitido al iniciar sesión (ver services/client.js
+    // login/verifyEmail). "Cerrar todas las sesiones" incrementa este número:
+    // los tokens ya emitidos, que llevan el número anterior, dejan de ser
+    // válidos aunque no hayan expirado (ver middleware/auth/require_auth.js).
+    session_version: {
+        type: Number,
+        default: 0
+    },
+    // Registro de propiedades vistas para la sección "Actividad reciente" del
+    // perfil. Se actualiza desde property.incrementViews cuando quien ve la
+    // propiedad está logueado como cliente (ver optional_auth.js). No usa
+    // "default: []" porque eso duplicaría el arreglo en cada subdocumento; el
+    // arreglo vacío ya es el comportamiento por defecto de Mongoose.
+    recently_viewed: [{
+        _id: false,
+        property: {
+            type: Schema.Types.ObjectId,
+            ref: 'property',
+            required: true
+        },
+        viewed_at: {
+            type: Date,
+            default: Date.now
+        }
+    }]
 }, {
     timestamps: true
 });

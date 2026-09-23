@@ -20,11 +20,11 @@ const interval = z.object({
     endTime: timeString,
 }).refine(
     data => toMinutes(data.startTime) < toMinutes(data.endTime),
-    { path: ['endTime'], message: 'start time must be earlier than end time' }
+    { path: ['endTime'], message: 'la hora de inicio debe ser anterior a la hora de fin' }
 );
 
 export const intervals = z.array(interval)
-    .min(1, 'you must include at least one time interval')
+    .min(1, 'debe incluir al menos un intervalo de horario')
     .superRefine((list, ctx) => {
         const sorted = list
             .map((iv, index) => ({ ...iv, index, start: toMinutes(iv.startTime), end: toMinutes(iv.endTime) }))
@@ -34,7 +34,7 @@ export const intervals = z.array(interval)
             if (sorted[i].start < sorted[i - 1].end) {
                 ctx.addIssue({
                     code: z.ZodIssueCode.custom,
-                    message: `interval starting at ${sorted[i].startTime} overlaps with the interval ending at ${sorted[i - 1].endTime}`,
+                    message: `el intervalo que inicia a las ${sorted[i].startTime} se traslapa con el que termina a las ${sorted[i - 1].endTime}`,
                     path: [sorted[i].index, 'startTime'],
                 });
             }

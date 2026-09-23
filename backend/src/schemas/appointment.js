@@ -14,8 +14,8 @@ export const schemas = {
     create: z.object({
         buyer: database.id.optional(),
         property: database.id,
-        qualification,
-        current_address: currentAddress,
+        qualification: qualification.optional(),
+        current_address: currentAddress.optional(),
         proposed_dates: proposedDates,
         notes: longText().optional(),
         time,
@@ -28,7 +28,7 @@ export const schemas = {
         notes: longText().optional(),
     }).strict().refine(
         data => Object.keys(data).length > 0,
-        { message: 'at least one field must be updated' }
+        { message: 'debe actualizar al menos un campo' }
     ),
 
     assign: z.object({

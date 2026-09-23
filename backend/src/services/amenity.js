@@ -13,7 +13,7 @@ const service = {
     async create({ name }) {
         const exists = await model.findOne({ name });
         if (exists) throw new ConflictError(
-            'amenity already exists', {
+            'ya existe una amenidad con ese nombre', {
             code: 'AMENITY_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -28,7 +28,7 @@ const service = {
         // este comentario en específico. "yo" siendo Juan Adolfo Portillo
         const exists = await model.findOne({ name, _id: { $ne: id } });
         if (exists) throw new ConflictError(
-            'amenity already exists', {
+            'ya existe una amenidad con ese nombre', {
             code: 'AMENITY_ALREADY_EXISTS',
             field: 'name',
             value: name
@@ -40,7 +40,7 @@ const service = {
             { new: true, runValidators: true }
         );
         if (!amenity) throw new NotFoundError(
-            'amenity not found', {
+            'amenidad no encontrada', {
             code: 'AMENITY_NOT_FOUND',
             resource: 'amenity',
             id
@@ -51,7 +51,7 @@ const service = {
     async delete(id) {
         const amenity = await model.findByIdAndDelete(id);
         if (!amenity) throw new NotFoundError(
-            'amenity not found', {
+            'amenidad no encontrada', {
             code: 'AMENITY_NOT_FOUND',
             resource: 'amenity',
             id
@@ -62,7 +62,7 @@ const service = {
     async merge({ principal, references }) {
         const principalExists = await model.exists({ _id: principal });
         if (!principalExists) throw new NotFoundError(
-            'principal amenity not found', {
+            'la amenidad principal no fue encontrada', {
             code: 'AMENITY_NOT_FOUND',
             resource: 'amenity',
             id: principal
@@ -76,7 +76,7 @@ const service = {
             const foundIds = referenceDocs.map(doc => String(doc._id));
             const missing = references.filter(id => !foundIds.includes(id));
             throw new NotFoundError(
-                'one or more amenities to absorb were not found', {
+                'una o más amenidades a absorber no fueron encontradas', {
                 code: 'AMENITY_NOT_FOUND',
                 resource: 'amenity',
                 missing_ids: missing

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Camera, Mail, Phone } from 'lucide-react' // Phone se usa en el header
-import { cn } from '@/lib/utils'
+import { cn, formatPhoneInput } from '@/lib/utils'
 import Navbar from '@/components/Navbar'
 import ClientService from '@/services/Client'
 import useAuth from '@/hooks/useAuth'
@@ -53,7 +53,7 @@ const Profile = () => {
         personal, setPersonal,
         editingPersonal, setEditingPersonal, savingPersonal, savePersonal,
         identification,
-        personalError,
+        personalError, personalErrors, personalIsValid,
     } = useProfile()
 
     const initials = user
@@ -187,15 +187,16 @@ const Profile = () => {
                                     onSave={savePersonal}
                                     onCancel={() => setEditingPersonal(false)}
                                     saving={savingPersonal}
+                                    disabled={!personalIsValid}
                                 />
                                 {personalError && (
                                     <p className='mb-3 text-sm text-orve-red'>{personalError}</p>
                                 )}
                                 <div className='grid grid-cols-2 gap-4'>
-                                    <ProfileField label='Nombre'            value={personal.name}     editing={editingPersonal} onChange={setField('name')} />
-                                    <ProfileField label='Apellido'          value={personal.lastname} editing={editingPersonal} onChange={setField('lastname')} />
+                                    <ProfileField label='Nombre'            value={personal.name}     editing={editingPersonal} onChange={setField('name')} maxLength={20} error={editingPersonal ? personalErrors.name : null} />
+                                    <ProfileField label='Apellido'          value={personal.lastname} editing={editingPersonal} onChange={setField('lastname')} maxLength={20} error={editingPersonal ? personalErrors.lastname : null} />
                                     <ProfileField label='Correo electrónico' value={personal.email}   editing={false} type='email' />
-                                    <ProfileField label='Número de teléfono' value={personal.phone}   editing={editingPersonal} onChange={setField('phone')} type='tel' />
+                                    <ProfileField label='Número de teléfono' value={personal.phone}   editing={editingPersonal} onChange={(v) => setField('phone')(formatPhoneInput(v))} type='tel' maxLength={9} error={editingPersonal ? personalErrors.phone : null} />
                                 </div>
                             </div>
                             <div>

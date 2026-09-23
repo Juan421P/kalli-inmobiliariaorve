@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getErrorMessage } from '@/lib/errorMessages.js';
 // withCredentials para que el navegador mande la cookie httpOnly del JWT en cada
 // request; sin esto cualquier ruta protegida responde 401 aunque el login haya
 // funcionado bien
@@ -18,6 +19,12 @@ api.interceptors.response.use(
         console.log('url:', error.config?.url);
         console.log('method:', error.config?.method);
         console.log('request data:', error.config?.data);
+        // Se calcula acá, una sola vez, un mensaje legible para el usuario.
+        // Así cualquier catch en hooks/páginas puede usar
+        // `error.friendlyMessage` en vez de repetir `error.response?.data?.message
+        // || 'algo genérico'` (y terminar mostrando cosas como "Request failed
+        // with status code 404" cuando el backend no manda un mensaje útil).
+        error.friendlyMessage = getErrorMessage(error);
         return Promise.reject(error);
     }
 );

@@ -25,21 +25,50 @@ const Profile = () => {
 
     const initials = `${(user?.name ?? 'U').charAt(0)}${(user?.lastname ?? '').charAt(0)}`.toUpperCase()
 
+    // Tiene que calzar con user.name/user.lastname en el backend
+    // (backend/src/schemas/fields/primitives.js: shortText)
+    const SHORT_TEXT_MAX = 20
+    const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/
+
     // Refresca el contexto de auth con los datos más recientes tras editar perfil o foto
     const refreshUser = async () => {
         const { role: freshRole, user: freshUser } = await AuthService.me()
         login({ role: freshRole, user: freshUser })
     }
 
+    const fieldValidators = {
+        name: (f) => {
+            if (!f.name.trim()) return 'El nombre es requerido.'
+            if (f.name.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.name.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
+        lastname: (f) => {
+            if (!f.lastname.trim()) return 'El apellido es requerido.'
+            if (f.lastname.trim().length > SHORT_TEXT_MAX) return `No puede superar los ${SHORT_TEXT_MAX} caracteres.`
+            if (!SHORT_TEXT_REGEX.test(f.lastname.trim())) return 'Solo letras, números, espacios, guiones y apóstrofes.'
+            return null
+        },
+    }
+
+    const validateField = (key, formOverride = form) => {
+        const message = fieldValidators[key]?.(formOverride) ?? null
+        setErrors((prev) => ({ ...prev, [key]: message }))
+        return message
+    }
+
     const setField = (key, value) => {
-        setForm((prev) => ({ ...prev, [key]: value }))
-        setErrors((prev) => ({ ...prev, [key]: null }))
+        const nextForm = { ...form, [key]: value }
+        setForm(nextForm)
+        validateField(key, nextForm)
     }
 
     const validate = () => {
         const e = {}
-        if (!form.name.trim()) e.name = 'El nombre es requerido.'
-        if (!form.lastname.trim()) e.lastname = 'El apellido es requerido.'
+        for (const key of Object.keys(fieldValidators)) {
+            const message = fieldValidators[key](form)
+            if (message) e[key] = message
+        }
         setErrors(e)
         return Object.keys(e).length === 0
     }
@@ -53,8 +82,8 @@ const Profile = () => {
             await service.put(user.id, { name: form.name.trim(), lastname: form.lastname.trim() })
             await refreshUser()
             toast.success('Perfil actualizado correctamente.')
-        } catch {
-            toast.error('Error', 'No se pudo actualizar el perfil.')
+        } catch (error) {
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsSaving(false)
         }
@@ -69,8 +98,8 @@ const Profile = () => {
             await service.uploadPicture(user.id, file)
             await refreshUser()
             toast.success('Foto de perfil actualizada.')
-        } catch {
-            toast.error('Error', 'No se pudo actualizar la foto de perfil.')
+        } catch (error) {
+            toast.error('Error', error.friendlyMessage)
         } finally {
             setIsUploadingPicture(false)
         }
@@ -150,6 +179,7 @@ const Profile = () => {
                                                 value={form.name}
                                                 onChange={(e) => setField('name', e.target.value)}
                                                 placeholder='Tu nombre'
+                                                maxLength={SHORT_TEXT_MAX}
                                                 className={`bg-white/70 h-11 ${errors.name ? 'border-orve-red' : ''}`}
                                             />
                                         </FieldLabel>
@@ -163,6 +193,7 @@ const Profile = () => {
                                                 value={form.lastname}
                                                 onChange={(e) => setField('lastname', e.target.value)}
                                                 placeholder='Tu apellido'
+                                                maxLength={SHORT_TEXT_MAX}
                                                 className={`bg-white/70 h-11 ${errors.lastname ? 'border-orve-red' : ''}`}
                                             />
                                         </FieldLabel>
@@ -183,7 +214,7 @@ const Profile = () => {
                         <div className='flex justify-end pt-8'>
                             <Button
                                 onClick={handleSave}
-                                disabled={isSaving || !hasChanges}
+                                disabled={isSaving || !hasChanges || Object.values(errors).some(Boolean)}
                                 className='bg-orve-teal hover:bg-orve-darker-teal text-white px-12 h-11'
                             >
                                 {isSaving ? 'Guardando...' : 'Guardar cambios'}

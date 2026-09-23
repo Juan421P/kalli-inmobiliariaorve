@@ -1,6 +1,6 @@
 import AppError from './app';
 class RateLimitError extends AppError {
-    constructor(message = 'too many requests') {
+    constructor(message = 'demasiadas solicitudes, intente de nuevo más tarde') {
         super(message, 429);
     }
 }

@@ -82,7 +82,7 @@ const useRegisterForm = () => {
             })
             setStep(3)
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'Error al crear la cuenta. Intente de nuevo.')
+            setServerError(err.friendlyMessage)
         }
     }
 
@@ -92,8 +92,7 @@ const submitStep3 = async ({ code }) => {
         await ClientService.verifyEmail({ code: code.toLowerCase() })
         setStep(4)
     } catch (err) {
-        console.log(err);
-        setServerError(err?.response?.data?.message ?? 'Código incorrecto o expirado.')
+        setServerError(err.friendlyMessage)
     }
 }
 
@@ -107,7 +106,7 @@ const submitStep3 = async ({ code }) => {
             setCountdown(OTP_TTL)
             step3.reset({ code: '' })
         } catch (err) {
-            setServerError(err?.response?.data?.message ?? 'No se pudo reenviar el código. Intente de nuevo.')
+            setServerError(err.friendlyMessage)
         }
     }
 

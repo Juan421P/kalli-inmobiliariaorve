@@ -17,7 +17,7 @@ const ProtectedRoute = ({ requiredRole } = {}) => {
     // patearia al usuario afuera por un instante aunque su sesion sea valida.
     if (isRehydrating) return null
     if (!isAuthenticated) return <Navigate to='/' replace />
-    if (requiredRole && role !== requiredRole) return <Navigate to='/dashboard' replace />
+    if (requiredRole && role !== requiredRole) return <Navigate to='/' replace />
     return <Outlet />
 }
 export default ProtectedRoute

@@ -3,6 +3,7 @@ import controller from '../controllers/property.js';
 import service from '../services/property.js';
 import cloudinary from '../utils/cloudinary.js';
 import { requireAuth } from '../middleware/auth/require_auth.js';
+import { optionalAuth } from '../middleware/auth/optional_auth.js';
 import { requireRole } from '../middleware/auth/require_role.js';
 import { requireAssignedCollaboratorOrAdmin } from '../middleware/auth/require_assigned_collaborator_or_admin.js';
 import { validatePayload } from '../middleware/validate_payload.js';
@@ -68,6 +69,7 @@ property.route('/:id')
 
 property.route('/:id/view')
     .put(
+        optionalAuth,
         validatePayload({ params: schemas.queryById }),
         controller.incrementViews
     );
