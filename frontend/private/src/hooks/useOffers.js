@@ -62,6 +62,23 @@ const useOffers = () => {
         }
     }
 
+    const counterOffer = async (id, price) => {
+        setIsSubmitting(true)
+        setError(null)
+        try {
+            await offersService.counter(id, price)
+            toast.success('Contraoferta enviada.')
+            await fetchOffers(currentPage, search, typeFilter)
+            return true
+        } catch (err) {
+            setError(err.friendlyMessage)
+            toast.error('No se pudo enviar la contraoferta.', err.friendlyMessage)
+            return false
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     const deleteOffer = async (id) => {
         setIsSubmitting(true)
         setError(null)
@@ -97,6 +114,7 @@ const useOffers = () => {
         setTypeFilter,
         fetchOffers,
         updateStatus,
+        counterOffer,
         deleteOffer,
     }
 }

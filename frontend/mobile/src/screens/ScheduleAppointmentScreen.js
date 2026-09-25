@@ -159,14 +159,18 @@ const ScheduleAppointmentScreen = () => {
                         <Controller
                             control={control}
                             name='monthlyIncome'
-                            rules={{ required: true, min: 0 }}
-                            render={({ field: { value, onChange } }) => (
+                            rules={{
+                                required: 'El ingreso mensual es requerido.',
+                                validate: (v) => Number(v) >= 0 || 'El ingreso no puede ser negativo.',
+                            }}
+                            render={({ field: { value, onChange }, fieldState: { error } }) => (
                                 <Input
                                     label='Ingreso mensual'
                                     placeholder='0'
                                     keyboardType='numeric'
                                     value={value ? String(value) : ''}
                                     onChangeText={onChange}
+                                    error={error?.message}
                                 />
                             )}
                         />
@@ -174,13 +178,18 @@ const ScheduleAppointmentScreen = () => {
                         <Controller
                             control={control}
                             name='addressReference'
-                            rules={{ required: true }}
-                            render={({ field: { value, onChange } }) => (
+                            rules={{
+                                required: 'La referencia de dirección es requerida.',
+                                maxLength: { value: 255, message: 'No puede superar los 255 caracteres.' },
+                            }}
+                            render={({ field: { value, onChange }, fieldState: { error } }) => (
                                 <Input
                                     label='Referencia de dirección'
                                     placeholder='Ej. Colonia Escalón, calle La Reforma #123'
                                     value={value}
                                     onChangeText={onChange}
+                                    maxLength={255}
+                                    error={error?.message}
                                 />
                             )}
                         />
@@ -202,15 +211,20 @@ const ScheduleAppointmentScreen = () => {
                         <Controller
                             control={control}
                             name='reason'
-                            rules={{ required: true }}
-                            render={({ field: { value, onChange } }) => (
+                            rules={{
+                                required: 'El motivo de la visita es requerido.',
+                                maxLength: { value: 500, message: 'No puede superar los 500 caracteres.' },
+                            }}
+                            render={({ field: { value, onChange }, fieldState: { error } }) => (
                                 <Input
                                     label='Motivo de la visita'
                                     placeholder='Contanos por qué te interesa esta propiedad'
                                     value={value}
                                     onChangeText={onChange}
+                                    maxLength={500}
                                     multiline
                                     numberOfLines={3}
+                                    error={error?.message}
                                 />
                             )}
                         />

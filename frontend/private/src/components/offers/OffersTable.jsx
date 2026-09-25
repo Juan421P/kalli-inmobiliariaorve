@@ -13,27 +13,10 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Spinner } from '@/components/ui/spinner'
 import UserAvatar from '@/components/users/UserAvatar'
+import OfferDetailsDialog from './OfferDetailsDialog'
+import { getStatus, formatCurrency, formatDate } from './constants'
 
-// colores y etiquetas según el estado de la oferta
-const STATUS_MAP = {
-    pending:   { label: 'Pendiente',       className: 'bg-amber-50   text-amber-700   border-amber-200'   },
-    accepted:  { label: 'Aceptada',        className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    rejected:  { label: 'Rechazada',       className: 'bg-red-50     text-red-600     border-red-200'     },
-    countered: { label: 'Contrapropuesta', className: 'bg-blue-50    text-blue-700    border-blue-200'    },
-    withdrawn: { label: 'Retirada',        className: 'bg-gray-50    text-gray-500    border-gray-200'    },
-}
-
-const formatCurrency = (value) =>
-    typeof value === 'number'
-        ? value.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })
-        : value
-
-const formatDate = (dateStr) => {
-    if (!dateStr) return '—'
-    return new Date(dateStr).toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: 'numeric' })
-}
-
-const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
+const OffersTable = ({ offers = [], isLoading, onStatusChange, onCounter, onDelete }) => {
     if (isLoading) {
         return (
             <div className='flex justify-center py-16'>
@@ -71,7 +54,7 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
             </TableHeader>
             <TableBody>
                 {offers.map((o) => {
-                    const status = STATUS_MAP[o.status] ?? { label: o.status, className: 'bg-gray-100 text-gray-500 border-gray-200' }
+                    const status = getStatus(o.status)
                     // solo se puede aceptar o rechazar si la oferta está pendiente o en contrapropuesta
                     const canAct = o.status === 'pending' || o.status === 'countered'
 
@@ -86,8 +69,14 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
                                         className='w-9 h-9'
                                     />
                                     <div className='flex flex-col'>
-                                        <span className='text-sm font-medium text-orve-darker-teal'>{o.buyer?.name ?? '—'}</span>
-                                        <span className='text-sm text-orve-teal/60'>{o.buyer?.lastname ?? '—'}</span>
+                                        {o.buyer ? (
+                                            <>
+                                                <span className='text-sm font-medium text-orve-darker-teal'>{o.buyer.name}</span>
+                                                <span className='text-sm text-orve-teal/60'>{o.buyer.lastname}</span>
+                                            </>
+                                        ) : (
+                                            <span className='text-sm font-medium text-orve-teal/40 italic'>Cliente eliminado</span>
+                                        )}
                                     </div>
                                 </div>
                             </TableCell>
@@ -119,6 +108,7 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onDelete }) => {
 
                             <TableCell className='text-right'>
                                 <div className='flex items-center justify-end gap-1'>
+                                    <OfferDetailsDialog offer={o} onCounter={onCounter} />
                                     {canAct && (
                                         <>
                                             <Button

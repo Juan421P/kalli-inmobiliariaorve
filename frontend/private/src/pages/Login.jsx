@@ -28,11 +28,10 @@ const Login = () => {
     }, [isAuthenticated, navigate])
     const { register, handleSubmit, watch, formState: { errors } } = useForm({ resolver: zodResolver(schema), mode: 'onTouched' })
     const [watchEmail = '', watchPassword = ''] = watch(['email', 'password'])
-    // Tiene que calzar con el schema `login` (schemas/admin.js), que a su vez
-    // refleja auth.password del backend — si no, el botón se habilita con
-    // contraseñas que el resolver de zod va a rechazar igual al enviar.
-    const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-    const canSubmit = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchEmail) && watchPassword.length <= 20 && PASSWORD_REGEX.test(watchPassword)
+    // Tiene que calzar con el schema `login` (schemas/admin.js): login solo
+    // exige que no esté vacía, no la complejidad de crear/cambiar contraseña
+    // (ver el comentario en ese archivo).
+    const canSubmit = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(watchEmail) && watchPassword.length > 0
     const emailRegister = register('email')
     const passwordRegister = register('password')
     const [isLoading, setIsLoading] = useState(false)

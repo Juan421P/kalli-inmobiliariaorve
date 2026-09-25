@@ -86,7 +86,7 @@ const AppointmentsTable = ({
                                         className='w-9 h-9'
                                     />
                                     <span className='text-sm font-medium text-orve-darker-teal'>
-                                        {apt.buyer?.name} {apt.buyer?.lastname}
+                                        {apt.buyer ? `${apt.buyer.name} ${apt.buyer.lastname}` : 'Cliente eliminado'}
                                     </span>
                                 </div>
                             </TableCell>

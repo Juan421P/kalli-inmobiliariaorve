@@ -92,8 +92,8 @@ const useAppointmentForm = ({ property, publicId }) => {
             });
             toast.success('¡Cita solicitada correctamente!');
             navigation.navigate('PropertyDetail', { publicId });
-        } catch {
-            toast.error('No se pudo solicitar la cita. Intenta de nuevo.');
+        } catch (err) {
+            toast.error('No se pudo solicitar la cita', err.friendlyMessage);
         } finally {
             setIsSubmitting(false);
         }

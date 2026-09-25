@@ -55,7 +55,7 @@ const service = {
 
         const [offers, total, statusCounts] = await Promise.all([
             model.find(filter)
-                .populate('buyer', 'name lastname picture')
+                .populate('buyer', 'name lastname email phone picture')
                 .populate('property', 'title public_id listing_type pictures')
                 .sort({ createdAt: -1 })
                 .skip(skip)
@@ -76,7 +76,9 @@ const service = {
     },
 
     async getById(id) {
-        const offer = await model.findById(id);
+        const offer = await model.findById(id)
+            .populate('buyer', 'name lastname email phone picture')
+            .populate('property', 'title public_id listing_type pictures');
         if (!offer) throw new NotFoundError(
             'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',

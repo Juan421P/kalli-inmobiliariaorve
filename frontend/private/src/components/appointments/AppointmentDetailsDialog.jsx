@@ -1,4 +1,4 @@
-import { Eye, Home, MapPin, FileText } from 'lucide-react'
+import { Eye, Home, MapPin, FileText, Mail, Phone } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
@@ -52,8 +52,15 @@ const AppointmentDetailsDialog = ({ appointment: apt }) => {
                             className='w-11 h-11'
                         />
                         <div>
-                            <p className='text-sm font-semibold text-orve-darker-teal'>{apt.buyer?.name} {apt.buyer?.lastname}</p>
-                            <p className='text-xs text-orve-teal/60'>{apt.buyer?.email}</p>
+                            <p className='text-sm font-semibold text-orve-darker-teal'>
+                                {apt.buyer ? `${apt.buyer.name} ${apt.buyer.lastname}` : 'Cliente eliminado'}
+                            </p>
+                            {apt.buyer?.email && (
+                                <p className='text-xs text-orve-teal/60 flex items-center gap-1'><Mail className='w-3 h-3' /> {apt.buyer.email}</p>
+                            )}
+                            {apt.buyer?.phone?.number && (
+                                <p className='text-xs text-orve-teal/60 flex items-center gap-1'><Phone className='w-3 h-3' /> {apt.buyer.phone.country_code} {apt.buyer.phone.number}</p>
+                            )}
                         </div>
                     </div>
                     <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border shrink-0', status.className)}>

@@ -16,8 +16,10 @@ const getAppointment = (req) => service.getById(req.params.id);
 
 appointment.route('/')
     .get(
+        // Staff ve todo (admin) o lo suyo asignado (collaborator); un client
+        // tambien puede listar, pero service.getAll() lo limita a sus propias
+        // citas (mismo patron que ya usa para collaborator) — ver appointment.js.
         requireAuth,
-        requireStaff,
         validatePayload({ query: schemas.queryFilter }),
         controller.get
     )

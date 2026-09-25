@@ -9,11 +9,12 @@ import useLoginForm from '@/hooks/useLoginForm'
 
 const inputBase = 'w-full text-sm bg-gray-100/80 border border-gray-200/80 rounded-xl outline-none transition-colors placeholder:text-xs placeholder:text-gray-400 focus:border-orve-teal/50 focus:bg-white/80'
 
-// Tiene que calzar exacto con auth.password en el backend
-// (backend/src/schemas/fields/primitives.js) — el login pasa por el mismo
-// schema antes de comparar credenciales, así que una contraseña floja acá deja
-// pasar intentos que el backend rechaza con un error de validación en vez de
-// "credenciales incorrectas".
+// Solo se usa para la "nueva contraseña" del flujo de recuperación (se está
+// creando una contraseña ahí, sí debe cumplir la complejidad de
+// auth.password en el backend). El campo de login NO debe usar este regex:
+// login solo compara contra el hash con bcrypt (backend/src/schemas/fields/auth.js
+// -> loginPassword), así que exigir complejidad ahí bloqueaba el login de
+// cualquier cuenta cuya contraseña real no calzara con este patrón.
 const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
 const PASSWORD_MAX = 20
 
@@ -282,14 +283,6 @@ const LoginForm = () => {
                         <input
                             {...register('password', {
                                 required: 'La contraseña es requerida.',
-                                maxLength: {
-                                    value: PASSWORD_MAX,
-                                    message: `La contraseña no puede superar los ${PASSWORD_MAX} caracteres.`,
-                                },
-                                pattern: {
-                                    value: PASSWORD_REGEX,
-                                    message: 'Debe incluir mayúscula, minúscula, número y carácter especial (@$!%*?&).',
-                                },
                             })}
                             type={showPassword ? 'text' : 'password'}
                             placeholder='Ingrese su contraseña'

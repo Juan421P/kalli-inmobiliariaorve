@@ -31,6 +31,7 @@ import {
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import LocationPicker from '@/components/properties/LocationPicker'
+import CatalogMultiSelect from '@/components/properties/CatalogMultiSelect'
 
 const PROPERTY_TYPES = [
     { value: 'house',     label: 'Casa'        },
@@ -192,7 +193,11 @@ const NewImageUploader = ({ images, onChange }) => {
     )
 }
 
-const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
+// Los catalogos vienen poblados como objetos completos ({_id, name}) desde el
+// backend (.populate) — acá solo hace falta el id para el multiselect.
+const toIds = (list) => (list ?? []).map((item) => item?._id ?? item).filter(Boolean)
+
+const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading, catalogs }) => {
     const initCoords = initialData?.location?.coordinates ?? null
     // El campo address puede venir en un formato legado (objeto con reference/district)
     // en vez del string plano que espera el formulario actual.
@@ -214,6 +219,10 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         area_unit:      initialData?.area?.unit                 ?? 'm2',
         allows_pets:    initialData?.allows_pets                ?? false,
         furnished:      initialData?.furnished                  ?? false,
+        amenities:      toIds(initialData?.amenities),
+        appliances:     toIds(initialData?.appliances),
+        features:       toIds(initialData?.features),
+        tags:           toIds(initialData?.tags),
     })
     const [location,   setLocation]   = useState({ coordinates: initCoords, address: initAddress })
     const [errors,     setErrors]     = useState({})
@@ -313,6 +322,10 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
             area:           { number: parseFloat(form.area_number || '0'), unit: form.area_unit },
             allows_pets:    form.allows_pets,
             furnished:      form.furnished,
+            amenities:      form.amenities,
+            appliances:     form.appliances,
+            features:       form.features,
+            tags:           form.tags,
             removePictureIds: removedIds,
             newImages:        newImages.map((i) => i.file),
         })
@@ -479,6 +492,17 @@ const PropertyEditForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
                             </div>
                         </FieldGroup>
                     )}
+
+                    {/* Catálogos: amenidades, electrodomésticos, características, etiquetas */}
+                    <FieldGroup>
+                        <FieldLegend className='text-orve-teal'>Catálogos</FieldLegend>
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                            <CatalogMultiSelect label='Amenidades' items={catalogs?.amenities} selectedIds={form.amenities} onChange={(v) => setField('amenities', v)} />
+                            <CatalogMultiSelect label='Electrodomésticos' items={catalogs?.appliances} selectedIds={form.appliances} onChange={(v) => setField('appliances', v)} />
+                            <CatalogMultiSelect label='Características' items={catalogs?.features} selectedIds={form.features} onChange={(v) => setField('features', v)} />
+                            <CatalogMultiSelect label='Etiquetas' items={catalogs?.tags} selectedIds={form.tags} onChange={(v) => setField('tags', v)} />
+                        </div>
+                    </FieldGroup>
                 </FieldSet>
 
                 {/* ── Columna derecha: ubicación + imágenes ── */}

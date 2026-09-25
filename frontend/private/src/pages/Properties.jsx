@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, PlusCircle, Pencil, Building, CheckCircle2, TrendingUp, DollarSign } from 'lucide-react'
 import Sidebar from '@/components/Sidebar'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -17,6 +17,13 @@ import PropertiesTable from '@/components/properties/PropertiesTable'
 import PropertyCreateForm from '@/components/properties/PropertyCreateForm'
 import PropertyEditForm from '@/components/properties/PropertyEditForm'
 import UsersPagination from '@/components/users/UsersPagination'
+import { amenityService, applianceService, featureService, tagService } from '@/services/CatalogService'
+import toast from '@/lib/toast'
+
+// Mismo truco que CatalogPage.jsx: el backend responde { amenities: [...] },
+// { tags: [...] }, etc. — se busca el primer array de la respuesta sin
+// depender del nombre exacto de la llave.
+const firstArray = (data) => Object.values(data ?? {}).find(Array.isArray) ?? []
 
 // ─── Tarjeta de métrica ───────────────────────────────────────────────────────
 const MetricCard = ({ icon: Icon, label, value, accent = 'teal' }) => {
@@ -61,6 +68,25 @@ const Properties = () => {
 
     const [tab,             setTab]             = useState('list')
     const [editingProperty, setEditingProperty] = useState(null)
+    const [catalogs, setCatalogs] = useState({ amenities: [], appliances: [], features: [], tags: [] })
+
+    // Catalogos ya existentes (administrados en /amenities, /appliances, etc.)
+    // para asociarlos a la propiedad desde Create/Edit — se cargan una sola
+    // vez, igual que hace cada CatalogPage con el suyo.
+    useEffect(() => {
+        Promise.all([
+            amenityService.get(), applianceService.get(), featureService.get(), tagService.get(),
+        ]).then(([amenities, appliances, features, tags]) => {
+            setCatalogs({
+                amenities: firstArray(amenities),
+                appliances: firstArray(appliances),
+                features: firstArray(features),
+                tags: firstArray(tags),
+            })
+        }).catch((error) => {
+            toast.error('No se pudieron cargar los catálogos de la propiedad.', error.friendlyMessage)
+        })
+    }, [])
 
     const {
         properties, metrics, total, totalPages, currentPage, LIMIT,
@@ -212,6 +238,7 @@ const Properties = () => {
                             <PropertyCreateForm
                                 onSubmit={handleCreate}
                                 isLoading={isSubmitting}
+                                catalogs={catalogs}
                             />
                         </div>
                     </TabsContent>
@@ -231,6 +258,7 @@ const Properties = () => {
                                     onSubmit={handleUpdate}
                                     onCancel={() => { setTab('list'); setEditingProperty(null) }}
                                     isLoading={isSubmitting}
+                                    catalogs={catalogs}
                                 />
                             </div>
                         )}

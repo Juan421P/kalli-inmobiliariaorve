@@ -23,7 +23,10 @@ const MORE_LINKS = [
 const ProfileScreen = () => {
     const navigation = useNavigation();
     const { isAuthenticated } = useAuth();
-    const { user, isLoading, personal, setPersonal, editing, setEditing, saving, savePersonal, logout } = useProfile();
+    const {
+        user, isLoading, personal, setPersonal, personalErrors, personalIsValid,
+        editing, setEditing, saving, savePersonal, logout,
+    } = useProfile();
 
     const initials = user?.name ? `${user.name[0]}${user.lastname?.[0] ?? ''}`.toUpperCase() : '?';
 
@@ -54,12 +57,14 @@ const ProfileScreen = () => {
                                     icon={<User size={16} color={colors.textFaint} />}
                                     value={personal.name}
                                     onChangeText={(v) => setPersonal((p) => ({ ...p, name: v }))}
+                                    error={personalErrors.name}
                                 />
                                 <Input
                                     label='Apellido'
                                     icon={<User size={16} color={colors.textFaint} />}
                                     value={personal.lastname}
                                     onChangeText={(v) => setPersonal((p) => ({ ...p, lastname: v }))}
+                                    error={personalErrors.lastname}
                                 />
                                 <Input
                                     label='Teléfono'
@@ -67,10 +72,12 @@ const ProfileScreen = () => {
                                     value={personal.phone}
                                     onChangeText={(v) => setPersonal((p) => ({ ...p, phone: v }))}
                                     keyboardType='phone-pad'
+                                    placeholder='0000-0000'
+                                    error={personalErrors.phone}
                                 />
                                 <View style={styles.row}>
                                     <Button title='Cancelar' variant='outline' style={styles.flex1} onPress={() => setEditing(false)} />
-                                    <Button title='Guardar' variant='dark' style={styles.flex1} loading={saving} onPress={savePersonal} />
+                                    <Button title='Guardar' variant='dark' style={styles.flex1} loading={saving} disabled={!personalIsValid} onPress={savePersonal} />
                                 </View>
                             </View>
                         ) : (

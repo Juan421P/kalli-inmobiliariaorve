@@ -233,7 +233,10 @@ const PropertyForSale = () => {
                             <Gallery pictures={property.pictures ?? []} />
                         </div>
 
-                        <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                        {/* items-start evita que el grid estire un acordeon cerrado a la
+                        altura de su vecino cuando este se despliega (comportamiento por
+                        defecto de CSS grid es align-items: stretch) */}
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-3 items-start'>
                             <Accordion icon={Star} title='Amenidades'>
                                 {property.amenities?.length > 0
                                     ? property.amenities.map((a) => <Chip key={a._id ?? a} label={a.name ?? a} />)

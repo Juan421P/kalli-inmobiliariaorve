@@ -8,13 +8,16 @@ import swaggerUI from 'swagger-ui-express';
 import swaggerDocs from './src/docs/swagger.json' with {type: 'json'};
 import router from './src/routers/router.js';
 const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:5174',
-    'http://localhost:5175',
     'https://kalli-inmobiliariaorve-omega.vercel.app',
     'https://kalli-inmobiliariaorve-6s5l.vercel.app',
     process.env.FRONTEND_URL,
 ].filter(Boolean);
+// Vite prueba puertos consecutivos (5173, 5174, 5175...) cuando el anterior
+// ya esta ocupado, asi que hardcodear un puerto especifico rompe CORS apenas
+// se levanta un cuarto o quinto frontend en simultaneo. En dev se acepta
+// cualquier puerto de localhost/127.0.0.1; en produccion sigue exigiendose
+// el match exacto contra allowedOrigins de arriba.
+const isLocalhostOrigin = (origin) => /^https?:\/\/(localhost|127\.0\.0\.1):\d+$/.test(origin);
 const requestLimit = {
     general: rateLimit({
         windowMs: 15 * 60 * 1000,
@@ -35,7 +38,7 @@ app.use(express.json({ limit: '1mb' }));
 app.use(cookieParser());
 app.use(cors({
     origin: (origin, cb) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || isLocalhostOrigin(origin)) {
             return cb(null, true);
         }
 
