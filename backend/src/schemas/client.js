@@ -30,7 +30,7 @@ export const schemas = {
 
     login: z.object({
         email: user.email,
-        password: auth.password
+        password: auth.loginPassword
     }).strict(),
 
     update: z.object({

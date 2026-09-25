@@ -34,7 +34,7 @@ const useLoginForm = () => {
             if (redirectTo) navigation.replace(redirectTo, redirectParams);
             else if (navigation.canGoBack()) navigation.goBack();
         } catch (err) {
-            setServerError(err?.data?.message ?? 'Credenciales incorrectas. Intente de nuevo.');
+            setServerError(err.friendlyMessage);
         }
     };
 
@@ -45,11 +45,14 @@ const useLoginForm = () => {
             setRecoveryToken(data?.token ?? null);
             setForgotStep(2);
         } catch (err) {
+            // 401/403/404 en este endpoint significan lo mismo: no hay cuenta
+            // con ese correo. Cualquier otro status (o sin respuesta del
+            // servidor) usa el mensaje ya traducido por apiClient.
             const status = err?.status;
             setServerError(
                 status === 401 || status === 403 || status === 404
                     ? 'No encontramos una cuenta con ese correo electrónico.'
-                    : 'Ocurrió un error. Intente de nuevo más tarde.'
+                    : err.friendlyMessage
             );
         }
     };
@@ -61,7 +64,7 @@ const useLoginForm = () => {
             setRecoveryToken(data?.token ?? recoveryToken);
             setForgotStep(3);
         } catch (err) {
-            setServerError(err?.data?.message ?? 'Código incorrecto o expirado.');
+            setServerError(err.friendlyMessage);
         }
     };
 
@@ -71,7 +74,7 @@ const useLoginForm = () => {
             await clientService.resetPassword({ token: recoveryToken, newPassword, confirmPassword });
             resetForgot();
         } catch (err) {
-            setServerError(err?.data?.message ?? 'No se pudo cambiar la contraseña. Intente de nuevo.');
+            setServerError(err.friendlyMessage);
         }
     };
 

@@ -100,6 +100,28 @@ class OffersService extends Service {
         return response.data
     }
 
+    // POST .../counter — la parte vendedora (admin/colaborador asignado)
+    // contrapropone un nuevo precio; el backend valida el turno (last_actor)
+    // y agrega la entrada al historial de negociación.
+    async counter(id, price) {
+        if (USE_MOCK) {
+            await mockDelay()
+            const idx = mockState.offers.findIndex((o) => o._id === id)
+            if (idx !== -1) mockState.offers[idx] = { ...mockState.offers[idx], price, status: 'countered' }
+            return { offer: mockState.offers[idx] }
+        }
+        const response = await this.api.post(`${this.endpoint}/${id}/counter`, { price })
+        return response.data
+    }
+
+    async getById(id) {
+        if (USE_MOCK) {
+            await mockDelay()
+            return { offer: mockState.offers.find((o) => o._id === id) ?? null }
+        }
+        return super.getById(id)
+    }
+
     async remove(id) {
         if (USE_MOCK) {
             await mockDelay()

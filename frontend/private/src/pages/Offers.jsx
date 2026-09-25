@@ -34,7 +34,7 @@ const Offers = () => {
         offers, metrics, total, totalPages, currentPage,
         search, typeFilter, isLoading, LIMIT,
         setSearch, setTypeFilter,
-        fetchOffers, updateStatus, deleteOffer,
+        fetchOffers, updateStatus, counterOffer, deleteOffer,
     } = useOffers()
 
     return (
@@ -89,6 +89,7 @@ const Offers = () => {
                             offers={offers}
                             isLoading={isLoading}
                             onStatusChange={updateStatus}
+                            onCounter={counterOffer}
                             onDelete={deleteOffer}
                         />
 

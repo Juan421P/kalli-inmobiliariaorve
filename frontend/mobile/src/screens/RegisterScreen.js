@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Controller } from 'react-hook-form';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +23,24 @@ const PASSWORD_CHECKS = [
 
 const DOCUMENT_TYPES = ['DUI', 'Pasaporte', 'Residencia'];
 
+// Tienen que calzar con backend/src/schemas/fields/primitives.js — mismos
+// limites que frontend/public/src/components/auth/register/RegisterStep1.jsx
+// y RegisterStep2.jsx.
+const SHORT_TEXT_MAX = 20;
+const SHORT_TEXT_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s'-]+$/;
+const EMAIL_MAX = 255;
+const PASSWORD_MAX = 20;
+const DOCUMENT_NUMBER_MAX = 50;
+
+const validateDocument = (value, type) => {
+    if (!value?.trim()) return 'El número de documento es requerido.';
+    if (type === 'DUI') {
+        return /^\d{8}-\d$/.test(value) || 'El DUI debe tener el formato 00000000-0';
+    }
+    if (value.trim().length > DOCUMENT_NUMBER_MAX) return `No puede superar los ${DOCUMENT_NUMBER_MAX} caracteres.`;
+    return value.trim().length >= 3 || 'Ingrese un número de documento válido.';
+};
+
 const ControlledInput = ({ control, name, rules, ...inputProps }) => (
     <Controller
         control={control}
@@ -45,6 +63,14 @@ const RegisterScreen = () => {
     } = useRegisterForm();
 
     const passwordVal = step1.watch('password', '');
+    const documentType = step2.watch('document_type', '');
+
+    // Revalida el numero de documento cuando cambia el tipo (ej. ya escribio
+    // un DUI valido y despues cambia a Pasaporte, o viceversa) — mismo ajuste
+    // que frontend/public/src/components/auth/register/RegisterStep2.jsx.
+    useEffect(() => {
+        step2.trigger('document_number');
+    }, [documentType]);
 
     return (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -73,12 +99,41 @@ const RegisterScreen = () => {
 
                     {step === 1 && (
                         <View style={styles.form}>
-                            <ControlledInput control={step1.control} name='name' rules={{ required: 'Este campo es requerido.' }} label='Nombre' icon={<User size={16} color={colors.textFaint} />} placeholder='Ingrese su nombre' />
-                            <ControlledInput control={step1.control} name='lastname' rules={{ required: 'Este campo es requerido.' }} label='Apellido' icon={<User size={16} color={colors.textFaint} />} placeholder='Ingrese su apellido' />
+                            <ControlledInput
+                                control={step1.control}
+                                name='name'
+                                rules={{
+                                    required: 'Este campo es requerido.',
+                                    maxLength: { value: SHORT_TEXT_MAX, message: `No puede superar los ${SHORT_TEXT_MAX} caracteres.` },
+                                    pattern: { value: SHORT_TEXT_REGEX, message: 'Solo letras, números, espacios, guiones y apóstrofes.' },
+                                }}
+                                maxLength={SHORT_TEXT_MAX}
+                                label='Nombre'
+                                icon={<User size={16} color={colors.textFaint} />}
+                                placeholder='Ingrese su nombre'
+                            />
+                            <ControlledInput
+                                control={step1.control}
+                                name='lastname'
+                                rules={{
+                                    required: 'Este campo es requerido.',
+                                    maxLength: { value: SHORT_TEXT_MAX, message: `No puede superar los ${SHORT_TEXT_MAX} caracteres.` },
+                                    pattern: { value: SHORT_TEXT_REGEX, message: 'Solo letras, números, espacios, guiones y apóstrofes.' },
+                                }}
+                                maxLength={SHORT_TEXT_MAX}
+                                label='Apellido'
+                                icon={<User size={16} color={colors.textFaint} />}
+                                placeholder='Ingrese su apellido'
+                            />
                             <ControlledInput
                                 control={step1.control}
                                 name='email'
-                                rules={{ required: 'El correo es requerido.', pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Ingrese un correo válido.' } }}
+                                rules={{
+                                    required: 'El correo es requerido.',
+                                    maxLength: { value: EMAIL_MAX, message: `No puede superar los ${EMAIL_MAX} caracteres.` },
+                                    pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Ingrese un correo válido.' },
+                                }}
+                                maxLength={EMAIL_MAX}
                                 label='Correo electrónico'
                                 icon={<Mail size={16} color={colors.textFaint} />}
                                 placeholder='correo@ejemplo.com'
@@ -91,7 +146,7 @@ const RegisterScreen = () => {
                                 rules={{
                                     required: 'La contraseña es requerida.',
                                     validate: (v) =>
-                                        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v)
+                                        (v.length <= PASSWORD_MAX && /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(v))
                                         || 'La contraseña no cumple los requisitos.',
                                 }}
                                 render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => (
@@ -101,6 +156,7 @@ const RegisterScreen = () => {
                                             icon={<Lock size={16} color={colors.textFaint} />}
                                             placeholder='Ingrese su contraseña'
                                             secureTextEntry={!showPass}
+                                            maxLength={PASSWORD_MAX}
                                             value={value}
                                             onChangeText={onChange}
                                             onBlur={onBlur}
@@ -158,10 +214,11 @@ const RegisterScreen = () => {
                             <ControlledInput
                                 control={step2.control}
                                 name='document_number'
-                                rules={{ required: 'El número de documento es requerido.' }}
+                                rules={{ validate: (v) => validateDocument(v, documentType) }}
+                                maxLength={DOCUMENT_NUMBER_MAX}
                                 label='Número de documento'
                                 icon={<Hash size={16} color={colors.textFaint} />}
-                                placeholder='Ingrese su número de documento'
+                                placeholder={documentType === 'DUI' ? '00000000-0' : 'Ingrese su número de documento'}
                             />
 
                             <ControlledInput

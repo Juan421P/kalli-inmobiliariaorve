@@ -7,7 +7,29 @@ import {
 import useAuth from '@/hooks/useAuth'
 import useFavorites from '@/hooks/useFavorites'
 import ClientService from '@/services/Client'
+import { appointmentService } from '@/services/Appointment'
+import OfferDetailSheet from '@/components/profile/OfferDetailSheet'
 import toast from '@/lib/toast'
+
+const UPCOMING_STATUSES = ['pending', 'assigned', 'scheduled']
+
+const formatDate = (dateStr) => dateStr
+    ? new Date(dateStr).toLocaleDateString('es-SV', { day: '2-digit', month: 'short', year: 'numeric' })
+    : null
+
+// El backend devuelve el documento completo (buyer/property poblados,
+// current_address, time.start_time/end_time...); acá se aplana a lo que
+// espera AppointmentCard.
+const toCardShape = (apt) => ({
+    id: apt._id,
+    status: apt.status,
+    public_id: apt.property?.public_id,
+    property: apt.property?.title ?? 'Propiedad',
+    image: apt.property?.pictures?.[0]?.picture,
+    address: apt.current_address?.reference ?? apt.current_address?.address ?? '—',
+    date: formatDate(apt.scheduled_date ?? apt.proposed_dates?.[0]) ?? '—',
+    time: apt.time?.start_time && apt.time?.end_time ? `${apt.time.start_time} - ${apt.time.end_time}` : '—',
+})
 
 // Formatea una fecha como tiempo relativo ("Hace 2h", "Hace 3d"), igual que
 // ListingCard.jsx usa para "publicado hace...".
@@ -35,25 +57,42 @@ const ProfileActivity = () => {
     const [appointments, setAppointments] = useState({ upcoming: [], past: [] })
     const [activity, setActivity] = useState([])
     const [isLoadingActivity, setIsLoadingActivity] = useState(true)
+    const [openOfferId, setOpenOfferId] = useState(null)
 
-    useEffect(() => {
-        // TODO: fetchAppointmentsByClient(user.id) → setAppointments(...)
-    }, [user?.id])
-
-    useEffect(() => {
+    const fetchActivity = () => {
         if (!user?.id) return
         ClientService.getActivity(user.id)
             .then((data) => setActivity(data.activity ?? []))
             .catch(() => setActivity([]))
             .finally(() => setIsLoadingActivity(false))
+    }
+
+    useEffect(() => {
+        if (!user?.id) return
+        appointmentService.getAll()
+            .then((data) => {
+                const list = (data?.appointments ?? []).map(toCardShape)
+                setAppointments({
+                    upcoming: list.filter((a) => UPCOMING_STATUSES.includes(a.status)),
+                    past: list.filter((a) => !UPCOMING_STATUSES.includes(a.status)),
+                })
+            })
+            .catch(() => setAppointments({ upcoming: [], past: [] }))
     }, [user?.id])
 
-    const cancelAppointment = (id) => {
-        setAppointments(prev => ({
-            ...prev,
-            upcoming: prev.upcoming.filter(a => a.id !== id),
-        }))
-        toast.success('Cita cancelada correctamente.')
+    useEffect(fetchActivity, [user?.id])
+
+    const cancelAppointment = async (id) => {
+        try {
+            await appointmentService.cancel(id)
+            setAppointments(prev => ({
+                ...prev,
+                upcoming: prev.upcoming.filter(a => a.id !== id),
+            }))
+            toast.success('Cita cancelada correctamente.')
+        } catch (err) {
+            toast.error(err.friendlyMessage)
+        }
     }
 
     return (
@@ -114,7 +153,11 @@ const ProfileActivity = () => {
                         <EmptyActivity />
                     ) : (
                         activity.map((item, i) => (
-                            <ActivityItem key={`${item.type}-${item.property._id}-${i}`} item={item} />
+                            <ActivityItem
+                                key={`${item.type}-${item.property._id}-${i}`}
+                                item={item}
+                                onOpenOffer={setOpenOfferId}
+                            />
                         ))
                     )}
                 </div>
@@ -148,6 +191,13 @@ const ProfileActivity = () => {
                     </div>
                 )}
             </section>
+
+            <OfferDetailSheet
+                offerId={openOfferId}
+                open={!!openOfferId}
+                onOpenChange={(next) => !next && setOpenOfferId(null)}
+                onChanged={fetchActivity}
+            />
         </div>
     )
 }
@@ -305,7 +355,7 @@ const EmptyActivity = () => (
 
 // Una fila del feed de "Actividad reciente": propiedades vistas u ofertas
 // hechas, ordenadas por fecha (ver services/client.js -> getActivity).
-const ActivityItem = ({ item }) => {
+const ActivityItem = ({ item, onOpenOffer }) => {
     const navigate = useNavigate()
     const { property } = item
     const isOffer = item.type === 'offer'
@@ -313,7 +363,7 @@ const ActivityItem = ({ item }) => {
 
     return (
         <button
-            onClick={() => navigate(`/property/${property.public_id}`)}
+            onClick={() => isOffer ? onOpenOffer(item.id) : navigate(`/property/${property.public_id}`)}
             className='flex items-center gap-3 bg-white/60 hover:bg-white/90 border border-orve-teal/10 rounded-2xl p-3 text-left transition-colors'
         >
             <div className='w-11 h-11 rounded-xl overflow-hidden bg-orve-teal/10 shrink-0'>

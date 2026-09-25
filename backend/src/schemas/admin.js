@@ -32,7 +32,7 @@ export const schemas = {
 
     login: z.object({
         email: user.email,
-        password: auth.password
+        password: auth.loginPassword
     }).strict(),
 
     uploadPicture: z.object({}).strict(),

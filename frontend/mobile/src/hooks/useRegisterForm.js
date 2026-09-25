@@ -57,7 +57,7 @@ const useRegisterForm = () => {
             setVerificationToken(res?.token ?? null);
             setStep(3);
         } catch (err) {
-            setServerError(err?.data?.message ?? 'Error al crear la cuenta. Intente de nuevo.');
+            setServerError(err.friendlyMessage);
         }
     };
 
@@ -67,7 +67,7 @@ const useRegisterForm = () => {
             await clientService.verifyEmail({ code: code.toLowerCase(), token: verificationToken });
             setStep(4);
         } catch (err) {
-            setServerError(err?.data?.message ?? 'Código incorrecto o expirado.');
+            setServerError(err.friendlyMessage);
         }
     };
 
@@ -81,7 +81,7 @@ const useRegisterForm = () => {
             setCountdown(OTP_TTL);
             step3.reset({ code: '' });
         } catch (err) {
-            setServerError(err?.data?.message ?? 'No se pudo reenviar el código. Intente de nuevo.');
+            setServerError(err.friendlyMessage);
         }
     };
 

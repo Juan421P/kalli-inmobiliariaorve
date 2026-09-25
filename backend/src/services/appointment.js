@@ -8,8 +8,8 @@ import ConflictError from '../errors/conflict.js';
 import ValidationError from '../errors/validation.js';
 
 const populateOptions = [
-    { path: 'buyer', select: 'name lastname email picture' },
-    { path: 'property', select: 'title public_id' },
+    { path: 'buyer', select: 'name lastname email phone picture' },
+    { path: 'property', select: 'title public_id pictures' },
     { path: 'collaborator', select: 'name lastname' },
 ];
 
@@ -39,14 +39,16 @@ async function assertTimeIsAvailable(proposedDates, time) {
 
 const service = {
 
-    // Un colaborador solo debe ver las citas que un admin le asignó a él -no
-    // todas las que existen, eso es cosa del admin-. Se aplica acá, en vez de
-    // en el controller, para que ninguna otra ruta que reutilice este método
-    // se le olvide filtrar.
+    // Un colaborador solo debe ver las citas que un admin le asignó a él, y un
+    // cliente solo las suyas propias -no todas las que existen, eso es cosa
+    // del staff-. Se aplica acá, en vez de en el controller, para que ninguna
+    // otra ruta que reutilice este método se le olvide filtrar.
     async getAll(filter = {}, actor) {
         const scopedFilter = actor?.role === 'collaborator'
             ? { ...filter, collaborator: actor.id }
-            : filter;
+            : actor?.role === 'client'
+                ? { ...filter, buyer: actor.id }
+                : filter;
         return await model.find(scopedFilter).populate(populateOptions).sort({ createdAt: -1 });
     },
 

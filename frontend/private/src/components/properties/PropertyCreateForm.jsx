@@ -20,6 +20,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import LocationPicker from '@/components/properties/LocationPicker'
+import CatalogMultiSelect from '@/components/properties/CatalogMultiSelect'
 
 // Los `value` de estas cuatro listas tienen que calzar exacto con los enums del
 // schema de property en el backend — si allá agregan un tipo nuevo hay que
@@ -67,6 +68,10 @@ const EMPTY_FORM = {
     area_unit:      'm2',
     allows_pets:    false,
     furnished:      false,
+    amenities:      [],
+    appliances:     [],
+    features:       [],
+    tags:           [],
 }
 
 // ─── Upload de imágenes ───────────────────────────────────────────────────────
@@ -195,7 +200,7 @@ const FeatureToggle = ({ checked, onCheckedChange, label, description }) => (
 )
 
 // ─── Formulario ───────────────────────────────────────────────────────────────
-const PropertyCreateForm = ({ onSubmit, isLoading }) => {
+const PropertyCreateForm = ({ onSubmit, isLoading, catalogs }) => {
     const [form,     setForm]     = useState(EMPTY_FORM)
     const [images,   setImages]   = useState([])
     const [errors,   setErrors]   = useState({})
@@ -292,6 +297,10 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
             area:               { number: parseFloat(form.area_number || '0'), unit: form.area_unit },
             allows_pets:        form.allows_pets,
             furnished:          form.furnished,
+            amenities:          form.amenities,
+            appliances:         form.appliances,
+            features:           form.features,
+            tags:               form.tags,
             images:             images.map((i) => i.file),
         })
         setForm(EMPTY_FORM)
@@ -465,6 +474,17 @@ const PropertyCreateForm = ({ onSubmit, isLoading }) => {
                             </div>
                         </FieldGroup>
                     )}
+
+                    {/* Catálogos: amenidades, electrodomésticos, características, etiquetas */}
+                    <FieldGroup>
+                        <FieldLegend className='text-orve-teal'>Catálogos</FieldLegend>
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                            <CatalogMultiSelect label='Amenidades' items={catalogs?.amenities} selectedIds={form.amenities} onChange={(v) => setField('amenities', v)} />
+                            <CatalogMultiSelect label='Electrodomésticos' items={catalogs?.appliances} selectedIds={form.appliances} onChange={(v) => setField('appliances', v)} />
+                            <CatalogMultiSelect label='Características' items={catalogs?.features} selectedIds={form.features} onChange={(v) => setField('features', v)} />
+                            <CatalogMultiSelect label='Etiquetas' items={catalogs?.tags} selectedIds={form.tags} onChange={(v) => setField('tags', v)} />
+                        </div>
+                    </FieldGroup>
                 </FieldSet>
 
                 {/* ── Columna derecha: ubicación + imágenes ── */}

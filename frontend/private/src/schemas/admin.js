@@ -28,9 +28,15 @@ export const register = a.omit({
     verified_email: true,
     verified_phone_number: true
 });
-export const login = a.pick({
-    email: true,
-    password: true
+// El login NO reusa `a.shape.password`: ese regex es para crear/cambiar una
+// contraseña. Login solo compara contra el hash con bcrypt (igual que
+// backend/src/schemas/fields/auth.js -> loginPassword), así que exigir la
+// complejidad acá bloqueaba el envío del formulario para cualquier cuenta
+// cuya contraseña real no calzara con ese patrón (ej. un símbolo fuera de
+// @$!%*?&), aunque las credenciales fueran correctas.
+export const login = z.object({
+    email: a.shape.email,
+    password: z.string().min(1, 'la contraseña es requerida'),
 });
 export const update = a.omit({
     password: true,

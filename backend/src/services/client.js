@@ -66,6 +66,7 @@ const service = {
             .filter(offer => offer.property)
             .map(offer => ({
                 type: 'offer',
+                id: offer._id,
                 at: offer.updatedAt,
                 property: offer.property,
                 status: offer.status,
