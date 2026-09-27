@@ -29,7 +29,6 @@ const useOfferForm = ({ property, publicId, userId }) => {
             price: '',
             moveInDate: '',
             rentalMonths: null,
-            contactMethod: null,
         },
     });
 

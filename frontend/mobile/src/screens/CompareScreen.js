@@ -6,6 +6,7 @@ import {
     Plus, Star, Tag, X, Zap,
 } from 'lucide-react-native';
 import EmptyState from '@/components/EmptyState';
+import Chip from '@/components/ui/Chip';
 import useCompare, { MAX_SLOTS } from '@/hooks/useCompare';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
@@ -158,9 +159,7 @@ const CompareAccordion = ({ icon: Icon, label, items = [] }) => {
                 <View style={styles.accordionBody}>
                     {items?.length > 0 ? (
                         items.map((item, i) => (
-                            <View key={i} style={styles.accordionChip}>
-                                <Text style={styles.accordionChipText}>{item.name ?? item}</Text>
-                            </View>
+                            <Chip key={item._id ?? i} label={item.name ?? item} />
                         ))
                     ) : (
                         <Text style={styles.accordionEmpty}>Sin datos</Text>
@@ -209,8 +208,6 @@ const styles = StyleSheet.create({
     rowValueWin: { color: colors.orveGreen },
     accordionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
     accordionBody: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-    accordionChip: { backgroundColor: 'rgba(80,113,119,0.1)', borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 3 },
-    accordionChipText: { fontSize: 10, color: colors.orveDarkerTeal, fontWeight: '600' },
     accordionEmpty: { fontSize: 10, color: colors.textFaint },
     scheduleButton: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs,

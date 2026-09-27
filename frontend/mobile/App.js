@@ -5,6 +5,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AuthProvider from '@/providers/AuthProvider';
 import ToastProvider from '@/providers/ToastProvider';
+import FavoritesProvider from '@/providers/FavoritesProvider';
+import CompareProvider from '@/providers/CompareProvider';
 import RootNavigator from '@/navigation/RootNavigator';
 
 // El Splash Screen nativo (logo de app.json) se mantiene visible hasta que
@@ -22,10 +24,14 @@ export default function App() {
         <SafeAreaProvider>
             <AuthProvider>
                 <ToastProvider>
-                    <NavigationContainer>
-                        <StatusBar style='light' />
-                        <RootNavigator />
-                    </NavigationContainer>
+                    <FavoritesProvider>
+                        <CompareProvider>
+                            <NavigationContainer>
+                                <StatusBar style='light' />
+                                <RootNavigator />
+                            </NavigationContainer>
+                        </CompareProvider>
+                    </FavoritesProvider>
                 </ToastProvider>
             </AuthProvider>
         </SafeAreaProvider>

@@ -1,47 +1,18 @@
-import { useCallback, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useContext } from 'react';
+import CompareContext from '@/context/CompareContext';
+import { MAX_SLOTS } from '@/providers/CompareProvider';
 
-const COMPARE_KEY = 'orve_compare';
-export const MAX_SLOTS = 3;
+export { MAX_SLOTS };
 
-/** Propiedades seleccionadas para comparar, persistidas en AsyncStorage,
- * igual que el sessionStorage de frontend/public/src/pages/CompareProperties.jsx. */
+/**
+ * Comparador compartido en toda la app (ver CompareProvider — un solo
+ * estado real, poblado desde AsyncStorage una sola vez en la raiz de la
+ * app). Mismo patron que useAuth()/useToast()/useFavorites().
+ */
 const useCompare = () => {
-    const [slots, setSlots] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-
-    useEffect(() => {
-        AsyncStorage.getItem(COMPARE_KEY)
-            .then((raw) => setSlots(raw ? JSON.parse(raw) : []))
-            .catch(() => setSlots([]))
-            .finally(() => setIsLoading(false));
-    }, []);
-
-    const persist = (next) => {
-        setSlots(next);
-        AsyncStorage.setItem(COMPARE_KEY, JSON.stringify(next));
-    };
-
-    const addProperty = useCallback((property) => {
-        setSlots((prev) => {
-            if (prev.find((p) => p._id === property._id)) return prev;
-            const next = [...prev, property].slice(0, MAX_SLOTS);
-            AsyncStorage.setItem(COMPARE_KEY, JSON.stringify(next));
-            return next;
-        });
-    }, []);
-
-    const removeProperty = useCallback((id) => {
-        setSlots((prev) => {
-            const next = prev.filter((p) => p._id !== id);
-            AsyncStorage.setItem(COMPARE_KEY, JSON.stringify(next));
-            return next;
-        });
-    }, []);
-
-    const clearAll = useCallback(() => persist([]), []);
-
-    return { slots, isLoading, addProperty, removeProperty, clearAll };
+    const context = useContext(CompareContext);
+    if (!context) throw new Error('useCompare must be used within CompareProvider');
+    return context;
 };
 
 export default useCompare;

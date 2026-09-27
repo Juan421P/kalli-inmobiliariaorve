@@ -184,9 +184,9 @@ const styles = StyleSheet.create({
     },
     nearMeBtnActive: { backgroundColor: colors.orveTeal, borderColor: colors.orveTeal },
     chipsRow: { gap: spacing.sm },
-    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.lg },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.lg, justifyContent: 'center' },
     cardSkeleton: { width: '47%', height: 170, borderRadius: radius.lg },
-    columnWrapper: { gap: spacing.md },
+    columnWrapper: { gap: spacing.md, justifyContent: 'center' },
     listContent: { padding: spacing.lg, gap: spacing.md },
     mapWrap: { flex: 1 },
 });

@@ -11,6 +11,7 @@ import Button from '@/components/ui/Button';
 import Chip from '@/components/ui/Chip';
 import OTPInput from '@/components/OTPInput';
 import useRegisterForm from '@/hooks/useRegisterForm';
+import { formatPhoneInput, formatDuiInput } from '@/lib/format';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
 const PASSWORD_CHECKS = [
@@ -41,13 +42,19 @@ const validateDocument = (value, type) => {
     return value.trim().length >= 3 || 'Ingrese un número de documento válido.';
 };
 
-const ControlledInput = ({ control, name, rules, ...inputProps }) => (
+const ControlledInput = ({ control, name, rules, format, ...inputProps }) => (
     <Controller
         control={control}
         name={name}
         rules={rules}
         render={({ field: { value, onChange, onBlur }, fieldState: { error } }) => (
-            <Input value={value} onChangeText={onChange} onBlur={onBlur} error={error?.message} {...inputProps} />
+            <Input
+                value={value}
+                onChangeText={(text) => onChange(format ? format(text) : text)}
+                onBlur={onBlur}
+                error={error?.message}
+                {...inputProps}
+            />
         )}
     />
 );
@@ -189,10 +196,12 @@ const RegisterScreen = () => {
                                 control={step2.control}
                                 name='phone'
                                 rules={{ required: 'El teléfono es requerido.', pattern: { value: /^\d{4}-?\d{4}$/, message: 'Formato: 0000-0000' } }}
+                                format={formatPhoneInput}
                                 label='Número de teléfono'
                                 icon={<Phone size={16} color={colors.textFaint} />}
                                 placeholder='0000-0000'
                                 keyboardType='phone-pad'
+                                maxLength={9}
                             />
 
                             <View style={{ gap: spacing.xs }}>
@@ -215,7 +224,8 @@ const RegisterScreen = () => {
                                 control={step2.control}
                                 name='document_number'
                                 rules={{ validate: (v) => validateDocument(v, documentType) }}
-                                maxLength={DOCUMENT_NUMBER_MAX}
+                                format={documentType === 'DUI' ? formatDuiInput : undefined}
+                                maxLength={documentType === 'DUI' ? 10 : DOCUMENT_NUMBER_MAX}
                                 label='Número de documento'
                                 icon={<Hash size={16} color={colors.textFaint} />}
                                 placeholder={documentType === 'DUI' ? '00000000-0' : 'Ingrese su número de documento'}

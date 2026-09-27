@@ -21,7 +21,7 @@ const FavoritesScreen = () => {
                 <EmptyState
                     icon={<Heart size={32} color={colors.textFaint} />}
                     title='Todavía no tenés favoritos'
-                    subtitle='Tocá la estrella en una propiedad para guardarla acá.'
+                    subtitle='Tocá el corazón en una propiedad para guardarla acá.'
                 />
             ) : (
                 <FlatList

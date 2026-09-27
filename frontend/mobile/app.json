@@ -21,21 +21,37 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+      },
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-splash-screen", {
-        "image": "./assets/splash-icon.png",
-        "imageWidth": 220,
-        "resizeMode": "contain",
-        "backgroundColor": "#507177"
-      }],
-      ["expo-location", {
-        "locationWhenInUsePermission": "ORVE usa tu ubicación para mostrarte en el mapa las propiedades más cercanas a vos."
-      }]
-    ]
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#507177"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "ORVE usa tu ubicación para mostrarte en el mapa las propiedades más cercanas a vos."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "63b143f1-f1b3-44f0-a1e8-77272ff3b1b6"
+      }
+    },
+    "owner": "camila17"
   }
 }

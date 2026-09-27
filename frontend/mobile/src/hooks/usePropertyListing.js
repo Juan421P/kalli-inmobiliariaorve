@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import propertyService from '@/services/propertyService';
+import useToast from '@/hooks/useToast';
 
 const toRad = (deg) => (deg * Math.PI) / 180;
 
@@ -28,6 +29,7 @@ const distanceKm = (userCoords, property) => {
  * @param {{ propertyType?: string, query?: string }} initial - filtros iniciales (via params de navegacion)
  */
 const usePropertyListing = (listingType, initial = {}) => {
+    const toast = useToast();
     const [properties, setProperties] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -44,7 +46,10 @@ const usePropertyListing = (listingType, initial = {}) => {
                 const result = Array.isArray(list) ? list.filter((p) => p.listing_type === listingType) : [];
                 setProperties(result);
             })
-            .catch(() => setProperties([]))
+            .catch((err) => {
+                setProperties([]);
+                toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
+            })
             .finally(() => setIsLoading(false));
     }, [listingType]);
 
