@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { History, ArrowRightLeft, XCircle } from 'lucide-react'
+import { History, ArrowRightLeft, XCircle, CheckCircle2 } from 'lucide-react'
 import {
     Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
@@ -37,13 +37,18 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
     const [isLoading, setIsLoading] = useState(true)
     const [price, setPrice] = useState('')
     const [submitting, setSubmitting] = useState(false)
+    const [loadError, setLoadError] = useState(null)
 
     useEffect(() => {
         if (!open || !offerId) return
         setIsLoading(true)
+        setLoadError(null)
         offerService.getById(offerId)
             .then((data) => setOffer(data.offer ?? data))
-            .catch(() => setOffer(null))
+            .catch((err) => {
+                setOffer(null)
+                setLoadError(err.friendlyMessage ?? 'No se pudo cargar la oferta.')
+            })
             .finally(() => setIsLoading(false))
     }, [open, offerId])
 
@@ -70,10 +75,10 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
     const handleWithdraw = async () => {
         setSubmitting(true)
         try {
-            const data = await offerService.resolve(offerId, 'withdrawn')
-            setOffer(data.offer ?? data)
-            toast.success('Oferta retirada.')
+            await offerService.resolve(offerId, 'withdrawn')
+            toast.success('Oferta retirada y eliminada.')
             onChanged?.()
+            onOpenChange(false)
         } catch (err) {
             toast.error(err.friendlyMessage)
         } finally {
@@ -96,7 +101,7 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
                         {[1, 2, 3].map((i) => <div key={i} className='h-12 rounded-xl bg-orve-teal/5 animate-pulse' />)}
                     </div>
                 ) : !offer ? (
-                    <p className='text-sm text-gray-400'>No se pudo cargar la oferta.</p>
+                    <p className='text-sm text-red-500'>{loadError ?? 'No se pudo cargar la oferta.'}</p>
                 ) : (
                     <>
                         <div className='flex items-center justify-between'>
@@ -108,6 +113,15 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
                                 {status.label}
                             </span>
                         </div>
+
+                        {offer.status === 'accepted' && (
+                            <div className='flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2.5'>
+                                <CheckCircle2 className='w-4 h-4 text-emerald-600 shrink-0 mt-0.5' />
+                                <p className='text-sm text-emerald-700 font-medium'>
+                                    Oferta aceptada. Nos comunicaremos contigo pronto.
+                                </p>
+                            </div>
+                        )}
 
                         {offer.history?.length > 0 && (
                             <div className='flex flex-col gap-2'>

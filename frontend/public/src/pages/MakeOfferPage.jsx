@@ -10,13 +10,6 @@ import useOfferForm from '@/hooks/useOfferForm'
 import useAuth from '@/hooks/useAuth'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
 
-// ─── Opciones de contacto (igual que en ScheduleAppointment) ──────────────────
-const CONTACT_OPTIONS = [
-    { value: 'whatsapp', label: 'WhatsApp',          icon: 'logos:whatsapp-icon',   sub: 'Recomendado' },
-    { value: 'phone',    label: 'Teléfono',           icon: 'solar:phone-bold'                          },
-    { value: 'email',    label: 'Correo electrónico', icon: 'solar:letter-bold'                         },
-]
-
 // ─── Opciones de meses de renta ───────────────────────────────────────────────
 const RENTAL_OPTIONS = [
     { value: '6',   label: '6 meses'  },
@@ -41,11 +34,12 @@ const MakeOfferPage = () => {
     const {
         isRent,
         isSubmitting,
+        whatsappNumber,
         errors,
         register,
         control,
         handleSubmit,
-    } = useOfferForm({ property, publicId: public_id, userId: user?._id })
+    } = useOfferForm({ property, publicId: public_id, userId: user?.id })
 
     const bgImage = property?.pictures?.[0]?.picture
 
@@ -192,42 +186,26 @@ const MakeOfferPage = () => {
 
                             <div className='h-px bg-orve-teal/10' />
 
-                            {/* Método de contacto */}
+                            {/* Método de contacto: fijo por WhatsApp, al número registrado */}
                             <div className='flex flex-col gap-2'>
                                 <label className='text-xs font-medium text-orve-teal/80'>
-                                    ¿Cómo desea que lo contactemos?
+                                    Modo de contacto
                                 </label>
-                                <Controller
-                                    control={control}
-                                    name='contactMethod'
-                                    rules={{ required: 'Selecciona un metodo de contacto' }}
-                                    render={({ field }) => (
-                                        <div className='grid grid-cols-3 gap-2'>
-                                            {CONTACT_OPTIONS.map((opt) => (
-                                                <button
-                                                    type='button'
-                                                    key={opt.value}
-                                                    onClick={() => field.onChange(opt.value)}
-                                                    className={cn(
-                                                        'flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border text-xs font-medium transition-colors',
-                                                        field.value === opt.value
-                                                            ? 'border-orve-teal bg-orve-teal/8 text-orve-darker-teal'
-                                                            : 'border-orve-teal/15 bg-orve-teal/5 text-orve-teal/70 hover:border-orve-teal/40'
-                                                    )}
-                                                >
-                                                    <Icon icon={opt.icon} width={22} />
-                                                    <span>{opt.label}</span>
-                                                    {opt.sub && (
-                                                        <span className='text-[10px] text-orve-teal/50 font-normal'>{opt.sub}</span>
-                                                    )}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                />
-                                {errors.contactMethod && (
-                                    <p className='text-[11px] text-red-500'>{errors.contactMethod.message}</p>
-                                )}
+                                <div className='flex items-center gap-3 px-4 py-3 rounded-xl border border-orve-teal/15 bg-orve-teal/5'>
+                                    <Icon icon='logos:whatsapp-icon' width={24} className='shrink-0' />
+                                    <div className='flex-1 min-w-0'>
+                                        <p className='text-xs font-medium text-orve-darker-teal'>WhatsApp</p>
+                                        <p className='text-[11px] text-orve-teal/60 truncate'>
+                                            {whatsappNumber ?? 'Cargando número...'}
+                                        </p>
+                                    </div>
+                                    <Link
+                                        to='/profile'
+                                        className='text-[11px] font-medium text-orve-teal underline hover:text-orve-darker-teal shrink-0'
+                                    >
+                                        Cambiar número
+                                    </Link>
+                                </div>
                             </div>
 
                             {/* Botón submit */}

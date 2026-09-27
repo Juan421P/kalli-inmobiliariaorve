@@ -8,13 +8,8 @@ import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
 import useProperty from '@/hooks/useProperty'
 import useAppointmentForm, { REASON_MAX, REASON_REGEX } from '@/hooks/useAppointmentForm'
+import useAuth from '@/hooks/useAuth'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
-
-const CONTACT_OPTIONS = [
-    { value: 'whatsapp', label: 'WhatsApp',          icon: 'logos:whatsapp-icon'  },
-    { value: 'phone',    label: 'Telefono',           icon: 'solar:phone-bold'     },
-    { value: 'email',    label: 'Correo electronico', icon: 'solar:letter-bold'    },
-]
 
 /**
  * Pagina "Agendar cita" para visitar una propiedad. Esta detras de
@@ -26,6 +21,7 @@ const CONTACT_OPTIONS = [
  */
 const ScheduleAppointment = () => {
     const { public_id } = useParams()
+    const { user } = useAuth()
     const { property, isLoading: isLoadingProperty, notFound } = useProperty(public_id)
 
     const {
@@ -33,6 +29,7 @@ const ScheduleAppointment = () => {
         noSchedules,
         isSubmitting,
         isValid,
+        whatsappNumber,
         errors,
         register,
         control,
@@ -41,7 +38,7 @@ const ScheduleAppointment = () => {
         disabledDays,
         handleDateChange,
         handleSubmit,
-    } = useAppointmentForm({ property, publicId: public_id })
+    } = useAppointmentForm({ property, publicId: public_id, userId: user?.id })
 
     const isLoading = isLoadingProperty || isLoadingSchedules
 
@@ -174,32 +171,22 @@ const ScheduleAppointment = () => {
                                     <div className='h-px bg-orve-teal/10' />
 
                                     <div className='flex flex-col gap-3'>
-                                        <p className='text-sm font-medium text-orve-teal'>Como desea que lo contactemos?</p>
-                                        <Controller
-                                            control={control}
-                                            name='contactMethod'
-                                            rules={{ required: 'Selecciona como te contactaremos' }}
-                                            render={({ field }) => (
-                                                <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-                                                    {CONTACT_OPTIONS.map(({ value, label, icon }) => (
-                                                        <button
-                                                            type='button'
-                                                            key={value}
-                                                            onClick={() => field.onChange(value)}
-                                                            className={cn(
-                                                                'flex items-center gap-2.5 px-4 py-3 rounded-xl border text-sm font-medium transition-colors',
-                                                                field.value === value
-                                                                    ? 'bg-orve-teal text-white border-orve-teal'
-                                                                    : 'bg-white/70 text-orve-teal border-orve-teal/20 hover:border-orve-teal hover:bg-orve-teal/5'
-                                                            )}
-                                                        >
-                                                            <Icon icon={icon} className='w-5 h-5 shrink-0' />
-                                                            {label}
-                                                        </button>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        />
+                                        <p className='text-sm font-medium text-orve-teal'>Modo de contacto</p>
+                                        <div className='flex items-center gap-3 px-4 py-3 rounded-xl border border-orve-teal/20 bg-white/70'>
+                                            <Icon icon='logos:whatsapp-icon' width={24} className='shrink-0' />
+                                            <div className='flex-1 min-w-0'>
+                                                <p className='text-sm font-medium text-orve-darker-teal'>WhatsApp</p>
+                                                <p className='text-xs text-orve-teal/60 truncate'>
+                                                    {whatsappNumber ?? 'Cargando numero...'}
+                                                </p>
+                                            </div>
+                                            <Link
+                                                to='/profile'
+                                                className='text-xs font-medium text-orve-teal underline hover:text-orve-darker-teal shrink-0'
+                                            >
+                                                Cambiar número
+                                            </Link>
+                                        </div>
                                     </div>
 
                                     <div className='h-px bg-orve-teal/10' />

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
     CalendarDays, Clock, MapPin, Heart, Eye, Tag,
-    HelpCircle, MoreVertical, ExternalLink, RotateCcw, X,
+    HelpCircle, MoreVertical, ExternalLink, RotateCcw, X, ArrowRightLeft,
 } from 'lucide-react'
 import useAuth from '@/hooks/useAuth'
 import useFavorites from '@/hooks/useFavorites'
@@ -56,14 +56,18 @@ const ProfileActivity = () => {
 
     const [appointments, setAppointments] = useState({ upcoming: [], past: [] })
     const [activity, setActivity] = useState([])
+    const [needsResponse, setNeedsResponse] = useState([])
     const [isLoadingActivity, setIsLoadingActivity] = useState(true)
     const [openOfferId, setOpenOfferId] = useState(null)
 
     const fetchActivity = () => {
         if (!user?.id) return
         ClientService.getActivity(user.id)
-            .then((data) => setActivity(data.activity ?? []))
-            .catch(() => setActivity([]))
+            .then((data) => {
+                setActivity(data.activity ?? [])
+                setNeedsResponse(data.needsResponse ?? [])
+            })
+            .catch(() => { setActivity([]); setNeedsResponse([]) })
             .finally(() => setIsLoadingActivity(false))
     }
 
@@ -97,6 +101,64 @@ const ProfileActivity = () => {
 
     return (
         <div className='flex flex-col gap-8'>
+
+            {/* Ofertas que requieren respuesta: aparte y destacadas, arriba de
+                todo para que no se pierdan mezcladas con el resto */}
+            {needsResponse.length > 0 && (
+                <section>
+                    <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2 mb-4'>
+                        <ArrowRightLeft className='w-4 h-4' />
+                        Ofertas que requieren tu respuesta
+                    </h3>
+                    <div className='flex flex-col gap-3'>
+                        {needsResponse.map((item) => {
+                            const isAccepted = item.status === 'accepted'
+                            const theme = isAccepted
+                                ? {
+                                    card: 'bg-emerald-50 hover:bg-emerald-100/80 border-emerald-300',
+                                    image: 'bg-emerald-100',
+                                    title: 'text-emerald-900',
+                                    text: 'text-emerald-700',
+                                    badge: 'bg-emerald-500',
+                                }
+                                : {
+                                    card: 'bg-amber-50 hover:bg-amber-100/80 border-amber-300',
+                                    image: 'bg-amber-100',
+                                    title: 'text-amber-900',
+                                    text: 'text-amber-700',
+                                    badge: 'bg-amber-500',
+                                }
+                            return (
+                                <button
+                                    key={item.id}
+                                    onClick={() => setOpenOfferId(item.id)}
+                                    className={`flex items-center gap-4 border-2 rounded-2xl p-4 text-left transition-colors ${theme.card}`}
+                                >
+                                    <div className={`w-14 h-14 rounded-xl overflow-hidden shrink-0 ${theme.image}`}>
+                                        {item.property.pictures?.[0]?.picture && (
+                                            <img src={item.property.pictures[0].picture} alt='' className='w-full h-full object-cover' />
+                                        )}
+                                    </div>
+                                    <div className='flex-1 min-w-0'>
+                                        <p className={`text-sm font-bold truncate ${theme.title}`}>
+                                            {item.property.title}
+                                        </p>
+                                        <p className={`text-xs mt-0.5 ${theme.text}`}>
+                                            {isAccepted
+                                                ? <>¡Oferta aceptada! Nos comunicaremos contigo pronto · <span className='font-bold'>${item.price?.toLocaleString()}</span></>
+                                                : <>ORVE contraofertó · Nuevo monto: <span className='font-bold'>${item.price?.toLocaleString()}</span></>
+                                            }
+                                        </p>
+                                    </div>
+                                    <span className={`shrink-0 text-[10px] font-bold text-white px-2.5 py-1 rounded-full uppercase tracking-wide ${theme.badge}`}>
+                                        {isAccepted ? 'Aceptada' : 'Nuevo'}
+                                    </span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </section>
+            )}
 
             {/* Citas próximas + pasadas */}
             <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
@@ -204,8 +266,16 @@ const ProfileActivity = () => {
 
 /* ─── AppointmentColumn ────────────────────────────────────────────── */
 
+// Cuantas citas se muestran antes de tener que desplegar el resto — sin esto
+// un cliente con muchas citas ve un chorizo enorme de tarjetas de una vez.
+const VISIBLE_APPOINTMENTS = 2
+
 const AppointmentColumn = ({ title, items, emptyText, onBook, type, onCancel }) => {
     const navigate = useNavigate()
+    const [expanded, setExpanded] = useState(false)
+    const hasMore = items.length > VISIBLE_APPOINTMENTS
+    const visibleItems = expanded ? items : items.slice(0, VISIBLE_APPOINTMENTS)
+
     return (
         <div>
             <div className='flex items-center justify-between mb-3'>
@@ -213,8 +283,13 @@ const AppointmentColumn = ({ title, items, emptyText, onBook, type, onCancel }) 
                     <CalendarDays className='w-4 h-4' />
                     {title}
                 </h3>
-                {items.length > 0 && (
-                    <button className='text-xs text-orve-teal hover:underline'>Ver todas</button>
+                {hasMore && (
+                    <button
+                        onClick={() => setExpanded((v) => !v)}
+                        className='text-xs text-orve-teal hover:underline'
+                    >
+                        {expanded ? 'Ver menos' : `Ver todas (${items.length})`}
+                    </button>
                 )}
             </div>
             {items.length === 0 ? (
@@ -229,7 +304,7 @@ const AppointmentColumn = ({ title, items, emptyText, onBook, type, onCancel }) 
                 </div>
             ) : (
                 <div className='flex flex-col gap-2'>
-                    {items.map((apt) => (
+                    {visibleItems.map((apt) => (
                         <AppointmentCard
                             key={apt.id}
                             appointment={apt}

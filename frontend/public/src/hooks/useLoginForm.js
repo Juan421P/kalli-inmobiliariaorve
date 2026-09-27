@@ -4,16 +4,28 @@ import { useNavigate } from 'react-router-dom'
 import ClientService from '@/services/Client'
 import useAuth from '@/hooks/useAuth'
 
+// Solo se guarda el correo, nunca la contraseña. Envuelto en try/catch porque
+// localStorage puede tirar en navegacion privada o con storage bloqueado.
+const REMEMBER_KEY = 'orve_remembered_email'
+const getRememberedEmail = () => {
+    try {
+        return localStorage.getItem(REMEMBER_KEY) ?? ''
+    } catch {
+        return ''
+    }
+}
+
 const useLoginForm = () => {
     const { login } = useAuth()
     const navigate = useNavigate()
     const [serverError, setServerError] = useState(null)
     const [forgotMode, setForgotMode] = useState(false)
     const [forgotStep, setForgotStep] = useState(1) // 1: email, 2: código, 3: nueva contraseña
+    const [rememberMe, setRememberMe] = useState(() => Boolean(getRememberedEmail()))
 
     const form = useForm({
         mode: 'onChange',
-        defaultValues: { email: '', password: '' },
+        defaultValues: { email: getRememberedEmail(), password: '' },
     })
 
     const emailForm = useForm({
@@ -35,6 +47,12 @@ const useLoginForm = () => {
         setServerError(null)
         try {
             const data = await ClientService.login({ email, password })
+            try {
+                if (rememberMe) localStorage.setItem(REMEMBER_KEY, email)
+                else localStorage.removeItem(REMEMBER_KEY)
+            } catch {
+                // almacenamiento no disponible (navegacion privada, etc.): no es critico
+            }
             login({ role: data.role ?? 'client', user: data.user ?? data.client })
             navigate('/')
         } catch (err) {
@@ -97,6 +115,7 @@ const useLoginForm = () => {
         serverError,
         forgotMode, setForgotMode,
         forgotStep,
+        rememberMe, setRememberMe,
         resetForgot,
         onLoginSubmit:    form.handleSubmit(onLoginSubmit),
         onForgotSubmit:   emailForm.handleSubmit(onForgotSubmit),

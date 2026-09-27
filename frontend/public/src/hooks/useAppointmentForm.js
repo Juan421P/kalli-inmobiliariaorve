@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { appointmentService, scheduleAvailabilityService } from '@/services/Appointment'
+import clientService from '@/services/Client'
 import toast from '@/lib/toast'
 
 // Mapea el indice de dia que devuelve Date.getDay() (0 = domingo) al nombre
@@ -18,24 +19,40 @@ export const REASON_REGEX = /^[A-Za-záéíóúÁÉÍÓÚñÑüÜ0-9\s.,;:!?()#'
 
 /**
  * Maneja el formulario de "Agendar cita" con react-hook-form: fecha/hora de
- * visita (dependen de los horarios configurados por el negocio), metodo de
- * contacto preferido y motivo de la visita. Los datos de calificacion del
- * interesado (origen de fondos, ingreso, direccion) ya no se piden en este
+ * visita (dependen de los horarios configurados por el negocio) y motivo de
+ * la visita. El contacto ya no se elige -siempre es por WhatsApp, al numero
+ * que el cliente registro, ver whatsappNumber-. Los datos de calificacion del
+ * interesado (origen de fondos, ingreso, direccion) tampoco se piden en este
  * formulario -el staff los completa despues, desde el panel privado-, asi
- * que se mandan como opcionales al backend. Fecha/hora/contacto son botones
- * tipo "chip" o el calendario y se exponen via `control` para <Controller>;
- * el motivo es un input nativo registrado normal con `register`.
+ * que se mandan como opcionales al backend. Fecha/hora son botones tipo
+ * "chip" o el calendario y se exponen via `control` para <Controller>; el
+ * motivo es un input nativo registrado normal con `register`.
  *
  * @param {object} property - propiedad sobre la que se agenda (de useProperty)
  * @param {string} publicId - public_id de la propiedad, para navegar de vuelta
+ * @param {string} userId - id del cliente logueado, para mostrar su numero de WhatsApp
  */
-const useAppointmentForm = ({ property, publicId }) => {
+const useAppointmentForm = ({ property, publicId, userId }) => {
     const navigate = useNavigate()
 
     const [schedules,          setSchedules]          = useState([])
     const [isLoadingSchedules, setIsLoadingSchedules]  = useState(true)
     const [noSchedules,        setNoSchedules]         = useState(false)
     const [isSubmitting,       setIsSubmitting]        = useState(false)
+    const [whatsappNumber,     setWhatsappNumber]      = useState(null)
+
+    // El contacto ya no se elige: siempre es por WhatsApp, al numero que el
+    // cliente registro. Se trae de su perfil (el AuthContext solo guarda los
+    // campos del login, no el telefono).
+    useEffect(() => {
+        if (!userId) return
+        clientService.get(userId)
+            .then((res) => {
+                const c = res.client ?? res
+                if (c.phone) setWhatsappNumber(`${c.phone.country_code} ${c.phone.number}`)
+            })
+            .catch(() => setWhatsappNumber(null))
+    }, [userId])
 
     const {
         register,
@@ -51,7 +68,6 @@ const useAppointmentForm = ({ property, publicId }) => {
         defaultValues: {
             selectedDate: null,
             selectedSlot: null,
-            contactMethod: null,
             reason: '',
         },
     })
@@ -117,6 +133,7 @@ const useAppointmentForm = ({ property, publicId }) => {
         noSchedules,
         isSubmitting,
         isValid,
+        whatsappNumber,
         errors,
         register,
         control,

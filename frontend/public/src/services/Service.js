@@ -7,6 +7,9 @@ import { getErrorMessage } from "@/lib/errorMessages.js";
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:4000/api",
   withCredentials: true,
+  // Le dice al backend que use la cookie auth_client, no auth_admin/auth_collaborator,
+  // aunque el navegador tenga varias guardadas (ver require_auth.js -> SCOPE_ROLES).
+  headers: { "X-Auth-Scope": "client" },
 });
 
 api.interceptors.response.use(

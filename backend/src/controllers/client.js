@@ -16,8 +16,8 @@ const controller = {
     }),
 
     getActivity: catchAsync(async (req, res) => {
-        const activity = await service.getActivity(req.params.id);
-        return res.status(200).json({ activity });
+        const { feed, needsResponse } = await service.getActivity(req.params.id);
+        return res.status(200).json({ activity: feed, needsResponse });
     }),
 
     register: catchAsync(async (req, res) => {

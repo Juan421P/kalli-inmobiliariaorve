@@ -40,6 +40,7 @@ const LoginForm = () => {
         serverError,
         forgotMode, setForgotMode,
         forgotStep,
+        rememberMe, setRememberMe,
         resetForgot,
         onLoginSubmit,
         onForgotSubmit,
@@ -303,7 +304,12 @@ const LoginForm = () => {
 
                 <div className='flex items-center justify-between'>
                     <label className='flex items-center gap-2 cursor-pointer'>
-                        <input type='checkbox' className='w-3.5 h-3.5 accent-orve-teal rounded' />
+                        <input
+                            type='checkbox'
+                            checked={rememberMe}
+                            onChange={(e) => setRememberMe(e.target.checked)}
+                            className='w-3.5 h-3.5 accent-orve-teal rounded'
+                        />
                         <span className='text-xs text-gray-500'>Recordarme</span>
                     </label>
                     <button
