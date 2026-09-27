@@ -24,7 +24,10 @@ const controller = {
 
     resolve: catchAsync(async (req, res) => {
         const offer = await service.resolve(req.params.id, { actor: req.user, ...req.body });
-        return res.status(200).json({ message: `offer marked as ${offer.status}`, offer });
+        const message = offer.status === 'withdrawn'
+            ? 'offer withdrawn and deleted successfully'
+            : `offer marked as ${offer.status}`;
+        return res.status(200).json({ message, offer });
     }),
 
     put: catchAsync(async (req, res) => {

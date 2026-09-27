@@ -5,7 +5,10 @@ import { getErrorMessage } from '@/lib/errorMessages.js';
 // funcionado bien
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL,
-    withCredentials: true
+    withCredentials: true,
+    // Le dice al backend que use la cookie auth_admin/auth_collaborator, no
+    // auth_client, aunque el navegador tenga varias guardadas (ver require_auth.js -> SCOPE_ROLES).
+    headers: { 'X-Auth-Scope': 'staff' }
 });
 // Log genérico de errores de red/HTTP para no andar repitiendo el mismo catch en
 // cada service. Los componentes igual atrapan el error para mostrar su propio

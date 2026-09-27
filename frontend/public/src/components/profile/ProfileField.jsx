@@ -5,9 +5,17 @@ import { cn } from '@/lib/utils'
  * @param {string[]} [options] - si se pasa, renderiza un <select> en lugar de <input>
  * @param {string} [error] - si se pasa (y editing=true), resalta el campo y muestra el mensaje debajo
  */
-const ProfileField = ({ label, value, editing, onChange, type = 'text', placeholder, options, error, maxLength }) => (
-    <div className='flex flex-col gap-1.5'>
-        <span className='text-xs font-medium text-orve-teal/50 pl-1 select-none'>{label}</span>
+const ProfileField = ({ label, value, editing, onChange, type = 'text', placeholder, options, error, maxLength }) => {
+    // En modo lectura con `options`, el valor crudo guardado (ej. "dui") no es
+    // lo que se le quiere mostrar al usuario — se busca su etiqueta legible
+    // (ej. "Cédula de identidad (DUI)") en vez de imprimirlo tal cual.
+    const displayValue = !editing && options
+        ? (options.find(opt => opt.value === value)?.label ?? value)
+        : value
+
+    return (
+        <div className='flex flex-col gap-1.5 min-w-0'>
+            <span className='text-xs font-medium text-orve-teal/50 pl-1 select-none'>{label}</span>
         {editing ? (
             options ? (
                 <select
@@ -43,13 +51,14 @@ const ProfileField = ({ label, value, editing, onChange, type = 'text', placehol
                 </>
             )
         ) : (
-            <div className='h-11 px-4 rounded-xl bg-orve-teal/8 flex items-center'>
-                <span className='text-sm text-orve-teal/70 font-medium'>
-                    {value || <span className='text-orve-teal/30 italic'>—</span>}
+            <div className='w-full h-11 px-4 rounded-xl bg-orve-teal/8 flex items-center overflow-hidden'>
+                <span className='text-sm text-orve-teal/70 font-medium truncate' title={displayValue || undefined}>
+                    {displayValue || <span className='text-orve-teal/30 italic'>—</span>}
                 </span>
             </div>
         )}
-    </div>
-)
+        </div>
+    )
+}
 
 export default ProfileField

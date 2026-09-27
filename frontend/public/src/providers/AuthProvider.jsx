@@ -21,7 +21,17 @@ const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         AuthService.me()
-            .then(({ role, user }) => setAuth({ role, user }))
+            // El backend acepta cookies de admin/cliente/colaborador (cada una
+            // con su propio nombre, ver auth_cookie.js) para que las tres
+            // puedan convivir en el mismo navegador. Pero este es el sitio
+            // PUBLICO: si quien pregunta "quien soy" resulta ser admin o
+            // colaborador (por una sesion del panel privado abierta en el
+            // mismo navegador), no cuenta como "logueado" aca — si no,
+            // el navbar muestra sesion activa y cualquier boton que dependa
+            // de isAuthenticated manda a /profile solo para que el guard de
+            // rol rebote de inmediato a inicio, sintiendose como que la
+            // pagina se refresca sola.
+            .then(({ role, user }) => setAuth(role === 'client' ? { role, user } : null))
             .catch(() => setAuth(null)) // sin cookie valida = no hay sesion, no es un error de UI
             .finally(() => setIsRehydrating(false))
     }, [])

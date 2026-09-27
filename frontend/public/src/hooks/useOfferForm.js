@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import offerService from '@/services/Offer'
+import clientService from '@/services/Client'
 import toast from '@/lib/toast'
 
 /**
@@ -19,7 +20,21 @@ import toast from '@/lib/toast'
 const useOfferForm = ({ property, publicId, userId }) => {
     const navigate = useNavigate()
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [whatsappNumber, setWhatsappNumber] = useState(null)
     const isRent = property?.listing_type === 'rent'
+
+    // El contacto ya no se elige: siempre es por WhatsApp, al número que el
+    // cliente registró. Se trae de su perfil (el AuthContext solo guarda los
+    // campos del login, no el teléfono).
+    useEffect(() => {
+        if (!userId) return
+        clientService.get(userId)
+            .then((res) => {
+                const c = res.client ?? res
+                if (c.phone) setWhatsappNumber(`${c.phone.country_code} ${c.phone.number}`)
+            })
+            .catch(() => setWhatsappNumber(null))
+    }, [userId])
 
     const {
         register,
@@ -31,11 +46,10 @@ const useOfferForm = ({ property, publicId, userId }) => {
             price: '',
             moveInDate: '',
             rentalMonths: null,
-            contactMethod: null,
         },
     })
 
-    // react-hook-form ya valida price > 0 y contactMethod requerido antes de llegar aca.
+    // react-hook-form ya valida price > 0 antes de llegar aca.
     const onSubmit = async (values) => {
         setIsSubmitting(true)
         try {
@@ -59,6 +73,7 @@ const useOfferForm = ({ property, publicId, userId }) => {
     return {
         isRent,
         isSubmitting,
+        whatsappNumber,
         errors,
         register,
         control,

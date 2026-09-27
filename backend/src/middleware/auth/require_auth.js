@@ -18,16 +18,26 @@ const modelsByRole = {
 // pisaba silenciosamente la sesión de colaborador que estaba activa en otra.
 // Con una cookie por rol, las tres pueden convivir en el mismo navegador.
 //
-// OJO: si de verdad hay sesiones válidas de más de un rol al mismo tiempo
-// (ej. admin y colaborador en dos pestañas), las cookies de ambas viajan
-// juntas en cada petición sin importar desde qué pestaña salió -eso ya es
-// una limitación de las cookies, no de esta app-, así que en ese caso puntual
-// siempre se usa la primera que decodifique bien, en el orden de abajo.
+// Las cookies quedan asociadas al dominio del backend, no al del frontend que
+// las usa -las tres apps (pública, panel privado) llaman a la misma API-, así
+// que el navegador manda TODAS las cookies de rol que tenga guardadas en cada
+// petición, sin importar desde cuál app salió. Si se elige "la primera que
+// decodifique bien" en un orden fijo, un colaborador con sesión activa en el
+// panel privado rompe al mismo usuario navegando el sitio público como
+// cliente (o viceversa). Por eso cada frontend manda el header
+// X-Auth-Scope -'client' el sitio público, 'staff' el panel privado- para
+// decirle al backend cuál cookie le corresponde a ESTA petición; solo se cae
+// de vuelta a probar todas si no llega el header (curl, Swagger, clientes viejos).
+const SCOPE_ROLES = { client: ['client'], staff: ['admin', 'collaborator'] };
 const getTokenCandidates = (req) => {
 	const candidates = [];
 	const bearer = req.headers.authorization?.split(' ')[1];
 	if (bearer) candidates.push(bearer);
-	for (const cookieName of Object.values(AUTH_COOKIE_NAMES)) {
+
+	const scope = req.headers['x-auth-scope'];
+	const roles = SCOPE_ROLES[scope] ?? Object.keys(AUTH_COOKIE_NAMES);
+	for (const role of roles) {
+		const cookieName = AUTH_COOKIE_NAMES[role];
 		if (req.cookies?.[cookieName]) candidates.push(req.cookies[cookieName]);
 	}
 	return candidates;

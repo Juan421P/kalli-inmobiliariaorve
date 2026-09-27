@@ -163,7 +163,6 @@ const service = {
             resource: 'offer',
             id
         });
-
         offer.price = price;
         offer.status = 'countered';
         offer.last_actor = side;
@@ -203,6 +202,14 @@ const service = {
             code: 'FORBIDDEN_WRONG_SIDE',
             required_side: requiredSide
         });
+
+        // al retirarse, la oferta no queda como un registro cerrado más: desaparece
+        // por completo, tanto del lado del comprador como del vendedor
+        if (status === 'withdrawn') {
+            await model.findByIdAndDelete(id);
+            offer.status = 'withdrawn';
+            return offer;
+        }
 
         offer.status = status;
         await offer.save();

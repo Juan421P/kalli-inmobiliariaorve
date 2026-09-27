@@ -38,14 +38,35 @@ const service = {
     // reciente primero. `limit` acota cuántos items finales se devuelven.
     async getActivity(id, { limit = 8 } = {}) {
         const PROPERTY_FIELDS = 'title public_id pictures listing_type price';
+        const toItem = (offer) => ({
+            type: 'offer',
+            id: offer._id,
+            at: offer.updatedAt,
+            property: offer.property,
+            status: offer.status,
+            price: offer.price,
+        });
 
-        const [client, offers] = await Promise.all([
+        const [client, offers, awaitingOffers] = await Promise.all([
             model.findById(id)
                 .select('recently_viewed')
                 .populate('recently_viewed.property', PROPERTY_FIELDS),
             offerModel.find({ buyer: id })
                 .sort({ updatedAt: -1 })
                 .limit(limit)
+                .populate('property', PROPERTY_FIELDS),
+            // Ofertas donde ORVE ya contraofertó y le toca responder al cliente,
+            // o que ya fueron aceptadas: no llevan limite, para que una nunca se
+            // quede afuera del feed general solo porque hubo muchas propiedades
+            // vistas despues. Se muestran aparte, destacadas, en vez de mezcladas.
+            offerModel.find({
+                buyer: id,
+                $or: [
+                    { status: 'countered', last_actor: 'seller' },
+                    { status: 'accepted' },
+                ],
+            })
+                .sort({ updatedAt: -1 })
                 .populate('property', PROPERTY_FIELDS),
         ]);
         if (!client) throw new NotFoundError(
@@ -64,18 +85,17 @@ const service = {
 
         const offerItems = offers
             .filter(offer => offer.property)
-            .map(offer => ({
-                type: 'offer',
-                id: offer._id,
-                at: offer.updatedAt,
-                property: offer.property,
-                status: offer.status,
-                price: offer.price,
-            }));
+            .map(toItem);
 
-        return [...viewedItems, ...offerItems]
+        const feed = [...viewedItems, ...offerItems]
             .sort((a, b) => new Date(b.at) - new Date(a.at))
             .slice(0, limit);
+
+        const needsResponse = awaitingOffers
+            .filter(offer => offer.property)
+            .map(toItem);
+
+        return { feed, needsResponse };
     },
 
     async register({ name, lastname, email, document, phone, picture, pictureId, password }) {

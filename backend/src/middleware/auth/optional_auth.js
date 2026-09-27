@@ -7,11 +7,15 @@ import { AUTH_COOKIE_NAMES } from '../../utils/auth_cookie.js';
 // token, o ninguno es válido, simplemente sigue sin req.user. Pensado para
 // rutas públicas (como ver una propiedad) que igual quieren saber "quién es"
 // cuando el visitante sí tiene sesión, sin bloquear a quienes navegan sin cuenta.
+const SCOPE_ROLES = { client: ['client'], staff: ['admin', 'collaborator'] };
 export const optionalAuth = async (req, res, next) => {
     const candidates = [];
     const bearer = req.headers.authorization?.split(' ')[1];
     if (bearer) candidates.push(bearer);
-    for (const cookieName of Object.values(AUTH_COOKIE_NAMES)) {
+    const scope = req.headers['x-auth-scope'];
+    const roles = scope ? (SCOPE_ROLES[scope] ?? []) : Object.keys(AUTH_COOKIE_NAMES);
+    for (const role of roles) {
+        const cookieName = AUTH_COOKIE_NAMES[role];
         if (req.cookies?.[cookieName]) candidates.push(req.cookies[cookieName]);
     }
 
