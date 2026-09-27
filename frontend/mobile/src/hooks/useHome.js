@@ -1,15 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useNavigation } from '@react-navigation/native';
 import propertyService from '@/services/propertyService';
+import useToast from '@/hooks/useToast';
 
 /**
- * Logica de la pantalla de inicio: trae todas las propiedades (para las
- * secciones de "Recientes"/"Populares") y maneja el buscador del Hero, que
- * al confirmar navega al listado con el texto buscado.
+ * Logica de la pantalla de inicio: trae todas las propiedades para las
+ * secciones de "Recientes"/"Populares".
  */
 const useHome = () => {
-    const navigation = useNavigation();
-    const [search, setSearch] = useState('');
+    const toast = useToast();
     const [properties, setProperties] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -19,16 +17,18 @@ const useHome = () => {
                 const list = data?.properties ?? data?.data ?? data ?? [];
                 setProperties(Array.isArray(list) ? list : []);
             })
-            .catch(() => setProperties([]))
+            .catch((err) => {
+                // Se deja la lista vacia igual (la UI ya sabe mostrar el
+                // EmptyState de "sin propiedades"), pero se avisa la causa
+                // real en vez de que un error de red se vea identico a que
+                // simplemente no hay propiedades cargadas.
+                setProperties([]);
+                toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
+            })
             .finally(() => setIsLoading(false));
     }, []);
 
-    const handleSearch = () => {
-        if (!search.trim()) return;
-        navigation.navigate('PropertyList', { query: search.trim() });
-    };
-
-    return { search, setSearch, properties, isLoading, handleSearch };
+    return { properties, isLoading };
 };
 
 export default useHome;

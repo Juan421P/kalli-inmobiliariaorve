@@ -14,8 +14,7 @@ const DAY_MAP = {
 /**
  * Maneja el formulario de "Agendar cita": fecha/hora de visita (dependen de
  * los horarios configurados por el negocio), datos de calificacion del
- * interesado (origen de fondos, ingreso, motivo, direccion) y metodo de
- * contacto preferido.
+ * interesado (origen de fondos, ingreso, motivo).
  */
 const useAppointmentForm = ({ property, publicId }) => {
     const navigation = useNavigation();
@@ -32,14 +31,12 @@ const useAppointmentForm = ({ property, publicId }) => {
     } = useForm({
         mode: 'onChange',
         defaultValues: {
-            selectedDate: null, selectedSlot: null, contactMethod: null,
-            fundsSource: null, monthlyIncome: '', reason: '', addressReference: '',
-            location: { coordinates: null, address: '' },
+            selectedDate: null, selectedSlot: null,
+            fundsSource: null, monthlyIncome: '', reason: '',
         },
     });
 
     const selectedDate = watch('selectedDate');
-    const location = watch('location');
 
     useEffect(() => {
         scheduleAvailabilityService.get()
@@ -48,7 +45,14 @@ const useAppointmentForm = ({ property, publicId }) => {
                 if (list.length > 0) setSchedules(list);
                 else setNoSchedules(true);
             })
-            .catch(() => setNoSchedules(true))
+            .catch((err) => {
+                // Distingue "el negocio no configuro horarios" (dato real,
+                // vacio) de "no se pudo consultar" (red/servidor) — antes
+                // ambos casos mostraban el mismo "no hay horarios
+                // disponibles", ocultando un problema de conexion real.
+                setNoSchedules(true);
+                toast.error('No se pudieron cargar los horarios disponibles', err.friendlyMessage);
+            })
             .finally(() => setIsLoadingSchedules(false));
     }, []);
 
@@ -84,11 +88,6 @@ const useAppointmentForm = ({ property, publicId }) => {
                     monthlyIncome: Number(values.monthlyIncome),
                     reason: values.reason.trim(),
                 },
-                current_address: {
-                    location: { type: 'Point', coordinates: values.location.coordinates },
-                    address: values.location.address,
-                    reference: values.addressReference.trim(),
-                },
             });
             toast.success('¡Cita solicitada correctamente!');
             navigation.navigate('PropertyDetail', { publicId });
@@ -102,7 +101,7 @@ const useAppointmentForm = ({ property, publicId }) => {
     return {
         isLoadingSchedules, noSchedules, isSubmitting, isValid, errors,
         control, watch, setValue,
-        selectedDate, slotsForDate, isDayDisabled, handleDateChange, location,
+        selectedDate, slotsForDate, isDayDisabled, handleDateChange,
         onSubmit: handleSubmit(onSubmit),
     };
 };

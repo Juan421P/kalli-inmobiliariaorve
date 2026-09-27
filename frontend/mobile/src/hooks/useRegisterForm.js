@@ -50,6 +50,7 @@ const useRegisterForm = () => {
                 lastname: step1Data.lastname,
                 email: step1Data.email,
                 password: step1Data.password,
+                confirmPassword: data.confirmPassword,
                 phone: data.phone,
                 document_type: data.document_type,
                 document_number: data.document_number,

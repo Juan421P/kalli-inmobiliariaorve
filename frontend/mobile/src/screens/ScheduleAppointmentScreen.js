@@ -1,14 +1,13 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Controller } from 'react-hook-form';
-import { Calendar as CalendarIcon, Clock, Mail, MessageCircle, Phone } from 'lucide-react-native';
+import { Calendar as CalendarIcon, Clock } from 'lucide-react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Chip from '@/components/ui/Chip';
 import Skeleton from '@/components/ui/Skeleton';
 import EmptyState from '@/components/EmptyState';
-import LocationPicker from '@/components/LocationPicker';
 import useProperty from '@/hooks/useProperty';
 import useAppointmentForm from '@/hooks/useAppointmentForm';
 import useToast from '@/hooks/useToast';
@@ -22,12 +21,6 @@ LocaleConfig.locales['es'] = {
 };
 LocaleConfig.defaultLocale = 'es';
 
-const CONTACT_OPTIONS = [
-    { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
-    { value: 'phone', label: 'Teléfono', icon: Phone },
-    { value: 'email', label: 'Correo', icon: Mail },
-];
-
 const FUNDS_SOURCE_OPTIONS = [
     { value: 'own', label: 'Fondos propios' },
     { value: 'loan', label: 'Préstamo/crédito' },
@@ -39,7 +32,7 @@ const toDateString = (date) => date.toISOString().slice(0, 10);
 const ScheduleAppointmentScreen = () => {
     const route = useRoute();
     const { publicId } = route.params;
-    const { property, isLoading: isLoadingProperty, notFound } = useProperty(publicId);
+    const { property, isLoading: isLoadingProperty, notFound, loadError, refetch } = useProperty(publicId);
     const toast = useToast();
 
     const {
@@ -55,6 +48,15 @@ const ScheduleAppointmentScreen = () => {
                 <Skeleton style={{ height: 300, borderRadius: radius.lg }} />
                 <Skeleton style={{ height: 200, borderRadius: radius.lg }} />
             </ScrollView>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <View style={styles.errorWrap}>
+                <EmptyState title='No se pudo cargar la propiedad' subtitle={loadError} />
+                <Button title='Reintentar' variant='outline' onPress={refetch} style={styles.retryButton} />
+            </View>
         );
     }
 
@@ -128,20 +130,6 @@ const ScheduleAppointmentScreen = () => {
 
                         <View style={styles.divider} />
 
-                        <Text style={styles.label}>¿Cómo desea que lo contactemos?</Text>
-                        <Controller
-                            control={control}
-                            name='contactMethod'
-                            rules={{ required: true }}
-                            render={({ field: { value, onChange } }) => (
-                                <View style={styles.optionsRow}>
-                                    {CONTACT_OPTIONS.map(({ value: v, label, icon }) => (
-                                        <Chip key={v} label={label} icon={icon} selected={value === v} onPress={() => onChange(v)} />
-                                    ))}
-                                </View>
-                            )}
-                        />
-
                         <Text style={styles.label}>¿Cuál es el origen de los fondos?</Text>
                         <Controller
                             control={control}
@@ -171,39 +159,6 @@ const ScheduleAppointmentScreen = () => {
                                     value={value ? String(value) : ''}
                                     onChangeText={onChange}
                                     error={error?.message}
-                                />
-                            )}
-                        />
-
-                        <Controller
-                            control={control}
-                            name='addressReference'
-                            rules={{
-                                required: 'La referencia de dirección es requerida.',
-                                maxLength: { value: 255, message: 'No puede superar los 255 caracteres.' },
-                            }}
-                            render={({ field: { value, onChange }, fieldState: { error } }) => (
-                                <Input
-                                    label='Referencia de dirección'
-                                    placeholder='Ej. Colonia Escalón, calle La Reforma #123'
-                                    value={value}
-                                    onChangeText={onChange}
-                                    maxLength={255}
-                                    error={error?.message}
-                                />
-                            )}
-                        />
-
-                        <Text style={styles.label}>Su ubicación actual</Text>
-                        <Controller
-                            control={control}
-                            name='location'
-                            rules={{ validate: (v) => Boolean(v?.address) || 'Marque su ubicación en el mapa' }}
-                            render={({ field: { value, onChange } }) => (
-                                <LocationPicker
-                                    defaultCoordinates={value?.coordinates}
-                                    defaultAddress={value?.address}
-                                    onChange={onChange}
                                 />
                             )}
                         />
@@ -249,6 +204,8 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
     loadingContent: { padding: spacing.lg, gap: spacing.md },
+    errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+    retryButton: { minWidth: 160 },
     title: { fontSize: fontSize.xl, fontWeight: '700', color: colors.orveDarkerTeal },
     card: { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
     cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

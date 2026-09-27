@@ -1,7 +1,7 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Controller } from 'react-hook-form';
-import { ArrowRight, Calendar, Mail, MessageCircle, Phone, Tag } from 'lucide-react-native';
+import { ArrowRight, Calendar, Tag } from 'lucide-react-native';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Chip from '@/components/ui/Chip';
@@ -11,12 +11,6 @@ import useProperty from '@/hooks/useProperty';
 import useOfferForm from '@/hooks/useOfferForm';
 import useAuth from '@/hooks/useAuth';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
-
-const CONTACT_OPTIONS = [
-    { value: 'whatsapp', label: 'WhatsApp', icon: MessageCircle },
-    { value: 'phone', label: 'Teléfono', icon: Phone },
-    { value: 'email', label: 'Correo', icon: Mail },
-];
 
 const RENTAL_OPTIONS = [
     { value: '6', label: '6 meses' },
@@ -29,11 +23,11 @@ const MakeOfferScreen = () => {
     const route = useRoute();
     const { publicId } = route.params;
     const { user } = useAuth();
-    const { property, isLoading, notFound } = useProperty(publicId);
+    const { property, isLoading, notFound, loadError, refetch } = useProperty(publicId);
 
     const {
         isRent, isSubmitting, errors, control, isValid, onSubmit,
-    } = useOfferForm({ property, publicId, userId: user?._id });
+    } = useOfferForm({ property, publicId, userId: user?.id });
 
     if (isLoading) {
         return (
@@ -41,6 +35,15 @@ const MakeOfferScreen = () => {
                 <Skeleton style={{ height: 120, borderRadius: radius.lg }} />
                 <Skeleton style={{ height: 200, borderRadius: radius.lg }} />
             </ScrollView>
+        );
+    }
+
+    if (loadError) {
+        return (
+            <View style={styles.errorWrap}>
+                <EmptyState title='No se pudo cargar la propiedad' subtitle={loadError} />
+                <Button title='Reintentar' variant='outline' onPress={refetch} style={styles.retryButton} />
+            </View>
         );
     }
 
@@ -120,25 +123,6 @@ const MakeOfferScreen = () => {
                     </View>
                 ) : null}
 
-                <View style={styles.divider} />
-
-                <View style={styles.field}>
-                    <Text style={styles.label}>¿Cómo desea que lo contactemos?</Text>
-                    <Controller
-                        control={control}
-                        name='contactMethod'
-                        rules={{ required: true }}
-                        render={({ field: { value, onChange } }) => (
-                            <View style={styles.optionsRow}>
-                                {CONTACT_OPTIONS.map(({ value: v, label, icon }) => (
-                                    <Chip key={v} label={label} icon={icon} selected={value === v} onPress={() => onChange(v)} />
-                                ))}
-                            </View>
-                        )}
-                    />
-                    {errors.contactMethod ? <Text style={styles.error}>Selecciona un método de contacto</Text> : null}
-                </View>
-
                 <Button
                     title={isSubmitting ? 'Enviando...' : 'Hacer oferta'}
                     onPress={onSubmit}
@@ -156,6 +140,8 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
     loadingContent: { padding: spacing.lg, gap: spacing.md },
+    errorWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.xl },
+    retryButton: { minWidth: 160 },
     title: { fontSize: fontSize.xl, fontWeight: '700', color: colors.orveDarkerTeal },
     card: { backgroundColor: colors.white, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.md },
     cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },

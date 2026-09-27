@@ -1,5 +1,6 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Building2, Home as HomeIcon, Map, Star } from 'lucide-react-native';
+import { Building2, Home as HomeIcon, Map } from 'lucide-react-native';
+import FavoriteHeart from '@/components/ui/FavoriteHeart';
 import { colors, radius, spacing, fontSize, shadow } from '@/styles/theme';
 
 const PROPERTY_ICONS = { house: HomeIcon, apartment: Building2, land: Map };
@@ -21,9 +22,7 @@ const ListingCard = ({ property, onPress, isFavorite = false, onToggleFavorite }
                 }
                 <View style={styles.typeBadge}><Icon size={13} color={colors.orveTeal} /></View>
                 {onToggleFavorite && (
-                    <Pressable onPress={onToggleFavorite} style={styles.favBadge} hitSlop={8}>
-                        <Star size={13} color={isFavorite ? colors.orveRed : colors.orveTeal} fill={isFavorite ? colors.orveRed : 'transparent'} />
-                    </Pressable>
+                    <FavoriteHeart isFavorite={isFavorite} onPress={onToggleFavorite} size={13} style={styles.favBadge} />
                 )}
                 <View style={styles.priceBadge}><Text style={styles.priceBadgeText}>{formatPrice(property.price)}</Text></View>
             </View>

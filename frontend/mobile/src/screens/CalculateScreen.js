@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Minus, Plus } from 'lucide-react-native';
+import { Calculator, Minus, Plus } from 'lucide-react-native';
+import EmptyState from '@/components/EmptyState';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
 const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(n);
@@ -10,14 +11,23 @@ const fmt = (n) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).
  * Calculadora de cuota hipotecaria mensual aproximada, misma formula de
  * amortizacion que frontend/public/src/pages/Calculate.jsx:
  * M = P * [r(1+r)^n] / [(1+r)^n - 1]
+ *
+ * A diferencia de esa version web, acá no arranca con numeros de ejemplo
+ * precargados (676767, 10%, 6.7%, 67 meses) — el valor de la propiedad
+ * empieza vacio y el resultado solo se calcula/muestra una vez que el
+ * usuario lo ingresa, para no aparentar un resultado real sin que haya
+ * tecleado nada.
  */
 const CalculateScreen = () => {
-    const [propertyValue, setPropertyValue] = useState(676767);
-    const [creditPct, setCreditPct] = useState(10);
-    const [annualRate, setAnnualRate] = useState(6.7);
-    const [months, setMonths] = useState(67);
+    const [propertyValue, setPropertyValue] = useState(null);
+    const [creditPct, setCreditPct] = useState(0);
+    const [annualRate, setAnnualRate] = useState(0);
+    const [months, setMonths] = useState(0);
+
+    const hasPropertyValue = propertyValue != null && propertyValue > 0;
 
     const { loanAmount, downPayment, monthly } = useMemo(() => {
+        if (!hasPropertyValue) return { loanAmount: 0, downPayment: 0, monthly: 0 };
         const loan = propertyValue * (creditPct / 100);
         const down = propertyValue - loan;
         const r = annualRate / 100 / 12;
@@ -26,11 +36,11 @@ const CalculateScreen = () => {
             ? (r === 0 && n > 0 ? loan / n : 0)
             : loan * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
         return { loanAmount: loan, downPayment: down, monthly: M };
-    }, [propertyValue, creditPct, annualRate, months]);
+    }, [hasPropertyValue, propertyValue, creditPct, annualRate, months]);
 
     const handlePropertyValue = (text) => {
         const raw = text.replace(/[^0-9]/g, '');
-        setPropertyValue(Number(raw) || 0);
+        setPropertyValue(raw ? Number(raw) : null);
     };
 
     return (
@@ -40,16 +50,18 @@ const CalculateScreen = () => {
             <View style={styles.field}>
                 <Text style={styles.label}>Valor de la propiedad</Text>
                 <TextInput
-                    value={`$${fmt(propertyValue)}`}
+                    value={hasPropertyValue ? `$${fmt(propertyValue)}` : ''}
                     onChangeText={handlePropertyValue}
                     keyboardType='numeric'
+                    placeholder='Ingresá el valor de la propiedad'
+                    placeholderTextColor={colors.textFaint}
                     style={styles.valueInput}
                 />
             </View>
 
             <StepperField
                 label='Crédito requerido'
-                sublabel={`$${fmt(loanAmount)}  ·  ${creditPct}% del valor de la propiedad`}
+                sublabel={hasPropertyValue ? `$${fmt(loanAmount)}  ·  ${creditPct}% del valor de la propiedad` : `${creditPct}% del valor de la propiedad`}
                 value={creditPct}
                 min={0} max={100} step={5}
                 onChange={setCreditPct}
@@ -69,10 +81,20 @@ const CalculateScreen = () => {
                 onChange={setMonths}
             />
 
-            <View style={styles.resultsWrap}>
-                <ResultCard label='Pago inicial' value={`$${fmt(downPayment)}`} />
-                <ResultCard label='Pago mensual desde' value={`$${fmt(monthly)}`} />
-            </View>
+            {hasPropertyValue ? (
+                <View style={styles.resultsWrap}>
+                    <ResultCard label='Pago inicial' value={`$${fmt(downPayment)}`} />
+                    <ResultCard label='Pago mensual desde' value={`$${fmt(monthly)}`} />
+                </View>
+            ) : (
+                <View style={styles.emptyResult}>
+                    <EmptyState
+                        icon={<Calculator size={28} color={colors.textFaint} />}
+                        title='Ingresá el valor de la propiedad'
+                        subtitle='El resultado del cálculo aparece acá.'
+                    />
+                </View>
+            )}
         </ScrollView>
     );
 };
@@ -111,7 +133,7 @@ const ResultCard = ({ label, value }) => (
 const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     content: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-    title: { fontSize: fontSize.lg, fontWeight: '700', color: colors.orveDarkerTeal },
+    title: { fontSize: fontSize.xl, fontWeight: '700', color: colors.orveDarkerTeal },
     field: { gap: spacing.xs },
     label: { fontSize: fontSize.xs, fontWeight: '600', color: colors.textMuted },
     sublabel: { fontSize: fontSize.sm, fontWeight: '700', color: colors.orveDarkerTeal },
@@ -130,6 +152,9 @@ const styles = StyleSheet.create({
     resultCard: { borderRadius: radius.lg, padding: spacing.xl, gap: spacing.xs },
     resultLabel: { color: 'rgba(255,255,255,0.75)', fontSize: fontSize.sm },
     resultValue: { color: colors.white, fontSize: fontSize.xxl, fontWeight: '700' },
+    emptyResult: {
+        marginTop: spacing.sm, backgroundColor: colors.white, borderRadius: radius.lg, paddingVertical: spacing.md,
+    },
 });
 
 export default CalculateScreen;

@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Bath, Bed, Car, Check, MapPin, Search } from 'lucide-react-native';
 import EmptyState from '@/components/EmptyState';
+import Skeleton from '@/components/ui/Skeleton';
 import useCompare from '@/hooks/useCompare';
+import useToast from '@/hooks/useToast';
 import propertyService from '@/services/propertyService';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
@@ -11,6 +13,7 @@ const fmt = (n) => new Intl.NumberFormat('en-US', { style: 'currency', currency:
 
 const CompareSelectScreen = () => {
     const navigation = useNavigation();
+    const toast = useToast();
     const { slots, addProperty } = useCompare();
     const [allProps, setAllProps] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +27,10 @@ const CompareSelectScreen = () => {
                 const list = data?.properties ?? data?.data ?? data ?? [];
                 setAllProps(Array.isArray(list) ? list : []);
             })
-            .catch(() => setAllProps([]))
+            .catch((err) => {
+                setAllProps([]);
+                toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
+            })
             .finally(() => setIsLoading(false));
     }, []);
 
@@ -53,7 +59,9 @@ const CompareSelectScreen = () => {
             </View>
 
             {isLoading ? (
-                <ActivityIndicator style={styles.loader} color={colors.orveTeal} />
+                <View style={styles.grid}>
+                    {[1, 2, 3, 4].map((i) => <Skeleton key={i} style={styles.cardSkeleton} />)}
+                </View>
             ) : filtered.length === 0 ? (
                 <EmptyState title='Sin resultados' />
             ) : (
@@ -122,8 +130,9 @@ const styles = StyleSheet.create({
         backgroundColor: colors.white, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     },
     searchInput: { flex: 1, fontSize: fontSize.sm, color: colors.orveBlack },
-    loader: { marginTop: spacing.xxl },
-    columnWrapper: { gap: spacing.md },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, padding: spacing.lg, justifyContent: 'center' },
+    cardSkeleton: { width: '47%', height: 150, borderRadius: radius.lg },
+    columnWrapper: { gap: spacing.md, justifyContent: 'center' },
     listContent: { padding: spacing.lg, gap: spacing.md },
     card: { flex: 1, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.white },
     cardDisabled: { opacity: 0.5 },
