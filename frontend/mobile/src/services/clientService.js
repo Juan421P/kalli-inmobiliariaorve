@@ -46,6 +46,9 @@ const clientService = {
     async get(id) {
         return api.get(`/client/${id}`);
     },
+    async getActivity(id) {
+        return api.get(`/client/${id}/activity`);
+    },
     async update(id, { name, lastname, email, phone }) {
         const updates = {};
         if (name !== undefined) updates.name = name;

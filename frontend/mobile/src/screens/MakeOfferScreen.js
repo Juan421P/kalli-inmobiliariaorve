@@ -10,6 +10,7 @@ import EmptyState from '@/components/EmptyState';
 import useProperty from '@/hooks/useProperty';
 import useOfferForm from '@/hooks/useOfferForm';
 import useAuth from '@/hooks/useAuth';
+import { sanitizeDecimalInput } from '@/lib/format';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
 const RENTAL_OPTIONS = [
@@ -73,10 +74,10 @@ const MakeOfferScreen = () => {
                     render={({ field: { value, onChange } }) => (
                         <Input
                             label='Ingrese su oferta'
-                            placeholder='0'
-                            keyboardType='numeric'
+                            placeholder='0.00'
+                            keyboardType='decimal-pad'
                             value={value}
-                            onChangeText={onChange}
+                            onChangeText={(text) => onChange(sanitizeDecimalInput(text))}
                             error={errors.price ? 'Ingresá un monto de oferta válido.' : null}
                         />
                     )}

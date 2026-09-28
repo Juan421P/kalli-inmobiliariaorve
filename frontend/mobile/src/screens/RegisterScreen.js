@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Controller } from 'react-hook-form';
-import { LinearGradient } from 'expo-linear-gradient';
 import {
     ArrowLeft, ArrowRight, Check, CheckCircle, CheckCircle2, Eye, EyeOff,
     Hash, Lock, Mail, Phone, User, UserPlus,
@@ -82,13 +81,12 @@ const RegisterScreen = () => {
     return (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps='handled'>
-                <LinearGradient colors={[colors.orveTeal, colors.orveDarkerTeal]} style={styles.header}>
-                    <Text style={styles.headerBrand}>ORVE</Text>
-                    <Text style={styles.headerTitle}>{step === 3 ? 'Verificación de correo' : 'Crear cuenta'}</Text>
-                    <Text style={styles.headerSubtitle}>Crea tu cuenta para poder personalizar tu experiencia</Text>
-                </LinearGradient>
-
                 <View style={styles.card}>
+                    <View style={styles.introBlock}>
+                        <Text style={styles.introTitle}>{step === 3 ? 'Verificación de correo' : 'Crear cuenta'}</Text>
+                        <Text style={styles.introSubtitle}>Crea tu cuenta para poder personalizar tu experiencia</Text>
+                    </View>
+
                     {step < 4 && (
                         <View style={styles.authTabs}>
                             <Text onPress={goToLogin} style={styles.authTab}>Iniciar sesión</Text>
@@ -325,20 +323,13 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     flex1: { flex: 1 },
     scroll: { flexGrow: 1 },
-    header: {
-        paddingTop: spacing.xxl + spacing.lg,
-        paddingBottom: spacing.xxl,
-        paddingHorizontal: spacing.xl,
-        borderBottomLeftRadius: radius.xl,
-        borderBottomRightRadius: radius.xl,
-    },
-    headerBrand: { color: 'rgba(255,255,255,0.7)', fontSize: fontSize.sm, fontWeight: '700', letterSpacing: 2 },
-    headerTitle: { color: colors.white, fontSize: fontSize.xxl, fontWeight: '700', marginTop: spacing.sm },
-    headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: fontSize.sm, marginTop: spacing.xs },
+    introBlock: { gap: spacing.xs },
+    introTitle: { color: colors.orveDarkerTeal, fontSize: fontSize.xxl, fontWeight: '700' },
+    introSubtitle: { color: colors.textMuted, fontSize: fontSize.sm },
     card: {
         backgroundColor: colors.white,
         marginHorizontal: spacing.lg,
-        marginTop: -spacing.xl,
+        marginTop: spacing.lg,
         borderRadius: radius.xl,
         padding: spacing.xl,
         gap: spacing.lg,

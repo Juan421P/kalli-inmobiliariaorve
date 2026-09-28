@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Controller } from 'react-hook-form';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
@@ -52,17 +51,16 @@ const LoginScreen = () => {
     return (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
             <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps='handled'>
-                <LinearGradient colors={[colors.orveTeal, colors.orveDarkerTeal]} style={styles.header}>
-                    <Text style={styles.headerBrand}>ORVE</Text>
-                    <Text style={styles.headerTitle}>
-                        {forgotMode ? STEP_COPY[forgotStep]?.title : 'Inicio de sesión'}
-                    </Text>
-                    <Text style={styles.headerSubtitle}>
-                        {forgotMode ? STEP_COPY[forgotStep]?.subtitle : 'Accede a tu cuenta para gestionar propiedades'}
-                    </Text>
-                </LinearGradient>
-
                 <View style={styles.card}>
+                    <View style={styles.introBlock}>
+                        <Text style={styles.introTitle}>
+                            {forgotMode ? STEP_COPY[forgotStep]?.title : 'Inicio de sesión'}
+                        </Text>
+                        <Text style={styles.introSubtitle}>
+                            {forgotMode ? STEP_COPY[forgotStep]?.subtitle : 'Accede a tu cuenta para gestionar propiedades'}
+                        </Text>
+                    </View>
+
                     {!forgotMode && (
                         <View style={styles.authTabs}>
                             <Text style={[styles.authTab, styles.authTabActive]}>Iniciar sesión</Text>
@@ -207,20 +205,13 @@ const styles = StyleSheet.create({
     flex: { flex: 1, backgroundColor: colors.background },
     flex1: { flex: 1 },
     scroll: { flexGrow: 1 },
-    header: {
-        paddingTop: spacing.xxl + spacing.lg,
-        paddingBottom: spacing.xxl,
-        paddingHorizontal: spacing.xl,
-        borderBottomLeftRadius: radius.xl,
-        borderBottomRightRadius: radius.xl,
-    },
-    headerBrand: { color: 'rgba(255,255,255,0.7)', fontSize: fontSize.sm, fontWeight: '700', letterSpacing: 2 },
-    headerTitle: { color: colors.white, fontSize: fontSize.xxl, fontWeight: '700', marginTop: spacing.sm },
-    headerSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: fontSize.sm, marginTop: spacing.xs },
+    introBlock: { gap: spacing.xs },
+    introTitle: { color: colors.orveDarkerTeal, fontSize: fontSize.xxl, fontWeight: '700' },
+    introSubtitle: { color: colors.textMuted, fontSize: fontSize.sm },
     card: {
         backgroundColor: colors.white,
         marginHorizontal: spacing.lg,
-        marginTop: -spacing.xl,
+        marginTop: spacing.lg,
         borderRadius: radius.xl,
         padding: spacing.xl,
         gap: spacing.lg,

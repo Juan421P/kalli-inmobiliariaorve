@@ -40,6 +40,14 @@ const CompareScreen = () => {
     const { slots, removeProperty, clearAll } = useCompare();
     const wins = useMemo(() => computeWins(slots), [slots]);
     const emptyCount = MAX_SLOTS - slots.length;
+    // pagingEnabled ajusta el scroll a multiplos del ancho de la PANTALLA, pero
+    // cada tarjeta es mas angosta (tiene gap entre ellas) — el snap quedaba
+    // desalineado con el borde real de cada tarjeta y se sentia trabado/
+    // rebotaba al intentar llegar a la 3ra. snapToOffsets con la posicion
+    // exacta de cada tarjeta (ancho + gap) lo arregla.
+    const totalCards = slots.length + emptyCount;
+    const cardStep = CARD_WIDTH + spacing.md;
+    const snapOffsets = Array.from({ length: totalCards }, (_, i) => i * cardStep);
 
     if (slots.length === 0) {
         return (
@@ -68,7 +76,8 @@ const CompareScreen = () => {
 
             <ScrollView
                 horizontal
-                pagingEnabled
+                decelerationRate='fast'
+                snapToOffsets={snapOffsets}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
