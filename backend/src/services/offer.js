@@ -88,7 +88,7 @@ const service = {
         return offer;
     },
 
-    async create({ actor, property, price, moveInDate, rentalMonths, buyer }) {
+    async create({ actor, property, price, move_in_date: moveInDate, rental_months: rentalMonths, buyer }) {
         const isStaff = actor.role === 'admin' || actor.role === 'collaborator';
         const buyerId = (buyer && isStaff) ? buyer : actor.id;
 
@@ -221,7 +221,7 @@ const service = {
         return offer;
     },
 
-    async update(id, { actor, moveInDate, rentalMonths }) {
+    async update(id, { actor, move_in_date: moveInDate, rental_months: rentalMonths }) {
         const offer = await model.findById(id);
         if (!offer) throw new NotFoundError(
             'oferta no encontrada', {
