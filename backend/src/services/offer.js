@@ -22,7 +22,7 @@ async function determineSide(actor, offer) {
 
 const service = {
 
-    async getAll({ search, page, limit, type }) {
+    async getAll({ search, page, limit, type }, actor) {
         const skip = (page - 1) * limit;
         const filter = {};
 
@@ -53,15 +53,28 @@ const service = {
             }
         }
 
+        // un colaborador solo debe ver las ofertas de las propiedades que un admin
+        // le asignó a él -no todas las que existen-, igual que ya pasa con las
+        // citas (ver services/appointment.js: getAll). Se aplica también a las
+        // métricas para que el resumen no filtre información de otras propiedades
+        const collaboratorFilter = {};
+        if (actor?.role === 'collaborator') {
+            const assignedProperties = await propertyModel.find({ collaborator: actor.id }).select('_id');
+            collaboratorFilter.property = { $in: assignedProperties.map(p => p._id) };
+        }
+        const scopedFilter = Object.keys(collaboratorFilter).length
+            ? { $and: [filter, collaboratorFilter] }
+            : filter;
+
         const [offers, total, statusCounts] = await Promise.all([
-            model.find(filter)
+            model.find(scopedFilter)
                 .populate('buyer', 'name lastname email phone picture')
                 .populate('property', 'title public_id listing_type pictures')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
-            model.countDocuments(filter),
-            model.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+            model.countDocuments(scopedFilter),
+            model.aggregate([{ $match: collaboratorFilter }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
         ]);
 
         const byStatus = Object.fromEntries(statusCounts.map(s => [s._id, s.count]));

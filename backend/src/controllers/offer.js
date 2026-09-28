@@ -4,7 +4,7 @@ import { catchAsync } from '../utils/catch_async.js';
 const controller = {
 
     get: catchAsync(async (req, res) => {
-        const { offers, total, metrics } = await service.getAll(req.query);
+        const { offers, total, metrics } = await service.getAll(req.query, req.user);
         return res.status(200).json({ offers, total, metrics });
     }),
 
