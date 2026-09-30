@@ -48,6 +48,7 @@ const useProfileActivity = () => {
     const [activity, setActivity] = useState([]);
     const [needsResponse, setNeedsResponse] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const fetchAppointments = () => appointmentService.getAll()
         .then((data) => {
@@ -57,20 +58,38 @@ const useProfileActivity = () => {
                 past: list.filter((a) => !UPCOMING_STATUSES.includes(a.status)),
             });
         })
-        .catch(() => setAppointments({ upcoming: [], past: [] }));
+        .catch((err) => {
+            // Antes esto se tragaba en silencio y dejaba la lista vacia, que
+            // se ve identico a "no tiene citas" aunque en realidad la
+            // peticion haya fallado (sesion, red, cold start del backend).
+            setAppointments({ upcoming: [], past: [] });
+            toast.error('No se pudieron cargar tus citas', err.friendlyMessage);
+        });
 
     const fetchActivity = () => clientService.getActivity(user.id)
         .then((data) => {
             setActivity(data?.activity ?? []);
             setNeedsResponse(data?.needsResponse ?? []);
         })
-        .catch(() => { setActivity([]); setNeedsResponse([]); });
+        .catch((err) => {
+            setActivity([]);
+            setNeedsResponse([]);
+            toast.error('No se pudo cargar tu actividad', err.friendlyMessage);
+        });
 
     useEffect(() => {
         if (!user?.id) { setIsLoading(false); return; }
         setIsLoading(true);
         Promise.all([fetchAppointments(), fetchActivity()]).finally(() => setIsLoading(false));
     }, [user?.id]);
+
+    // Pull-to-refresh: repite ambos fetches (citas + actividad) con su propio
+    // indicador, para no reemplazar todo por los skeletons de carga inicial.
+    const refresh = () => {
+        if (!user?.id) return;
+        setIsRefreshing(true);
+        Promise.all([fetchAppointments(), fetchActivity()]).finally(() => setIsRefreshing(false));
+    };
 
     const confirmCancelAppointment = (id) => {
         Alert.alert('Cancelar cita', '¿Seguro que querés cancelar esta cita?', [
@@ -92,7 +111,7 @@ const useProfileActivity = () => {
     };
 
     return {
-        appointments, activity, needsResponse, isLoading,
+        appointments, activity, needsResponse, isLoading, isRefreshing, refresh,
         confirmCancelAppointment,
         refetchActivity: fetchActivity,
     };

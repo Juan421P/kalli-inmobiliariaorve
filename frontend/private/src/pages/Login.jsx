@@ -57,9 +57,29 @@ const Login = () => {
                     // los dos intentos tiene nada que ver con "credenciales" y hay que
                     // decirlo explícitamente en vez de dejar pasar un 401 genérico.
                     const noResponseFromServer = !adminError.response && !collaboratorError.response
-                    const message = noResponseFromServer
-                        ? collaboratorError.friendlyMessage
-                        : (collaboratorError.friendlyMessage || adminError.friendlyMessage)
+
+                    // Esta página ya intenta admin Y colaborador con las mismas
+                    // credenciales, así que un "este correo pertenece a una cuenta
+                    // de administrador/colaborador" que venga de CUALQUIERA de los
+                    // dos intentos no tiene sentido (esa cuenta ya se probó acá
+                    // mismo) y terminaba tapando el mensaje real de "contraseña
+                    // incorrecta". Solo es útil cuando la cuenta pertenece a
+                    // cliente, un panel distinto de verdad. El backend no manda un
+                    // código para esto (mismo texto de siempre, sin tocarlo), así
+                    // que se detecta por el propio mensaje.
+                    const isSameStaffCrossRole = (err) =>
+                        /cuenta de (administrador|colaborador)/i.test(err.friendlyMessage ?? '')
+
+                    let message
+                    if (noResponseFromServer) {
+                        message = collaboratorError.friendlyMessage
+                    } else if (isSameStaffCrossRole(collaboratorError)) {
+                        message = adminError.friendlyMessage
+                    } else if (isSameStaffCrossRole(adminError)) {
+                        message = collaboratorError.friendlyMessage
+                    } else {
+                        message = collaboratorError.friendlyMessage || adminError.friendlyMessage
+                    }
                     toast.error('Error al iniciar sesión', message)
                     return
                 }

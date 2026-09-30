@@ -24,8 +24,15 @@ async function request(path, { method = 'GET', body, headers = {}, timeout = REQ
             method,
             credentials: 'include',
             signal: controller.signal,
+            // 'no-store' en GET evita que el stack de red nativo (OkHttp en
+            // Android, NSURLSession en iOS) reutilice una respuesta cacheada
+            // de una peticion anterior dentro de la misma sesion de la app —
+            // sin esto, pantallas como "Actividad" del perfil solo mostraban
+            // datos frescos despues de cerrar y volver a abrir la app entera.
+            ...(method === 'GET' && { cache: 'no-store' }),
             headers: {
                 ...(body ? { 'Content-Type': 'application/json' } : {}),
+                ...(method === 'GET' && { 'Cache-Control': 'no-cache' }),
                 ...headers,
             },
             body: body !== undefined ? JSON.stringify(body) : undefined,

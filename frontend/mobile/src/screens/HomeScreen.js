@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Building2, Home as HomeIcon, Map } from 'lucide-react-native';
 import ListingCard from '@/components/ListingCard';
 import Skeleton from '@/components/ui/Skeleton';
 import EmptyState from '@/components/EmptyState';
+import AuthRequiredModal from '@/components/AuthRequiredModal';
 import useHome from '@/hooks/useHome';
 import useAuth from '@/hooks/useAuth';
 import useFavorites from '@/hooks/useFavorites';
+import useAuthGate from '@/hooks/useAuthGate';
 import { colors, spacing, fontSize, radius, shadow } from '@/styles/theme';
 import homeHeroBackground from '@/assets/home-hero-background.jpg';
 
@@ -21,9 +23,15 @@ const CATEGORIES = [
 const HomeScreen = () => {
     const navigation = useNavigation();
     const { user } = useAuth();
-    const { properties, isLoading } = useHome();
+    const { properties, isLoading, isRefreshing, refresh } = useHome();
     const { toggleFavorite, isFavorite } = useFavorites();
+    const { requireAuth, authModalVisible, authModalMessage, closeAuthModal, confirmAuthLogin } = useAuthGate();
     const [tab, setTab] = useState('recent');
+
+    const handleToggleFavorite = (item) => requireAuth({
+        message: 'Iniciá sesión para guardar propiedades en tus favoritos.',
+        onAuthenticated: () => toggleFavorite(item),
+    });
 
     const recent = properties.slice(0, 10);
     // "Populares" son las que de verdad tienen vistas — antes se ordenaban
@@ -40,7 +48,14 @@ const HomeScreen = () => {
     const goToCategory = (propertyType) => navigation.navigate('PropertyList', { propertyType });
 
     return (
-        <ScrollView style={styles.flex} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+                <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={colors.orveTeal} colors={[colors.orveTeal]} />
+            }
+        >
             <View style={styles.hero}>
                 <Image source={homeHeroBackground} style={StyleSheet.absoluteFill} resizeMode='cover' />
                 <LinearGradient colors={['rgba(80,113,119,0.85)', 'rgba(80,113,119,0.35)']} style={StyleSheet.absoluteFill} />
@@ -100,7 +115,7 @@ const HomeScreen = () => {
                                 <ListingCard
                                     property={item}
                                     isFavorite={isFavorite(item._id)}
-                                    onToggleFavorite={() => toggleFavorite(item)}
+                                    onToggleFavorite={() => handleToggleFavorite(item)}
                                     onPress={() => goToProperty(item.public_id)}
                                 />
                             </View>
@@ -108,6 +123,13 @@ const HomeScreen = () => {
                     </View>
                 )}
             </View>
+
+            <AuthRequiredModal
+                visible={authModalVisible}
+                message={authModalMessage}
+                onClose={closeAuthModal}
+                onConfirm={confirmAuthLogin}
+            />
         </ScrollView>
     );
 };

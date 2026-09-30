@@ -1,4 +1,4 @@
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useRef, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -35,14 +35,18 @@ const ProfileScreen = () => {
     const navigation = useNavigation();
     const { isAuthenticated } = useAuth();
     const {
-        user, isLoading, personal, setPersonal, personalErrors, personalIsValid,
+        user, isLoading, isRefreshing: isRefreshingProfile, refresh: refreshProfile,
+        personal, setPersonal, personalErrors, personalIsValid,
         editing, setEditing, saving, savePersonal, logout,
     } = useProfile();
     const {
         appointments, activity, needsResponse, isLoading: isLoadingActivity,
+        isRefreshing: isRefreshingActivity, refresh: refreshActivity,
         confirmCancelAppointment, refetchActivity,
     } = useProfileActivity();
     const [tab, setTab] = useState('profile');
+    const isRefreshing = tab === 'profile' ? isRefreshingProfile : isRefreshingActivity;
+    const handleRefresh = () => (tab === 'profile' ? refreshProfile() : refreshActivity());
     const isFirstFocus = useRef(true);
 
     // Al volver de OfferDetail (contraoferta/retiro) o de agendar/cancelar una
@@ -61,7 +65,15 @@ const ProfileScreen = () => {
     const initials = user?.name ? `${user.name[0]}${user.lastname?.[0] ?? ''}`.toUpperCase() : '?';
 
     return (
-        <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
+        <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.content}
+            refreshControl={
+                isAuthenticated ? (
+                    <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.orveTeal} colors={[colors.orveTeal]} />
+                ) : undefined
+            }
+        >
             {isAuthenticated ? (
                 <>
                     <LinearGradient colors={[colors.orveTeal, colors.orveDarkerTeal]} style={styles.header}>

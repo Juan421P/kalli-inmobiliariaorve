@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import {
-    FlatList, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View,
+    FlatList, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, useWindowDimensions, View,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
@@ -13,9 +13,10 @@ import FavoriteHeart from '@/components/ui/FavoriteHeart';
 import AccordionSection from '@/components/ui/AccordionSection';
 import EmptyState from '@/components/EmptyState';
 import PropertiesMap from '@/components/PropertiesMap';
+import AuthRequiredModal from '@/components/AuthRequiredModal';
 import useProperty from '@/hooks/useProperty';
 import useFavorites from '@/hooks/useFavorites';
-import useAuth from '@/hooks/useAuth';
+import useAuthGate from '@/hooks/useAuthGate';
 import { colors, spacing, fontSize, radius } from '@/styles/theme';
 
 const formatPrice = (price) =>
@@ -33,7 +34,7 @@ const PropertyDetailScreen = () => {
     const { publicId } = route.params;
     const { property, isLoading, notFound, loadError, refetch } = useProperty(publicId);
     const { toggleFavorite, isFavorite } = useFavorites();
-    const { isAuthenticated } = useAuth();
+    const { requireAuth, authModalVisible, authModalMessage, closeAuthModal, confirmAuthLogin } = useAuthGate();
     const { width } = useWindowDimensions();
     const [activeImage, setActiveImage] = useState(0);
     const [brokenImages, setBrokenImages] = useState({});
@@ -57,21 +58,24 @@ const PropertyDetailScreen = () => {
         });
     }, [property]);
 
-    const handleSchedule = () => {
-        if (!isAuthenticated) {
-            navigation.navigate('Login', { redirectTo: 'ScheduleAppointment', redirectParams: { publicId } });
-            return;
-        }
-        navigation.navigate('ScheduleAppointment', { publicId });
-    };
+    const handleSchedule = () => requireAuth({
+        message: 'Iniciá sesión para agendar una cita y visitar esta propiedad.',
+        redirectTo: 'ScheduleAppointment',
+        redirectParams: { publicId },
+        onAuthenticated: () => navigation.navigate('ScheduleAppointment', { publicId }),
+    });
 
-    const handleOffer = () => {
-        if (!isAuthenticated) {
-            navigation.navigate('Login', { redirectTo: 'MakeOffer', redirectParams: { publicId } });
-            return;
-        }
-        navigation.navigate('MakeOffer', { publicId });
-    };
+    const handleOffer = () => requireAuth({
+        message: 'Iniciá sesión para hacer una oferta por esta propiedad.',
+        redirectTo: 'MakeOffer',
+        redirectParams: { publicId },
+        onAuthenticated: () => navigation.navigate('MakeOffer', { publicId }),
+    });
+
+    const handleToggleFavorite = () => requireAuth({
+        message: 'Iniciá sesión para guardar propiedades en tus favoritos.',
+        onAuthenticated: () => toggleFavorite(property),
+    });
 
     if (isLoading) {
         return (
@@ -112,7 +116,12 @@ const PropertyDetailScreen = () => {
     };
 
     return (
-        <ScrollView style={styles.flex}>
+        <ScrollView
+            style={styles.flex}
+            refreshControl={
+                <RefreshControl refreshing={false} onRefresh={refetch} tintColor={colors.orveTeal} colors={[colors.orveTeal]} />
+            }
+        >
             <View style={styles.galleryWrap}>
                 {pictures.length > 0 ? (
                     <>
@@ -170,7 +179,7 @@ const PropertyDetailScreen = () => {
                         <Text style={styles.placeholderText}>Sin imágenes registradas</Text>
                     </View>
                 )}
-                <FavoriteHeart isFavorite={isFav} onPress={() => toggleFavorite(property)} size={18} style={styles.favButton} />
+                <FavoriteHeart isFavorite={isFav} onPress={handleToggleFavorite} size={18} style={styles.favButton} />
             </View>
 
             <View style={styles.body}>
@@ -257,6 +266,13 @@ const PropertyDetailScreen = () => {
                     </View>
                 )}
             </View>
+
+            <AuthRequiredModal
+                visible={authModalVisible}
+                message={authModalMessage}
+                onClose={closeAuthModal}
+                onConfirm={confirmAuthLogin}
+            />
         </ScrollView>
     );
 };
