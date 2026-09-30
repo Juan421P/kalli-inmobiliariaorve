@@ -39,17 +39,14 @@ const useProfile = () => {
     const { user, logout, updateUser } = useAuth();
     const toast = useToast();
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [personal, setPersonal] = useState({ name: '', lastname: '', email: '', phone: '' });
 
-    useEffect(() => {
-        if (!user?.id) {
-            setIsLoading(false);
-            return;
-        }
-        setIsLoading(true);
-        clientService.get(user.id)
+    const fetchPersonal = () => {
+        if (!user?.id) return Promise.resolve();
+        return clientService.get(user.id)
             .then((res) => {
                 const c = res?.client ?? res;
                 setPersonal({
@@ -66,9 +63,21 @@ const useProfile = () => {
                     email: user.email ?? '',
                     phone: '',
                 });
-            })
-            .finally(() => setIsLoading(false));
+            });
+    };
+
+    useEffect(() => {
+        if (!user?.id) { setIsLoading(false); return; }
+        setIsLoading(true);
+        fetchPersonal().finally(() => setIsLoading(false));
     }, [user?.id]);
+
+    // Pull-to-refresh: mismo fetch, con su propio indicador para no volver a
+    // mostrar los skeletons de carga inicial cada vez que se desliza.
+    const refresh = () => {
+        setIsRefreshing(true);
+        fetchPersonal().finally(() => setIsRefreshing(false));
+    };
 
     const personalErrors = useMemo(() => validatePersonal(personal), [personal]);
     const personalIsValid = Object.keys(personalErrors).length === 0;
@@ -94,7 +103,7 @@ const useProfile = () => {
 
     return {
         user,
-        isLoading,
+        isLoading, isRefreshing, refresh,
         personal, setPersonal,
         personalErrors, personalIsValid,
         editing, setEditing,

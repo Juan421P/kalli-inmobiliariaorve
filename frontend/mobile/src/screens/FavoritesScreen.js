@@ -3,12 +3,20 @@ import { useNavigation } from '@react-navigation/native';
 import { Heart } from 'lucide-react-native';
 import ListingCard from '@/components/ListingCard';
 import EmptyState from '@/components/EmptyState';
+import AuthRequiredModal from '@/components/AuthRequiredModal';
 import useFavorites from '@/hooks/useFavorites';
+import useAuthGate from '@/hooks/useAuthGate';
 import { colors, spacing, fontSize } from '@/styles/theme';
 
 const FavoritesScreen = () => {
     const navigation = useNavigation();
     const { favorites, toggleFavorite, isFavorite } = useFavorites();
+    const { requireAuth, authModalVisible, authModalMessage, closeAuthModal, confirmAuthLogin } = useAuthGate();
+
+    const handleToggleFavorite = (item) => requireAuth({
+        message: 'Iniciá sesión para guardar propiedades en tus favoritos.',
+        onAuthenticated: () => toggleFavorite(item),
+    });
 
     return (
         <View style={styles.flex}>
@@ -34,12 +42,19 @@ const FavoritesScreen = () => {
                         <ListingCard
                             property={item}
                             isFavorite={isFavorite(item._id)}
-                            onToggleFavorite={() => toggleFavorite(item)}
+                            onToggleFavorite={() => handleToggleFavorite(item)}
                             onPress={() => navigation.navigate('PropertyDetail', { publicId: item.public_id })}
                         />
                     )}
                 />
             )}
+
+            <AuthRequiredModal
+                visible={authModalVisible}
+                message={authModalMessage}
+                onClose={closeAuthModal}
+                onConfirm={confirmAuthLogin}
+            />
         </View>
     );
 };

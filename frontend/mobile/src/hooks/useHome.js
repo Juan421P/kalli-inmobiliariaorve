@@ -10,25 +10,35 @@ const useHome = () => {
     const toast = useToast();
     const [properties, setProperties] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const fetchProperties = () => propertyService.getAll()
+        .then((data) => {
+            const list = data?.properties ?? data?.data ?? data ?? [];
+            setProperties(Array.isArray(list) ? list : []);
+        })
+        .catch((err) => {
+            // Se deja la lista vacia igual (la UI ya sabe mostrar el
+            // EmptyState de "sin propiedades"), pero se avisa la causa
+            // real en vez de que un error de red se vea identico a que
+            // simplemente no hay propiedades cargadas.
+            setProperties([]);
+            toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
+        });
 
     useEffect(() => {
-        propertyService.getAll()
-            .then((data) => {
-                const list = data?.properties ?? data?.data ?? data ?? [];
-                setProperties(Array.isArray(list) ? list : []);
-            })
-            .catch((err) => {
-                // Se deja la lista vacia igual (la UI ya sabe mostrar el
-                // EmptyState de "sin propiedades"), pero se avisa la causa
-                // real en vez de que un error de red se vea identico a que
-                // simplemente no hay propiedades cargadas.
-                setProperties([]);
-                toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
-            })
-            .finally(() => setIsLoading(false));
+        fetchProperties().finally(() => setIsLoading(false));
     }, []);
 
-    return { properties, isLoading };
+    // Pull-to-refresh: mismo fetch, pero con su propio indicador para no
+    // reemplazar la lista por los skeletons de carga inicial cada vez que se
+    // desliza hacia abajo.
+    const refresh = () => {
+        setIsRefreshing(true);
+        fetchProperties().finally(() => setIsRefreshing(false));
+    };
+
+    return { properties, isLoading, isRefreshing, refresh };
 };
 
 export default useHome;

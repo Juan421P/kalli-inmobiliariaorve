@@ -31,8 +31,18 @@ const useLoginForm = () => {
             const data = await clientService.login({ email, password });
             login({ role: data.role ?? 'client', user: data.user ?? data.client });
             const { redirectTo, redirectParams } = route.params ?? {};
-            if (redirectTo) navigation.replace(redirectTo, redirectParams);
-            else if (navigation.canGoBack()) navigation.goBack();
+            if (redirectTo) {
+                navigation.replace(redirectTo, redirectParams);
+            } else {
+                // Si no hay una accion pendiente que retomar (agendar cita,
+                // hacer oferta), se manda a Inicio. popToTop() primero es
+                // necesario: sin esto, Login se queda apilado arriba de todo
+                // en el stack de donde se abrio (ej. Perfil) — cambiar de tab
+                // con navigate() no lo saca de ahi, asi que al volver a esa
+                // pestaña seguia mostrando el login ya iniciado.
+                navigation.popToTop();
+                navigation.navigate('HomeTab', { screen: 'Home' });
+            }
         } catch (err) {
             setServerError(err.friendlyMessage);
         }

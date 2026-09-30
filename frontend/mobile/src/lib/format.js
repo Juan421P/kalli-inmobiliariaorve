@@ -13,3 +13,12 @@ export function formatDuiInput(value) {
     const digits = (value ?? '').replace(/\D/g, '').slice(0, 9);
     return digits.length > 8 ? `${digits.slice(0, 8)}-${digits.slice(8)}` : digits;
 }
+
+// Limpia un input de monto dejando solo dígitos y un único punto decimal
+// (ej. "1,250.5.0" -> "1250.50"), para usar junto con keyboardType='decimal-pad'
+// en campos de precio (oferta, contraoferta).
+export function sanitizeDecimalInput(value) {
+    const cleaned = (value ?? '').replace(/[^0-9.]/g, '');
+    const [intPart, ...rest] = cleaned.split('.');
+    return rest.length ? `${intPart}.${rest.join('')}` : intPart;
+}

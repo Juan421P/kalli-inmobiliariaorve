@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { List, LocateFixed, Map as MapIcon, Search } from 'lucide-react-native';
 import ListingCard from '@/components/ListingCard';
@@ -7,9 +7,11 @@ import PropertiesMap from '@/components/PropertiesMap';
 import Chip from '@/components/ui/Chip';
 import Skeleton from '@/components/ui/Skeleton';
 import EmptyState from '@/components/EmptyState';
+import AuthRequiredModal from '@/components/AuthRequiredModal';
 import usePropertyListing from '@/hooks/usePropertyListing';
 import useUserLocation from '@/hooks/useUserLocation';
 import useFavorites from '@/hooks/useFavorites';
+import useAuthGate from '@/hooks/useAuthGate';
 import useToast from '@/hooks/useToast';
 import { colors, spacing, fontSize, radius, shadow } from '@/styles/theme';
 
@@ -26,7 +28,7 @@ const PropertyListScreen = () => {
     const [listingType, setListingType] = useState(route.params?.listingType ?? 'sale');
 
     const {
-        isLoading, filtered, search, setSearch, typeFilter, setTypeFilter,
+        isLoading, isRefreshing, refresh, filtered, search, setSearch, typeFilter, setTypeFilter,
         sortBy, setSortBy, view, setView, userCoords, setUserCoords,
     } = usePropertyListing(listingType, {
         propertyType: route.params?.propertyType,
@@ -34,8 +36,14 @@ const PropertyListScreen = () => {
     });
 
     const { toggleFavorite, isFavorite } = useFavorites();
+    const { requireAuth, authModalVisible, authModalMessage, closeAuthModal, confirmAuthLogin } = useAuthGate();
     const { coords, status, requestLocation } = useUserLocation();
     const toast = useToast();
+
+    const handleToggleFavorite = (item) => requireAuth({
+        message: 'Iniciá sesión para guardar propiedades en tus favoritos.',
+        onAuthenticated: () => toggleFavorite(item),
+    });
 
     const isNearMeActive = sortBy === 'distance' && !!userCoords;
     const isLocating = status === 'loading';
@@ -146,16 +154,26 @@ const PropertyListScreen = () => {
                     numColumns={2}
                     columnWrapperStyle={styles.columnWrapper}
                     contentContainerStyle={styles.listContent}
+                    refreshControl={
+                        <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={colors.orveTeal} colors={[colors.orveTeal]} />
+                    }
                     renderItem={({ item }) => (
                         <ListingCard
                             property={item}
                             isFavorite={isFavorite(item._id)}
-                            onToggleFavorite={() => toggleFavorite(item)}
+                            onToggleFavorite={() => handleToggleFavorite(item)}
                             onPress={() => goToProperty(item)}
                         />
                     )}
                 />
             )}
+
+            <AuthRequiredModal
+                visible={authModalVisible}
+                message={authModalMessage}
+                onClose={closeAuthModal}
+                onConfirm={confirmAuthLogin}
+            />
         </View>
     );
 };

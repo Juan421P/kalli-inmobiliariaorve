@@ -33,25 +33,35 @@ const usePropertyListing = (listingType, initial = {}) => {
     const [properties, setProperties] = useState([]);
     const [filtered, setFiltered] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [search, setSearch] = useState(initial.query ?? '');
     const [typeFilter, setTypeFilter] = useState(initial.propertyType ?? 'all');
     const [sortBy, setSortBy] = useState('recommended');
     const [view, setView] = useState('list'); // 'list' | 'map'
     const [userCoords, setUserCoords] = useState(null);
 
+    const fetchProperties = () => propertyService.getAll()
+        .then((data) => {
+            const list = data?.properties ?? data?.data ?? data ?? [];
+            const result = Array.isArray(list) ? list.filter((p) => p.listing_type === listingType) : [];
+            setProperties(result);
+        })
+        .catch((err) => {
+            setProperties([]);
+            toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
+        });
+
     useEffect(() => {
-        propertyService.getAll()
-            .then((data) => {
-                const list = data?.properties ?? data?.data ?? data ?? [];
-                const result = Array.isArray(list) ? list.filter((p) => p.listing_type === listingType) : [];
-                setProperties(result);
-            })
-            .catch((err) => {
-                setProperties([]);
-                toast.error('No se pudieron cargar las propiedades', err.friendlyMessage);
-            })
-            .finally(() => setIsLoading(false));
+        setIsLoading(true);
+        fetchProperties().finally(() => setIsLoading(false));
     }, [listingType]);
+
+    // Pull-to-refresh: mismo fetch que ya corre al cambiar listingType, con su
+    // propio indicador para no mostrar los skeletons de carga inicial.
+    const refresh = () => {
+        setIsRefreshing(true);
+        fetchProperties().finally(() => setIsRefreshing(false));
+    };
 
     const applyFilters = useCallback(() => {
         let result = [...properties];
@@ -79,7 +89,7 @@ const usePropertyListing = (listingType, initial = {}) => {
     useEffect(() => { applyFilters(); }, [applyFilters]);
 
     return {
-        isLoading, filtered,
+        isLoading, isRefreshing, refresh, filtered,
         search, setSearch,
         typeFilter, setTypeFilter,
         sortBy, setSortBy,
