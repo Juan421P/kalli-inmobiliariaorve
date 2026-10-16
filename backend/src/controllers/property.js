@@ -14,7 +14,8 @@ const controller = {
     }),
 
     getByPublicId: catchAsync(async (req, res) => {
-        const property = await service.getByPublicId(req.params.public_id);
+        const clientId = req.user?.role === 'client' ? req.user.id : undefined;
+        const property = await service.getByPublicId(req.params.public_id, clientId);
         return res.status(200).json({ property });
     }),
 

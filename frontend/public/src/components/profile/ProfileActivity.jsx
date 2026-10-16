@@ -59,6 +59,7 @@ const ProfileActivity = () => {
     const [needsResponse, setNeedsResponse] = useState([])
     const [isLoadingActivity, setIsLoadingActivity] = useState(true)
     const [openOfferId, setOpenOfferId] = useState(null)
+    const [showAllNotifications, setShowAllNotifications] = useState(false)
 
     const fetchActivity = () => {
         if (!user?.id) return
@@ -111,7 +112,7 @@ const ProfileActivity = () => {
                         Ofertas que requieren tu respuesta
                     </h3>
                     <div className='flex flex-col gap-3'>
-                        {needsResponse.map((item) => {
+                        {(showAllNotifications ? needsResponse : needsResponse.slice(0, 1)).map((item) => {
                             const isAccepted = item.status === 'accepted'
                             const theme = isAccepted
                                 ? {
@@ -157,6 +158,14 @@ const ProfileActivity = () => {
                             )
                         })}
                     </div>
+                    {needsResponse.length > 1 && (
+                        <button
+                            onClick={() => setShowAllNotifications((v) => !v)}
+                            className='mt-2 text-xs text-orve-teal hover:underline'
+                        >
+                            {showAllNotifications ? 'Ver menos' : `Ver más (${needsResponse.length - 1})`}
+                        </button>
+                    )}
                 </section>
             )}
 

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
-import { ArrowLeft, CalendarIcon, ArrowRight, Tag } from 'lucide-react'
+import { ArrowLeft, CalendarIcon, ArrowRight, Tag, CheckCircle2 } from 'lucide-react'
 import { Icon } from '@iconify/react'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -65,6 +65,13 @@ const MakeOfferPage = () => {
                     <div className='flex flex-col items-center justify-center py-24 gap-3'>
                         <p className='text-orve-teal/50 text-lg'>Propiedad no encontrada.</p>
                         <Link to='/' className='text-sm text-orve-teal underline'>Volver al inicio</Link>
+                    </div>
+                ) : property?.my_accepted_offer ? (
+                    <div className='flex flex-col items-center justify-center py-24 gap-3 text-center'>
+                        <CheckCircle2 className='w-10 h-10 text-emerald-600' />
+                        <p className='text-orve-darker-teal text-lg font-semibold'>Ya le aceptaron su oferta por esta propiedad</p>
+                        <p className='text-sm text-orve-teal/60 max-w-md'>Nos comunicaremos con usted pronto. No es necesario hacer una nueva oferta.</p>
+                        <Link to={`/property/${public_id}`} className='text-sm text-orve-teal underline mt-2'>Volver a la propiedad</Link>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className='grid grid-cols-1 md:grid-cols-2 gap-8 items-start'>

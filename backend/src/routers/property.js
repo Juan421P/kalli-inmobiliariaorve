@@ -26,6 +26,7 @@ property.route('/')
 
 property.route('/public/:public_id')
     .get(
+        optionalAuth,
         validatePayload({ params: schemas.queryByPublicId }),
         controller.getByPublicId
     );
