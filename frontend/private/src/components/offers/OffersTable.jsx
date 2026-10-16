@@ -57,6 +57,9 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onCounter, onDele
                     const status = getStatus(o.status)
                     // solo se puede aceptar o rechazar si la oferta está pendiente o en contrapropuesta
                     const canAct = o.status === 'pending' || o.status === 'countered'
+                    // aceptar solo cuando el último monto lo propuso el cliente: ORVE no
+                    // puede aceptar su propia contraoferta (el backend lo rechaza igual)
+                    const canAccept = canAct && o.last_actor !== 'seller'
 
                     return (
                         <TableRow key={o._id} className='border-orve-teal/10 hover:bg-orve-teal/[0.03]'>
@@ -111,15 +114,17 @@ const OffersTable = ({ offers = [], isLoading, onStatusChange, onCounter, onDele
                                     <OfferDetailsDialog offer={o} onCounter={onCounter} />
                                     {canAct && (
                                         <>
-                                            <Button
-                                                variant='ghost'
-                                                size='icon-sm'
-                                                title='Aceptar oferta'
-                                                onClick={() => onStatusChange(o._id, 'accepted')}
-                                                className='text-orve-teal/50 hover:text-emerald-600 hover:bg-emerald-50'
-                                            >
-                                                <CheckCircle2 className='w-3.5 h-3.5' />
-                                            </Button>
+                                            {canAccept && (
+                                                <Button
+                                                    variant='ghost'
+                                                    size='icon-sm'
+                                                    title='Aceptar oferta'
+                                                    onClick={() => onStatusChange(o._id, 'accepted')}
+                                                    className='text-orve-teal/50 hover:text-emerald-600 hover:bg-emerald-50'
+                                                >
+                                                    <CheckCircle2 className='w-3.5 h-3.5' />
+                                                </Button>
+                                            )}
                                             <Button
                                                 variant='ghost'
                                                 size='icon-sm'

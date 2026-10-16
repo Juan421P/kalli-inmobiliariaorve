@@ -4,6 +4,7 @@ import clientModel from '../models/client.js';
 import NotFoundError from '../errors/not_found.js';
 import ConflictError from '../errors/conflict.js';
 import AuthorizationError from '../errors/authorization.js';
+import { assertPriceInRange } from '../utils/offer_price_range.js';
 
 const ACTIVE_STATUSES = ['pending', 'countered'];
 const CLOSED_STATUSES = ['accepted', 'rejected', 'withdrawn'];
@@ -18,6 +19,77 @@ async function determineSide(actor, offer) {
         if (property?.collaborator && String(property.collaborator) === actor.id) return 'seller';
     }
     return null;
+}
+
+// trae la propiedad de la oferta y verifica que siga disponible: una propiedad
+// ocupada ya cerró con otra oferta, así que no tiene sentido seguir negociando
+async function findAvailableProperty(propertyId, offerId) {
+    const propertyDoc = await propertyModel.findById(propertyId);
+    if (!propertyDoc) throw new NotFoundError(
+        'la propiedad de esta oferta ya no existe', {
+        code: 'PROPERTY_NOT_FOUND',
+        resource: 'property',
+        id: propertyId
+    });
+    if (propertyDoc.status !== 'available') throw new ConflictError(
+        'la propiedad ya no está disponible, por lo que esta oferta no puede continuar', {
+        code: 'PROPERTY_NOT_AVAILABLE',
+        resource: 'property',
+        id: propertyId,
+        offer_id: offerId,
+        current_status: propertyDoc.status
+    });
+    return propertyDoc;
+}
+
+// aceptar le toca a quien recibió la última propuesta: el vendedor acepta la
+// oferta del comprador y el comprador acepta la contraoferta de ORVE. Nadie
+// puede aceptar su propia propuesta
+async function acceptOffer(offer, side) {
+    const id = offer._id;
+    if (offer.last_actor === side) throw new ConflictError(
+        'no puede aceptar su propia propuesta, debe esperar a que la otra parte responda', {
+        code: 'AWAITING_OTHER_PARTY',
+        resource: 'offer',
+        id
+    });
+
+    // el monto se vuelve a validar contra el precio actual de la propiedad: no
+    // basta con que la interfaz lo haya filtrado, ni con que fuera válido cuando
+    // se propuso (el precio publicado pudo cambiar después)
+    const propertyDoc = await findAvailableProperty(offer.property, id);
+    assertPriceInRange(offer.price, propertyDoc, { action: 'accept', offerId: id });
+
+    // primero se reserva la propiedad y luego se cierra la oferta, ambas con
+    // condición, para que dos aceptaciones simultáneas (de la misma oferta o de
+    // otra oferta sobre la misma propiedad) no puedan pasar las dos
+    const reserved = await propertyModel.findOneAndUpdate(
+        { _id: propertyDoc._id, status: 'available' },
+        { status: 'occupied' },
+    );
+    if (!reserved) throw new ConflictError(
+        'la propiedad ya no está disponible, por lo que esta oferta no puede continuar', {
+        code: 'PROPERTY_NOT_AVAILABLE',
+        resource: 'property',
+        id: propertyDoc._id,
+        offer_id: id
+    });
+
+    const accepted = await model.findOneAndUpdate(
+        { _id: id, status: { $in: ACTIVE_STATUSES }, last_actor: offer.last_actor, price: offer.price },
+        { status: 'accepted' },
+        { returnDocument: 'after' },
+    );
+    if (!accepted) {
+        await propertyModel.findByIdAndUpdate(propertyDoc._id, { status: 'available' });
+        throw new ConflictError(
+            'la oferta cambió o ya fue resuelta mientras se procesaba, recargue para ver su estado actual', {
+            code: 'OFFER_ALREADY_CLOSED',
+            resource: 'offer',
+            id
+        });
+    }
+    return accepted;
 }
 
 const service = {
@@ -69,7 +141,7 @@ const service = {
         const [offers, total, statusCounts] = await Promise.all([
             model.find(scopedFilter)
                 .populate('buyer', 'name lastname email phone picture')
-                .populate('property', 'title public_id listing_type pictures')
+                .populate('property', 'title public_id listing_type pictures price status')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit),
@@ -91,7 +163,7 @@ const service = {
     async getById(id) {
         const offer = await model.findById(id)
             .populate('buyer', 'name lastname email phone picture')
-            .populate('property', 'title public_id listing_type pictures');
+            .populate('property', 'title public_id listing_type pictures price status');
         if (!offer) throw new NotFoundError(
             'oferta no encontrada', {
             code: 'OFFER_NOT_FOUND',
@@ -126,17 +198,20 @@ const service = {
             id: property
         });
 
-        const duplicate = await model.findOne({
-            buyer: buyerId,
-            property,
-            status: { $in: ACTIVE_STATUSES }
-        });
+        // un cliente puede ofertar en todas las propiedades que quiera, pero solo
+        // una vez por propiedad: cuenta cualquier oferta previa, también las
+        // rechazadas o aceptadas. Las retiradas se eliminan, no quedan registradas
+        const duplicate = await model.findOne({ buyer: buyerId, property });
         if (duplicate) throw new ConflictError(
-            'solo puede tener una oferta activa a la vez sobre esta propiedad', {
-            code: 'ACTIVE_OFFER_ALREADY_EXISTS',
+            'Solo puede hacerse una oferta a la vez por propiedad', {
+            code: 'OFFER_ALREADY_EXISTS',
             resource: 'offer',
-            id: duplicate._id
+            id: duplicate._id,
+            current_status: duplicate.status,
+            last_actor: duplicate.last_actor
         });
+
+        assertPriceInRange(price, propertyDoc);
 
         return await model.create({
             buyer: buyerId,
@@ -176,6 +251,10 @@ const service = {
             resource: 'offer',
             id
         });
+
+        const propertyDoc = await findAvailableProperty(offer.property, id);
+        assertPriceInRange(price, propertyDoc, { offerId: id });
+
         offer.price = price;
         offer.status = 'countered';
         offer.last_actor = side;
@@ -206,9 +285,10 @@ const service = {
             code: 'FORBIDDEN_NOT_A_PARTY'
         });
 
-        // aceptar o rechazar una oferta depende del comprador. De la misma manera,
-        // retirarse de una oferta es una operación propia del comprador. Ninguno de los
-        // dos puede tomar una decisión que dependa del otro
+        if (status === 'accepted') return await acceptOffer(offer, side);
+
+        // rechazar una oferta le toca al vendedor y retirarse de ella, al
+        // comprador. Ninguno de los dos puede tomar una decisión que dependa del otro
         const requiredSide = status === 'withdrawn' ? 'buyer' : 'seller';
         if (side !== requiredSide) throw new AuthorizationError(
             `solo la parte ${requiredSide === 'buyer' ? 'compradora' : 'vendedora'} puede marcar una oferta como ${status}`, {
@@ -226,11 +306,6 @@ const service = {
 
         offer.status = status;
         await offer.save();
-
-        if (status === 'accepted') {
-            await propertyModel.findByIdAndUpdate(offer.property, { status: 'occupied' });
-        }
-
         return offer;
     },
 

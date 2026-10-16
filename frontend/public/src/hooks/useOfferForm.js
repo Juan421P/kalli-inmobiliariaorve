@@ -49,7 +49,8 @@ const useOfferForm = ({ property, publicId, userId }) => {
         },
     })
 
-    // react-hook-form ya valida price > 0 antes de llegar aca.
+    // react-hook-form ya valida el monto contra el rango de la propiedad antes
+    // de llegar aca (ver MakeOfferPage -> getPriceError).
     const onSubmit = async (values) => {
         setIsSubmitting(true)
         try {

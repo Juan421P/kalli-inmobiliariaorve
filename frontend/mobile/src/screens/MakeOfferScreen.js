@@ -91,7 +91,7 @@ const MakeOfferScreen = () => {
                 />
                 {property.price ? (
                     <Text style={styles.hint}>
-                        Sugerencia: en el rango de ${Math.round(property.price * 0.85).toLocaleString()} a ${property.price.toLocaleString()}
+                        Monto mínimo: ${Math.round(property.price * 0.70).toLocaleString()}
                     </Text>
                 ) : null}
 

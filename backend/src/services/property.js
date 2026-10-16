@@ -56,10 +56,21 @@ const service = {
         // Si quien consulta es un cliente logueado, se le avisa si ya le
         // aceptaron una oferta sobre esta propiedad -no tendria sentido
         // dejarlo seguir ofertando sobre algo que ya cerro a su favor-.
+        // Igual con una oferta que sigue abierta: el backend no deja crear
+        // otra (services/offer.js -> create), asi el frontend lo avisa antes.
         const result = property.toObject();
         if (clientId) {
-            const accepted = await offerModel.exists({ buyer: clientId, property: property._id, status: 'accepted' });
+            const [accepted, rejected, active] = await Promise.all([
+                offerModel.exists({ buyer: clientId, property: property._id, status: 'accepted' }),
+                offerModel.exists({ buyer: clientId, property: property._id, status: 'rejected' }),
+                offerModel.findOne({ buyer: clientId, property: property._id, status: { $in: ['pending', 'countered'] } })
+                    .select('status last_actor price'),
+            ]);
             result.my_accepted_offer = Boolean(accepted);
+            result.my_rejected_offer = Boolean(rejected);
+            result.my_active_offer = active
+                ? { _id: active._id, status: active.status, last_actor: active.last_actor, price: active.price }
+                : null;
         }
         return result;
     },

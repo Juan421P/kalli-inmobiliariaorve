@@ -44,6 +44,9 @@ const service = {
             at: offer.updatedAt,
             property: offer.property,
             status: offer.status,
+            // sin esto el frontend no distingue "ORVE contraofertó" de
+            // "usted contraofertó", que comparten el estado 'countered'
+            last_actor: offer.last_actor,
             price: offer.price,
         });
 

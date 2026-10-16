@@ -43,11 +43,16 @@ const timeAgo = (date) => {
 
 const OFFER_STATUS_LABEL = {
     pending:   'Oferta pendiente',
-    countered: 'Contraoferta recibida',
     accepted:  'Oferta aceptada',
     rejected:  'Oferta rechazada',
     withdrawn: 'Oferta retirada',
 }
+
+// 'countered' cubre tanto la contraoferta de ORVE como la del cliente; lo
+// que las distingue es quien hizo el ultimo movimiento
+const getOfferLabel = (item) => item.status === 'countered'
+    ? (item.last_actor === 'seller' ? 'Contraoferta recibida' : 'Contraoferta enviada')
+    : OFFER_STATUS_LABEL[item.status] ?? 'Oferta enviada'
 
 const ProfileActivity = () => {
     const { user } = useAuth()
@@ -459,7 +464,7 @@ const ActivityItem = ({ item, onOpenOffer }) => {
                 </p>
                 <p className='text-[10px] text-gray-400 flex items-center gap-1 mt-0.5'>
                     {isOffer
-                        ? <><Tag className='w-3 h-3 shrink-0' /> {OFFER_STATUS_LABEL[item.status] ?? 'Oferta enviada'}{item.price ? ` · $${item.price.toLocaleString()}` : ''}</>
+                        ? <><Tag className='w-3 h-3 shrink-0' /> {getOfferLabel(item)}{item.price ? ` · $${item.price.toLocaleString()}` : ''}</>
                         : <><Eye className='w-3 h-3 shrink-0' /> Propiedad vista</>
                     }
                 </p>

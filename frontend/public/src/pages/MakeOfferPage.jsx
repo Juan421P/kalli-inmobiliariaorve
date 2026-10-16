@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { Controller } from 'react-hook-form'
-import { ArrowLeft, CalendarIcon, ArrowRight, Tag, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, CalendarIcon, ArrowRight, Tag, CheckCircle2, Clock, XCircle } from 'lucide-react'
 import { Icon } from '@iconify/react'
 import Navbar from '@/components/Navbar'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import useProperty from '@/hooks/useProperty'
 import useOfferForm from '@/hooks/useOfferForm'
 import useAuth from '@/hooks/useAuth'
+import { getAllowedRange, formatUSD, getPriceError } from '@/lib/offerRange'
 import coolBg from '@/assets/cool-ass-design-for-the-background.png'
 
 // ─── Opciones de meses de renta ───────────────────────────────────────────────
@@ -73,6 +74,31 @@ const MakeOfferPage = () => {
                         <p className='text-sm text-orve-teal/60 max-w-md'>Nos comunicaremos con usted pronto. No es necesario hacer una nueva oferta.</p>
                         <Link to={`/property/${public_id}`} className='text-sm text-orve-teal underline mt-2'>Volver a la propiedad</Link>
                     </div>
+                ) : property?.my_rejected_offer && !property?.my_active_offer ? (
+                    <div className='flex flex-col items-center justify-center py-24 gap-3 text-center'>
+                        <XCircle className='w-10 h-10 text-red-500' />
+                        <p className='text-orve-darker-teal text-lg font-semibold'>Ya hizo una oferta por esta propiedad</p>
+                        <p className='text-sm text-orve-teal/60 max-w-md'>Solo puede hacerse una oferta a la vez por propiedad. Puede ofertar en otras propiedades.</p>
+                        <Link to={`/property/${public_id}`} className='text-sm text-orve-teal underline mt-2'>Volver a la propiedad</Link>
+                    </div>
+                ) : property?.my_active_offer ? (
+                    // el backend tampoco deja crear otra (services/offer.js -> create),
+                    // esto solo evita llenar el formulario para nada
+                    <div className='flex flex-col items-center justify-center py-24 gap-3 text-center'>
+                        <Clock className='w-10 h-10 text-amber-600' />
+                        <p className='text-orve-darker-teal text-lg font-semibold'>
+                            {property.my_active_offer.last_actor === 'seller'
+                                ? 'ORVE le hizo una contraoferta por esta propiedad'
+                                : 'Ya tiene una oferta pendiente por esta propiedad'}
+                        </p>
+                        <p className='text-sm text-orve-teal/60 max-w-md'>
+                            {property.my_active_offer.last_actor === 'seller'
+                                ? 'La contraoferta espera su respuesta. Puede aceptarla o contraofertar desde su perfil.'
+                                : 'Solo puede hacerse una oferta a la vez por propiedad.'}
+                        </p>
+                        <Link to='/profile' className='text-sm text-orve-teal underline mt-2'>Ver mis ofertas</Link>
+                        <Link to={`/property/${public_id}`} className='text-sm text-orve-teal underline'>Volver a la propiedad</Link>
+                    </div>
                 ) : (
                     <form onSubmit={handleSubmit} className='grid grid-cols-1 md:grid-cols-2 gap-8 items-start'>
 
@@ -126,16 +152,16 @@ const MakeOfferPage = () => {
                                         type='number'
                                         min='0'
                                         placeholder='0'
-                                        {...register('price', { required: true, min: 0.01 })}
+                                        {...register('price', { validate: (v) => getPriceError(v, property?.price) ?? true })}
                                         className='flex-1 bg-transparent text-orve-darker-teal text-sm font-medium outline-none placeholder:text-orve-teal/30'
                                     />
                                 </div>
                                 {errors.price && (
-                                    <p className='text-[11px] text-red-500'>Ingresá un monto de oferta válido.</p>
+                                    <p className='text-[11px] text-red-500'>{errors.price.message}</p>
                                 )}
                                 {property?.price && (
                                     <p className='text-[11px] text-orve-teal/50'>
-                                        Sugerencia: En el rango de ${Math.round(property.price * 0.85).toLocaleString()} a ${property.price.toLocaleString()}
+                                        Monto mínimo: {formatUSD(getAllowedRange(property.price).min)}
                                     </p>
                                 )}
                             </div>

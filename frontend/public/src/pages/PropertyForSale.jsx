@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import {
     MapPin, Eye, Bed, Bath, Car, Maximize2,
     Sofa, PawPrint, Zap, ChevronDown, Calendar, Tag,
-    Layers, Star, Images, Heart, CheckCircle2
+    Layers, Star, Images, Heart, CheckCircle2, Clock, XCircle
 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -209,6 +209,27 @@ const PropertyForSale = () => {
                                     </div>
                                 )}
 
+                                {property.my_rejected_offer && !property.my_accepted_offer && !property.my_active_offer && (
+                                    <div className='flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3'>
+                                        <XCircle className='w-4 h-4 text-red-500 shrink-0 mt-0.5' />
+                                        <p className='text-sm text-red-600 font-medium'>
+                                            Solo puede hacerse una oferta a la vez por propiedad. Ya ofertó en esta, pero puede ofertar en otras.
+                                        </p>
+                                    </div>
+                                )}
+
+                                {property.my_active_offer && (
+                                    <div className='flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3'>
+                                        <Clock className='w-4 h-4 text-amber-600 shrink-0 mt-0.5' />
+                                        <p className='text-sm text-amber-700 font-medium'>
+                                            {property.my_active_offer.last_actor === 'seller'
+                                                ? <>ORVE le hizo una contraoferta de {formatPrice(property.my_active_offer.price)}. Puede aceptarla o contraofertar desde <Link to='/profile' className='underline'>su perfil</Link>.</>
+                                                : <>Ya tiene una oferta pendiente de {formatPrice(property.my_active_offer.price)} por esta propiedad. Espere a que sea revisada o resuelta.</>
+                                            }
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className='flex gap-3 mt-2'>
                                     <button
                                         onClick={handleScheduleClick}
@@ -217,7 +238,7 @@ const PropertyForSale = () => {
                                         <Calendar className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                         Agendar cita
                                     </button>
-                                    {!property.my_accepted_offer && (
+                                    {!property.my_accepted_offer && !property.my_active_offer && !property.my_rejected_offer && (
                                         <button
                                             onClick={handleOfferClick}
                                             className='flex-1 flex items-center justify-center gap-2 bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
