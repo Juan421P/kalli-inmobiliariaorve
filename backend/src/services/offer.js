@@ -132,7 +132,7 @@ const service = {
             status: { $in: ACTIVE_STATUSES }
         });
         if (duplicate) throw new ConflictError(
-            'ya existe una oferta activa de este comprador para esta propiedad', {
+            'solo puede tener una oferta activa a la vez sobre esta propiedad', {
             code: 'ACTIVE_OFFER_ALREADY_EXISTS',
             resource: 'offer',
             id: duplicate._id

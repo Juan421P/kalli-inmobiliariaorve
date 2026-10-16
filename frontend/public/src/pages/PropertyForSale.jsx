@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom'
 import {
     MapPin, Eye, Bed, Bath, Car, Maximize2,
     Sofa, PawPrint, Zap, ChevronDown, Calendar, Tag,
-    Layers, Star, Images, Heart
+    Layers, Star, Images, Heart, CheckCircle2
 } from 'lucide-react'
 import { MapContainer, TileLayer, Marker } from 'react-leaflet'
 import L from 'leaflet'
@@ -200,6 +200,15 @@ const PropertyForSale = () => {
                                     )}
                                 </div>
 
+                                {property.my_accepted_offer && (
+                                    <div className='flex items-start gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3'>
+                                        <CheckCircle2 className='w-4 h-4 text-emerald-600 shrink-0 mt-0.5' />
+                                        <p className='text-sm text-emerald-700 font-medium'>
+                                            Ya le aceptaron su oferta por esta propiedad. Nos comunicaremos con usted pronto.
+                                        </p>
+                                    </div>
+                                )}
+
                                 <div className='flex gap-3 mt-2'>
                                     <button
                                         onClick={handleScheduleClick}
@@ -208,13 +217,15 @@ const PropertyForSale = () => {
                                         <Calendar className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                         Agendar cita
                                     </button>
-                                    <button
-                                        onClick={handleOfferClick}
-                                        className='flex-1 flex items-center justify-center gap-2 bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
-                                    >
-                                        <Star className='w-4 h-4 shrink-0' strokeWidth={1.5} />
-                                        Hacer una oferta
-                                    </button>
+                                    {!property.my_accepted_offer && (
+                                        <button
+                                            onClick={handleOfferClick}
+                                            className='flex-1 flex items-center justify-center gap-2 bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
+                                        >
+                                            <Star className='w-4 h-4 shrink-0' strokeWidth={1.5} />
+                                            Hacer una oferta
+                                        </button>
+                                    )}
                                     <button
                                         onClick={() => property && toggleFavorite(property)}
                                         title={isFav ? 'Quitar de favoritos' : 'Agregar a favoritos'}

@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { v2 as cloudinary } from 'cloudinary';
 import model from '../models/property.js';
 import clientModel from '../models/client.js';
+import offerModel from '../models/offer.js';
 import NotFoundError from '../errors/not_found.js';
 import ValidationError from '../errors/validation.js';
 import CloudinaryError from '../errors/cloudinary.js';
@@ -44,14 +45,23 @@ const service = {
         return property;
     },
 
-    async getByPublicId(publicId) {
+    async getByPublicId(publicId, clientId) {
         const property = await model.findOne({ public_id: publicId.toUpperCase() })
             .populate('amenities').populate('features').populate('appliances').populate('tags');
         if (!property) throw new NotFoundError(
             'propiedad no encontrada',
             { code: 'PROPERTY_NOT_FOUND', resource: 'property', public_id: publicId }
         );
-        return property;
+
+        // Si quien consulta es un cliente logueado, se le avisa si ya le
+        // aceptaron una oferta sobre esta propiedad -no tendria sentido
+        // dejarlo seguir ofertando sobre algo que ya cerro a su favor-.
+        const result = property.toObject();
+        if (clientId) {
+            const accepted = await offerModel.exists({ buyer: clientId, property: property._id, status: 'accepted' });
+            result.my_accepted_offer = Boolean(accepted);
+        }
+        return result;
     },
 
     // Búsqueda geoespacial pura contra la propia colección. No necesita la
