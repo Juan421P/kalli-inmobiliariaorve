@@ -93,8 +93,8 @@ const MakeOfferPage = () => {
                         </p>
                         <p className='text-sm text-orve-teal/60 max-w-md'>
                             {property.my_active_offer.last_actor === 'seller'
-                                ? 'La contraoferta espera su respuesta. Puede aceptarla o contraofertar desde su perfil.'
-                                : 'Solo puede hacerse una oferta a la vez por propiedad.'}
+                                ? 'La contraoferta espera su respuesta. Puede contraofertar o retirar su oferta desde su perfil; solo ORVE puede aceptar.'
+                                : 'Se está esperando la respuesta de ORVE. Solo puede hacerse una oferta a la vez por propiedad.'}
                         </p>
                         <Link to='/profile' className='text-sm text-orve-teal underline mt-2'>Ver mis ofertas</Link>
                         <Link to={`/property/${public_id}`} className='text-sm text-orve-teal underline'>Volver a la propiedad</Link>

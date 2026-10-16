@@ -137,9 +137,16 @@ test('no se puede aceptar una oferta por debajo del mínimo', async () => {
     assert.equal(property.status, 'available');
 });
 
-test('el cliente acepta la contraoferta de ORVE y la propiedad queda ocupada', async () => {
+test('el cliente no puede aceptar ni la contraoferta de ORVE: solo ORVE acepta', async () => {
     offer = makeOffer({ status: 'countered', last_actor: 'seller', price: 480000 });
-    const accepted = await service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' });
+    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 403, 'FORBIDDEN_WRONG_SIDE');
+    assert.equal(offer.status, 'countered');
+    assert.equal(property.status, 'available');
+});
+
+test('el vendedor acepta la oferta del cliente y la propiedad queda ocupada', async () => {
+    offer = makeOffer({ status: 'countered', last_actor: 'buyer', price: 480000 });
+    const accepted = await service.resolve(OFFER_ID, { actor: admin, status: 'accepted' });
     assert.equal(accepted.status, 'accepted');
     assert.equal(property.status, 'occupied');
 });
@@ -150,39 +157,39 @@ test('el vendedor acepta la oferta del cliente', async () => {
     assert.equal(accepted.status, 'accepted');
 });
 
-test('nadie puede aceptar su propia propuesta', async () => {
+test('ORVE no puede aceptar su propia contraoferta', async () => {
     offer = makeOffer({ status: 'pending', last_actor: 'buyer', price: 450000 });
-    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 409, 'AWAITING_OTHER_PARTY');
+    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 403, 'FORBIDDEN_WRONG_SIDE');
     offer = makeOffer({ status: 'countered', last_actor: 'seller', price: 480000 });
     await rejectsWith(service.resolve(OFFER_ID, { actor: admin, status: 'accepted' }), 409, 'AWAITING_OTHER_PARTY');
 });
 
 test('aceptar dos veces la misma oferta falla la segunda vez', async () => {
-    offer = makeOffer({ status: 'countered', last_actor: 'seller', price: 480000 });
-    await service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' });
-    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
+    offer = makeOffer({ status: 'countered', last_actor: 'buyer', price: 480000 });
+    await service.resolve(OFFER_ID, { actor: admin, status: 'accepted' });
+    await rejectsWith(service.resolve(OFFER_ID, { actor: admin, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
 });
 
 test('si la oferta cambia mientras se acepta, no se acepta y la propiedad se libera', async () => {
-    offer = makeOffer({ status: 'countered', last_actor: 'seller', price: 480000 });
+    offer = makeOffer({ status: 'countered', last_actor: 'buyer', price: 480000 });
     // otra petición la cerró justo entre la lectura y la escritura
     model.findOneAndUpdate = async () => null;
-    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
+    await rejectsWith(service.resolve(OFFER_ID, { actor: admin, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
     assert.equal(property.status, 'available');
 });
 
 test('no se puede aceptar una oferta rechazada, retirada o ya aceptada', async () => {
     for (const status of ['rejected', 'withdrawn', 'accepted']) {
         offer = makeOffer({ status, last_actor: 'seller', price: 480000 });
-        await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
+        await rejectsWith(service.resolve(OFFER_ID, { actor: admin, status: 'accepted' }), 409, 'OFFER_ALREADY_CLOSED');
     }
 });
 
 test('no se puede aceptar ni contraofertar si la propiedad ya está ocupada', async () => {
     property.status = 'occupied';
-    offer = makeOffer({ status: 'countered', last_actor: 'seller', price: 480000 });
-    await rejectsWith(service.resolve(OFFER_ID, { actor: buyer, status: 'accepted' }), 409, 'PROPERTY_NOT_AVAILABLE');
-    await rejectsWith(service.counter(OFFER_ID, { actor: buyer, price: 470000 }), 409, 'PROPERTY_NOT_AVAILABLE');
+    offer = makeOffer({ status: 'countered', last_actor: 'buyer', price: 480000 });
+    await rejectsWith(service.resolve(OFFER_ID, { actor: admin, status: 'accepted' }), 409, 'PROPERTY_NOT_AVAILABLE');
+    await rejectsWith(service.counter(OFFER_ID, { actor: admin, price: 470000 }), 409, 'PROPERTY_NOT_AVAILABLE');
 });
 
 test('rechazar y retirar siguen funcionando como antes', async () => {

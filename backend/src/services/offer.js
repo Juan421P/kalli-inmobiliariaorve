@@ -42,11 +42,16 @@ async function findAvailableProperty(propertyId, offerId) {
     return propertyDoc;
 }
 
-// aceptar le toca a quien recibió la última propuesta: el vendedor acepta la
-// oferta del comprador y el comprador acepta la contraoferta de ORVE. Nadie
-// puede aceptar su propia propuesta
+// aceptar le toca solo al vendedor (admin o colaborador de la propiedad) y solo
+// sobre la última propuesta del comprador: el cliente nunca acepta, y ORVE no
+// puede aceptar su propia contraoferta
 async function acceptOffer(offer, side) {
     const id = offer._id;
+    if (side !== 'seller') throw new AuthorizationError(
+        'solo ORVE (administrador o colaborador) puede aceptar una oferta', {
+        code: 'FORBIDDEN_WRONG_SIDE',
+        required_side: 'seller'
+    });
     if (offer.last_actor === side) throw new ConflictError(
         'no puede aceptar su propia propuesta, debe esperar a que la otra parte responda', {
         code: 'AWAITING_OTHER_PARTY',

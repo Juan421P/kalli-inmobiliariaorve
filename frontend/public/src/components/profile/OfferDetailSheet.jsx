@@ -3,10 +3,6 @@ import { History, ArrowRightLeft, XCircle, CheckCircle2, Clock } from 'lucide-re
 import {
     Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription,
 } from '@/components/ui/sheet'
-import {
-    AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
-    AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import offerService from '@/services/Offer'
@@ -57,7 +53,7 @@ const Notice = ({ icon, tone, children }) => {
 
 // Detalle de una oferta propia con su historial completo de negociacion.
 // Cuando le toca responder al cliente (last_actor === 'seller', es decir ORVE
-// ya contraoferto) puede aceptar la contraoferta o contraofertar; mientras la
+// ya contraoferto) puede contraofertar (solo ORVE acepta); mientras la
 // oferta siga abierta puede retirarla. El backend valida lo mismo del otro
 // lado (offer.js -> counter()/resolve()), incluido el rango de montos; esto
 // solo evita mostrar una accion que igual el servidor rechazaria.
@@ -67,7 +63,6 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
     const [price, setPrice] = useState('')
     const [priceError, setPriceError] = useState(null)
     const [submitting, setSubmitting] = useState(false)
-    const [confirmAccept, setConfirmAccept] = useState(false)
     const [loadError, setLoadError] = useState(null)
 
     const loadOffer = () => offerService.getById(offerId)
@@ -94,9 +89,6 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
     const isMyTurn = isOpenOffer && offer.last_actor === 'seller'
     const propertyAvailable = offer?.property?.status !== 'occupied'
     const canRespond = isMyTurn && propertyAvailable
-    // la contraoferta de ORVE ya se valido al crearla, pero el precio publicado
-    // pudo cambiar despues: si quedo fuera de rango, el backend no la acepta
-    const acceptBlockedReason = canRespond && propertyPrice ? getPriceError(offer.price, propertyPrice) : null
 
     // si el servidor rechaza la accion porque la oferta cambio por otro lado
     // (ya resuelta, propiedad ocupada...), se recarga para que el estado y los
@@ -127,21 +119,6 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
         }
     }
 
-    const handleAccept = async () => {
-        setSubmitting(true)
-        try {
-            const data = await offerService.resolve(offerId, 'accepted')
-            setOffer((prev) => ({ ...prev, ...(data.offer ?? data), property: prev.property }))
-            setConfirmAccept(false)
-            toast.success('¡Oferta aceptada! Nos comunicaremos contigo pronto.')
-            onChanged?.()
-        } catch (err) {
-            setConfirmAccept(false)
-            handleActionError(err)
-        } finally {
-            setSubmitting(false)
-        }
-    }
 
     const handleWithdraw = async () => {
         setSubmitting(true)
@@ -213,7 +190,7 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
                         )}
                         {canRespond && (
                             <Notice icon={ArrowRightLeft} tone='blue'>
-                                ORVE le propone {formatCurrency(offer.price)}. Puede aceptar, contraofertar o retirar su oferta.
+                                ORVE le propone {formatCurrency(offer.price)}. Puede contraofertar o retirar su oferta; solo ORVE puede aceptar ofertas.
                             </Notice>
                         )}
 
@@ -232,20 +209,6 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
                             </div>
                         )}
 
-                        {canRespond && (
-                            <div className='flex flex-col gap-2 pt-2 border-t border-orve-teal/10'>
-                                <Button
-                                    onClick={() => setConfirmAccept(true)}
-                                    disabled={submitting || !!acceptBlockedReason}
-                                    className='bg-emerald-600 hover:bg-emerald-700 text-white'
-                                >
-                                    <CheckCircle2 className='w-4 h-4' /> Aceptar oferta
-                                </Button>
-                                {acceptBlockedReason && (
-                                    <p className='text-[11px] text-red-500'>No se puede aceptar: {acceptBlockedReason}</p>
-                                )}
-                            </div>
-                        )}
 
                         {canRespond && (
                             <div className='flex flex-col gap-2 pt-2 border-t border-orve-teal/10'>
@@ -287,27 +250,6 @@ const OfferDetailSheet = ({ offerId, open, onOpenChange, onChanged }) => {
                     </>
                 )}
 
-                <AlertDialog open={confirmAccept} onOpenChange={(next) => !submitting && setConfirmAccept(next)}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                            <AlertDialogTitle>¿Aceptar la contraoferta?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Va a aceptar la propuesta de ORVE por {formatCurrency(offer?.price)} para {offer?.property?.title}.
-                                La negociación se cerrará y un agente se comunicará con usted.
-                            </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                            <AlertDialogCancel disabled={submitting}>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                                onClick={(e) => { e.preventDefault(); handleAccept() }}
-                                disabled={submitting}
-                                className='bg-emerald-600 hover:bg-emerald-700 text-white'
-                            >
-                                {submitting ? 'Aceptando...' : 'Sí, aceptar'}
-                            </AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
             </SheetContent>
         </Sheet>
     )

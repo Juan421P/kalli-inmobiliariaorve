@@ -223,8 +223,10 @@ const PropertyForSale = () => {
                                         <Clock className='w-4 h-4 text-amber-600 shrink-0 mt-0.5' />
                                         <p className='text-sm text-amber-700 font-medium'>
                                             {property.my_active_offer.last_actor === 'seller'
-                                                ? <>ORVE le hizo una contraoferta de {formatPrice(property.my_active_offer.price)}. Puede aceptarla o contraofertar desde <Link to='/profile' className='underline'>su perfil</Link>.</>
-                                                : <>Ya tiene una oferta pendiente de {formatPrice(property.my_active_offer.price)} por esta propiedad. Espere a que sea revisada o resuelta.</>
+                                                ? <>ORVE le hizo una contraoferta de {formatPrice(property.my_active_offer.price)}. Puede contraofertar o retirar su oferta desde <Link to='/profile' className='underline'>su perfil</Link>; solo ORVE puede aceptar.</>
+                                                : property.my_active_offer.status === 'countered'
+                                                    ? <>Su contraoferta de {formatPrice(property.my_active_offer.price)} fue enviada. Está esperando la respuesta de ORVE. Solo puede hacerse una oferta a la vez por propiedad.</>
+                                                    : <>Su oferta de {formatPrice(property.my_active_offer.price)} está pendiente: se espera la respuesta de ORVE. Solo puede hacerse una oferta a la vez por propiedad.</>
                                             }
                                         </p>
                                     </div>
