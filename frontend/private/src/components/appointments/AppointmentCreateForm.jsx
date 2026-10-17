@@ -338,7 +338,7 @@ const AppointmentCreateForm = ({ initialData, onSubmit, onCancel, isLoading }) =
                 </Field>
             </FieldGroup>
 
-            <div className='flex justify-end gap-3 pt-2'>
+            <div className='flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2'>
                 {isEditing && (
                     <Button
                         variant='outline'

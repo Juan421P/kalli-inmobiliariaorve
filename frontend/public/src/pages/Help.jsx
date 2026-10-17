@@ -163,7 +163,7 @@ const Help = () => {
 
             <Navbar />
 
-            <div className='relative max-w-3xl mx-auto px-6 pt-28 pb-20'>
+            <div className='relative max-w-3xl mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-20'>
 
                 {/* Hero */}
                 <div className='text-center mb-10'>

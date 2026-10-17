@@ -29,9 +29,9 @@ const ScheduleTable = ({ schedules = [], onEdit, onDelete, onDeleteSlot, loading
                         <div className={`w-1 shrink-0 ${accent} opacity-70 group-hover:opacity-100 transition-opacity`} />
 
                         {/* Contenido */}
-                        <div className='flex flex-1 items-center gap-5 px-5 py-4'>
+                        <div className='flex flex-1 flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-5 px-4 sm:px-5 py-3 sm:py-4'>
                             {/* Día */}
-                            <div className='flex items-center gap-2 w-28 shrink-0'>
+                            <div className='flex items-center gap-2 sm:w-28 shrink-0'>
                                 <Clock className='w-3.5 h-3.5 text-orve-teal/40 shrink-0' />
                                 <span className='text-sm font-semibold text-orve-teal tracking-wide'>
                                     {dayEntry.day}
@@ -75,7 +75,7 @@ const ScheduleTable = ({ schedules = [], onEdit, onDelete, onDeleteSlot, loading
                             </div>
 
                             {/* Solo eliminar día completo */}
-                            <div className='flex items-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity'>
+                            <div className='flex items-center shrink-0 opacity-0 pointer-coarse:opacity-100 group-hover:opacity-100 transition-opacity'>
                                 <button
                                     onClick={() => onDelete(dayEntry)}
                                     disabled={!!loadingSlotId}

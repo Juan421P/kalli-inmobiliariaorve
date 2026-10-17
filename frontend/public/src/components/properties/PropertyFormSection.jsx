@@ -35,7 +35,7 @@ const PropertyFormSection = ({ title, description, pdfFile, pdfFileName }) => {
                     </p>
                 </div>
 
-                <div className='flex items-center gap-3'>
+                <div className='flex flex-wrap items-center gap-3'>
                     <a
                         href={`https://wa.me/${WHATSAPP_NUMBER}`}
                         target='_blank'

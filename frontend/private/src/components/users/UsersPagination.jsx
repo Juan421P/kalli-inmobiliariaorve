@@ -18,7 +18,7 @@ const UsersPagination = ({ currentPage, totalPages, total, limit, entityLabel = 
     })
 
     return (
-        <div className='flex items-center justify-between pt-3 border-t border-orve-teal/10'>
+        <div className='flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-orve-teal/10'>
             <span className='text-sm text-orve-teal/60'>
                 {total === 0
                     ? `Sin ${entityLabel}`

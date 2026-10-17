@@ -336,7 +336,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading, catalogs }) => {
                             {errors.title && <p className='text-xs text-orve-red mt-0.5'>{errors.title}</p>}
                         </Field>
 
-                        <div className='grid grid-cols-3 gap-3'>
+                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
                             <Field>
                                 <FieldLabel>
                                     <FieldTitle className='text-orve-teal/70'>Tipo</FieldTitle>
@@ -391,7 +391,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading, catalogs }) => {
                     <FieldGroup>
                         <FieldLegend className='text-orve-teal'>Precio y dimensiones</FieldLegend>
 
-                        <div className='grid grid-cols-2 gap-4'>
+                        <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                             <Field>
                                 <FieldLabel>
                                     <FieldTitle className='text-orve-teal/70'>
@@ -437,7 +437,7 @@ const PropertyCreateForm = ({ onSubmit, isLoading, catalogs }) => {
                         </div>
 
                         {showRooms && (
-                            <div className='grid grid-cols-3 gap-3'>
+                            <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
                                 <div className='flex flex-col gap-1.5'>
                                     <span className='text-sm font-medium text-orve-teal/70'>Habitaciones</span>
                                     <NumberStepper value={form.bedrooms}       onChange={(v) => setField('bedrooms', v)}       />

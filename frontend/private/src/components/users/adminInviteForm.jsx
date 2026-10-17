@@ -204,7 +204,7 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
     return (
         <div className='flex flex-col gap-5'>
             {/* ── Avatar + campos lado a lado ── */}
-            <div className='flex gap-6 items-start'>
+            <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 items-center sm:items-start'>
                 {/* Avatar */}
                 <div className='shrink-0 pt-1'>
                     <AvatarUpload
@@ -218,7 +218,7 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
                 </div>
 
                 {/* Campos en cuadrícula 2 columnas */}
-                <div className='flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4'>
+                <div className='flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-4'>
                     <Field>
                         <FieldLabel>
                             <FieldTitle className='text-orve-teal/70 flex items-center gap-2'>
@@ -353,14 +353,14 @@ const AdminInviteForm = ({ onSubmit, isLoading }) => {
             </div>
 
             {/* ── Nota + botón ── */}
-            <div className='flex items-center justify-between gap-4 pt-1'>
+            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 pt-1'>
                 <p className='text-xs text-orve-teal/50'>
                     Se enviará un correo de invitación para que el administrador defina su contraseña.
                 </p>
                 <Button
                     onClick={handleSubmit}
                     disabled={isLoading || !isFormReady}
-                    className='shrink-0 bg-orve-teal hover:bg-orve-darker-teal text-white px-8'
+                    className='shrink-0 w-full sm:w-auto bg-orve-teal hover:bg-orve-darker-teal text-white px-8'
                 >
                     {isLoading ? 'Enviando...' : 'Enviar invitación'}
                 </Button>

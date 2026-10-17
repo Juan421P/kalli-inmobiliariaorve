@@ -54,10 +54,10 @@ const CompareProperties = () => {
         <div className='min-h-screen'>
             <Navbar />
 
-            <div className='max-w-6xl mx-auto px-6 pt-24 pb-16'>
+            <div className='max-w-6xl mx-auto px-4 sm:px-6 pt-24 pb-16'>
 
                 {/* Header */}
-                <div className='flex items-center justify-between mb-6'>
+                <div className='flex flex-wrap items-center justify-between gap-2 mb-6'>
                     <h1 className='text-xl font-bold text-orve-darker-teal flex items-center gap-2'>
                         <SlidersHorizontal className='w-5 h-5' />
                         Comparar propiedades
@@ -74,7 +74,7 @@ const CompareProperties = () => {
                 </div>
 
                 {/* Columnas */}
-                <div className='grid gap-4' style={{ gridTemplateColumns: `repeat(${MAX_SLOTS}, 1fr)` }}>
+                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
                     {slots.map((prop) => (
                         <PropertyColumn
                             key={prop._id}

@@ -205,7 +205,7 @@ const OwnersSection = () => (
             <div className='absolute inset-0 bg-white/75 backdrop-blur-sm' />
             <div className='relative grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-orve-teal/15'>
                 {/* Alquilar */}
-                <div className='flex items-center justify-between gap-4 p-8'>
+                <div className='flex items-center justify-between gap-3 sm:gap-4 p-5 sm:p-8'>
                     <div className='flex flex-col gap-3'>
                         <div>
                             <h3 className='text-xl font-bold text-orve-darker-teal leading-tight'>
@@ -222,11 +222,11 @@ const OwnersSection = () => (
                             </Link>
                         </div>
                     </div>
-                    <img src={horseAgent} alt='Agente ORVE' className='w-28 h-28 object-contain shrink-0 select-none' />
+                    <img src={horseAgent} alt='Agente ORVE' className='w-20 h-20 sm:w-28 sm:h-28 object-contain shrink-0 select-none' />
                 </div>
                 {/* Vender */}
-                <div className='flex items-center justify-between gap-4 p-8'>
-                    <img src={horseAgent} alt='Agente ORVE' className='w-28 h-28 object-contain shrink-0 select-none scale-x-[-1]' />
+                <div className='flex items-center justify-between gap-3 sm:gap-4 p-5 sm:p-8'>
+                    <img src={horseAgent} alt='Agente ORVE' className='w-20 h-20 sm:w-28 sm:h-28 object-contain shrink-0 select-none scale-x-[-1]' />
                     <div className='flex flex-col gap-3 items-end text-right'>
                         <div>
                             <h3 className='text-xl font-bold text-orve-darker-teal leading-tight'>
@@ -251,11 +251,11 @@ const OwnersSection = () => (
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 const Hero = ({ search, onSearch, onSubmit }) => (
-    <section className='relative h-72 md:h-96 flex items-center overflow-hidden'>
+    <section className='relative min-h-72 md:h-96 pt-20 pb-10 md:py-0 flex items-center overflow-hidden'>
         <div className='absolute inset-0 bg-cover bg-center' style={{ backgroundImage: `url(${houseBg})` }} />
         <div className='absolute inset-0 bg-gradient-to-r from-orve-teal/70 via-orve-teal/30 to-transparent' />
-        <div className='relative z-10 w-full max-w-7xl mx-auto px-8'>
-            <h1 className='text-4xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-md'>
+        <div className='relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-8'>
+            <h1 className='text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight mb-6 drop-shadow-md'>
                 A un clic de tu<br />próximo hogar
             </h1>
             <div className='flex items-center gap-2 bg-white rounded-xl shadow-lg px-4 py-2.5 max-w-lg'>

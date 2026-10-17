@@ -80,10 +80,10 @@ const Profile = () => {
 
             <Navbar />
 
-            <div className='relative max-w-5xl mx-auto px-8 pt-28 pb-16'>
+            <div className='relative max-w-5xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-16'>
 
                 {/* Header: foto + info */}
-                <div className='flex items-center gap-7 mb-10'>
+                <div className='flex flex-col sm:flex-row items-center gap-4 sm:gap-7 mb-8 sm:mb-10 text-center sm:text-left'>
                     <div className='shrink-0'>
                         <div className='w-24 h-24 rounded-full overflow-hidden bg-orve-teal/15 ring-4 ring-white shadow-lg flex items-center justify-center relative'>
                             {uploading && (
@@ -98,7 +98,7 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    <div className='flex flex-col gap-1.5'>
+                    <div className='flex flex-col items-center sm:items-start gap-1.5 min-w-0'>
                         {isLoading ? (
                             <div className='flex flex-col gap-2'>
                                 <div className='h-6 w-48 bg-orve-teal/10 rounded-lg animate-pulse' />
@@ -111,13 +111,13 @@ const Profile = () => {
                                     {personal.name} {personal.lastname}
                                 </h1>
                                 {personal.email && (
-                                    <div className='flex items-center gap-2 text-gray-500 text-sm'>
+                                    <div className='flex items-center gap-2 text-gray-500 text-sm break-all'>
                                         <Mail className='w-3.5 h-3.5 shrink-0' />
                                         {personal.email}
                                     </div>
                                 )}
                                 {personal.phone && (
-                                    <div className='flex items-center gap-2 text-gray-500 text-sm'>
+                                    <div className='flex items-center gap-2 text-gray-500 text-sm break-all'>
                                         <Phone className='w-3.5 h-3.5 shrink-0' />
                                         +503 {personal.phone}
                                     </div>
@@ -126,7 +126,7 @@ const Profile = () => {
                         )}
                         <button
                             onClick={() => fileInputRef.current?.click()}
-                            className='mt-1 self-start flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/70 hover:bg-white/90 border border-gray-200/80 text-gray-500 text-xs font-medium transition-colors'
+                            className='mt-1 self-center sm:self-start flex items-center gap-2 px-4 py-1.5 rounded-xl bg-white/70 hover:bg-white/90 border border-gray-200/80 text-gray-500 text-xs font-medium transition-colors'
                         >
                             <Camera className='w-3.5 h-3.5' />
                             Editar foto
@@ -148,7 +148,7 @@ const Profile = () => {
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={cn(
-                                'py-3 rounded-xl text-sm font-semibold transition-all duration-200',
+                                'py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200',
                                 activeTab === tab.key
                                     ? 'bg-orve-darker-teal text-white shadow-sm'
                                     : 'text-orve-teal/50 hover:text-orve-teal/80'
@@ -162,11 +162,11 @@ const Profile = () => {
                 {/* Tab: Perfil */}
                 {activeTab === 'profile' && (
                     isLoading ? (
-                        <div className='grid grid-cols-1 lg:grid-cols-2 gap-10'>
+                        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10'>
                             {[0, 1].map(i => (
                                 <div key={i} className='flex flex-col gap-4'>
                                     <div className='h-5 w-40 bg-orve-teal/10 rounded-lg animate-pulse' />
-                                    <div className='grid grid-cols-2 gap-4'>
+                                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                                         {[0,1,2,3].map(j => (
                                             <div key={j} className='flex flex-col gap-1.5'>
                                                 <div className='h-3 w-16 bg-orve-teal/10 rounded animate-pulse' />
@@ -178,7 +178,7 @@ const Profile = () => {
                             ))}
                         </div>
                     ) : (
-                        <div className='grid grid-cols-1 lg:grid-cols-2 gap-10'>
+                        <div className='grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10'>
                             <div>
                                 <SectionHeader
                                     title='Información personal'
@@ -192,7 +192,7 @@ const Profile = () => {
                                 {personalError && (
                                     <p className='mb-3 text-sm text-orve-red'>{personalError}</p>
                                 )}
-                                <div className='grid grid-cols-2 gap-4'>
+                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                                     <ProfileField label='Nombre'            value={personal.name}     editing={editingPersonal} onChange={setField('name')} maxLength={20} error={editingPersonal ? personalErrors.name : null} />
                                     <ProfileField label='Apellido'          value={personal.lastname} editing={editingPersonal} onChange={setField('lastname')} maxLength={20} error={editingPersonal ? personalErrors.lastname : null} />
                                     <ProfileField label='Correo electrónico' value={personal.email}   editing={false} type='email' />

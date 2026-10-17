@@ -112,7 +112,7 @@ const MakeOfferPage = () => {
                                 Volver a la propiedad
                             </Link>
 
-                            <h1 className='text-3xl font-bold text-orve-darker-teal leading-tight'>
+                            <h1 className='text-2xl sm:text-3xl font-bold text-orve-darker-teal leading-tight'>
                                 {property?.title}
                             </h1>
 
@@ -124,7 +124,7 @@ const MakeOfferPage = () => {
                         </div>
 
                         {/* ── Columna derecha — formulario ── */}
-                        <div className='bg-white/80 backdrop-blur-sm border border-white rounded-2xl p-6 flex flex-col gap-6 shadow-sm'>
+                        <div className='bg-white/80 backdrop-blur-sm border border-white rounded-2xl p-4 sm:p-6 flex flex-col gap-6 shadow-sm'>
 
                             {/* Encabezado */}
                             <div className='flex items-start gap-3'>
@@ -194,7 +194,7 @@ const MakeOfferPage = () => {
                                         control={control}
                                         name='rentalMonths'
                                         render={({ field }) => (
-                                            <div className='grid grid-cols-4 gap-2'>
+                                            <div className='grid grid-cols-2 sm:grid-cols-4 gap-2'>
                                                 {RENTAL_OPTIONS.map((opt) => (
                                                     <button
                                                         type='button'

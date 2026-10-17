@@ -33,7 +33,7 @@ const ToastCard = ({ id, title, description, variant = 'default' }) => {
     const Icon = v.icon
     return (
         <div className={cn(
-            'relative flex items-start w-full min-w-80 max-w-md overflow-hidden',
+            'relative flex items-start w-full sm:min-w-80 max-w-md overflow-hidden',
             'rounded-r-xl shadow-xl ring-1',
             'bg-white/95 backdrop-blur-md',
             v.ring

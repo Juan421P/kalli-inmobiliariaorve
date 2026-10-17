@@ -45,7 +45,7 @@ const Calculate = () => {
 
             <Navbar />
 
-            <div className='relative max-w-5xl mx-auto px-8 pt-28 pb-16'>
+            <div className='relative max-w-5xl mx-auto px-4 sm:px-8 pt-24 sm:pt-28 pb-16'>
                 <h1 className='text-xl font-bold text-orve-darker-teal mb-8'>
                     Calcular cuota mensual aproximada
                 </h1>
@@ -128,11 +128,11 @@ const SliderField = ({ label, sublabel, value, min, max, step, leftLabel, rightL
 
 const ResultCard = ({ label, value }) => (
     <div
-        className='rounded-2xl px-8 py-8 flex flex-col gap-2'
+        className='rounded-2xl px-5 py-6 sm:px-8 sm:py-8 flex flex-col gap-2'
         style={{ background: 'linear-gradient(135deg, #507177 0%, #405C62 100%)' }}
     >
         <p className='text-white/70 text-sm'>{label}</p>
-        <p className='text-white text-3xl font-bold tracking-tight'>{value}</p>
+        <p className='text-white text-2xl sm:text-3xl font-bold tracking-tight break-all'>{value}</p>
     </div>
 )
 

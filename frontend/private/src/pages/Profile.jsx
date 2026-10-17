@@ -106,9 +106,9 @@ const Profile = () => {
     }
 
     return (
-        <div className='flex h-screen overflow-hidden bg-white/50'>
+        <div className='flex flex-col lg:flex-row h-screen overflow-hidden bg-white/50'>
             <Sidebar />
-            <main className='flex-1 overflow-y-auto p-8'>
+            <main className='flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8'>
                 <header className='mb-7 select-none'>
                     <h1 className='text-2xl font-semibold text-orve-teal leading-tight'>Mi perfil</h1>
                     <p className='text-sm text-orve-teal/70 mt-0.5'>Administra tu información personal y tu foto de perfil</p>
@@ -117,7 +117,7 @@ const Profile = () => {
                 <div className='flex flex-col gap-6'>
 
                     {/* Encabezado: avatar + identidad, a todo lo ancho */}
-                    <div className={`${panel} flex flex-col sm:flex-row items-center sm:items-stretch gap-8 p-8`}>
+                    <div className={`${panel} flex flex-col sm:flex-row items-center sm:items-stretch gap-5 sm:gap-8 p-5 sm:p-8`}>
                         <div className='relative group shrink-0'>
                             <div className='w-36 h-36 rounded-full bg-orve-teal/15 overflow-hidden flex items-center justify-center ring-4 ring-orve-teal/10'>
                                 {user?.picture
@@ -161,7 +161,7 @@ const Profile = () => {
                     </div>
 
                     {/* Formulario editable, a todo lo ancho */}
-                    <div className={`${panel} p-8`}>
+                    <div className={`${panel} p-5 sm:p-8`}>
                         <div className='mb-8'>
                             <h2 className='text-lg font-semibold text-orve-teal'>Información personal</h2>
                             <p className='text-sm text-orve-teal/60 mt-0.5'>Estos datos son visibles para el resto del equipo</p>

@@ -59,11 +59,11 @@ const OTPInput = ({ value = '', onChange, separatorAt = 3 }) => {
     }
 
     return (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center gap-1 sm:gap-2">
             {Array.from({ length: BOXES }).map((_, i) => (
                 <div key={i} className="flex items-center">
                     {i === separatorAt && (
-                        <span className="text-orve-teal/30 text-lg font-light select-none mx-2">
+                        <span className="text-orve-teal/30 text-lg font-light select-none mx-1 sm:mx-2">
                             —
                         </span>
                     )}
@@ -80,7 +80,7 @@ const OTPInput = ({ value = '', onChange, separatorAt = 3 }) => {
                         onChange={(e) => handleChange(i, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(i, e)}
                         onPaste={handlePaste}
-                        className="w-11 h-12 text-center text-base font-bold border-2 border-orve-teal/20 rounded-xl bg-orve-teal/5 outline-none focus:border-orve-teal transition-colors text-orve-darker-teal"
+                        className="w-9 h-11 sm:w-11 sm:h-12 text-center text-base font-bold border-2 border-orve-teal/20 rounded-xl bg-orve-teal/5 outline-none focus:border-orve-teal transition-colors text-orve-darker-teal"
                     />
                 </div>
             ))}

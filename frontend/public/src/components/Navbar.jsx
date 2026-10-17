@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, Menu, User } from 'lucide-react';
+import { ChevronDown, Menu, User, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import useAuth from '@/hooks/useAuth';
 import orveLogo from '@/assets/orve-logo.svg';
@@ -108,7 +108,11 @@ const Navbar = () => {
         window.addEventListener('scroll', onScroll, { passive: true })
         return () => window.removeEventListener('scroll', onScroll)
     }, [isHome])
-    const transparent = isHome && !scrolled
+    // el menú queda abierto solo mientras la ruta sea la que lo abrió: al navegar se cierra solo
+    const [openPath, setOpenPath] = useState(null)
+    const mobileOpen = openPath === pathname
+    const setMobileOpen = (next) => setOpenPath((typeof next === 'function' ? next(mobileOpen) : next) ? pathname : null)
+    const transparent = isHome && !scrolled && !mobileOpen
     const initials = user?.name
         ? `${user.name[0]}${user.lastname?.[0] ?? ''}`.toUpperCase()
         : null
@@ -119,7 +123,7 @@ const Navbar = () => {
                 ? 'bg-transparent'
                 : 'bg-white/95 backdrop-blur-md shadow-sm border-b border-orve-teal/10'
         )}>
-            <div className='max-w-6xl mx-auto px-6 h-16 flex items-center gap-8'>
+            <div className='max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4 md:gap-8'>
                 <Link to='/' className='shrink-0'>
                     <img
                         src={transparent ? orveLogoWhite : orveLogo}
@@ -132,7 +136,19 @@ const Navbar = () => {
                         <NavLink key={item.label} item={item} transparent={transparent} />
                     ))}
                 </div>
-                <div className='flex items-center gap-3 ml-auto'>
+                <div className='flex items-center gap-2 sm:gap-3 ml-auto'>
+                    <button
+                        type='button'
+                        onClick={() => setMobileOpen((v) => !v)}
+                        aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
+                        aria-expanded={mobileOpen}
+                        className={cn(
+                            'md:hidden p-2 rounded-full transition-colors cursor-pointer',
+                            transparent ? 'text-white hover:bg-white/10' : 'text-orve-teal hover:bg-orve-teal/5'
+                        )}
+                    >
+                        {mobileOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+                    </button>
                     <div className={cn(
                         'flex items-center gap-1 rounded-full px-2 py-1.5 cursor-pointer transition-colors',
                         transparent
@@ -141,7 +157,7 @@ const Navbar = () => {
                     )}
                         onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
                     >
-                        <Menu className={cn('w-5 h-5', transparent ? 'text-white' : 'text-orve-teal/70')} />
+                        <Menu className={cn('w-5 h-5 hidden md:block', transparent ? 'text-white' : 'text-orve-teal/70')} />
                         <div className={cn(
                             'w-8 h-8 rounded-full overflow-hidden flex items-center justify-center shrink-0',
                             transparent ? 'bg-white/20' : 'bg-orve-teal/15'
@@ -156,6 +172,34 @@ const Navbar = () => {
                     </div>
                 </div>
             </div>
+            {mobileOpen && (
+                <div className='md:hidden border-t border-orve-teal/10 bg-white max-h-[calc(100dvh-4rem)] overflow-y-auto'>
+                    <div className='px-4 py-3 flex flex-col'>
+                        {NAV_ITEMS.map((item) => (
+                            <div key={item.label} className='py-2 border-b border-orve-teal/10 last:border-0'>
+                                {item.items?.length ? (
+                                    <>
+                                        <span className='block text-xs font-semibold uppercase tracking-wider text-orve-teal/50 mb-1'>{item.label}</span>
+                                        {item.items.map((sub) => (
+                                            <Link
+                                                key={sub.to}
+                                                to={sub.to}
+                                                className='block py-2 text-sm text-orve-teal/80 hover:text-orve-teal'
+                                            >
+                                                {sub.label}
+                                            </Link>
+                                        ))}
+                                    </>
+                                ) : (
+                                    <Link to={item.to} className='block py-2 text-sm font-medium text-orve-teal/80 hover:text-orve-teal'>
+                                        {item.label}
+                                    </Link>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

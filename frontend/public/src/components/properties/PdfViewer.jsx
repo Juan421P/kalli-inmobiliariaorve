@@ -21,7 +21,7 @@ const PdfViewer = ({ file, fileName = 'documento.pdf' }) => {
 
     return (
         <div className='flex flex-col gap-2'>
-            <div className='bg-white border border-orve-teal/10 rounded-2xl shadow-sm overflow-auto max-h-[65vh] flex justify-center p-4'>
+            <div className='bg-white border border-orve-teal/10 rounded-2xl shadow-sm overflow-auto max-h-[65vh] flex justify-center p-2 sm:p-4'>
                 <Document
                     file={file}
                     onLoadSuccess={({ numPages }) => { setNumPages(numPages); setPageNumber(1) }}

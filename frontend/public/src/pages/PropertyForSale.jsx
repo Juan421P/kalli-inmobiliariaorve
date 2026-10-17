@@ -178,7 +178,7 @@ const PropertyForSale = () => {
                                     </p>
                                 </div>
 
-                                <div className='grid grid-cols-3 gap-3'>
+                                <div className='grid grid-cols-2 sm:grid-cols-3 gap-3'>
                                     {[
                                         { icon: Bed,       label: `${property.bedrooms ?? 0} habitaciones` },
                                         { icon: Bath,      label: `${property.bathrooms ?? 0} banos` },
@@ -232,10 +232,10 @@ const PropertyForSale = () => {
                                     </div>
                                 )}
 
-                                <div className='flex gap-3 mt-2'>
+                                <div className='flex flex-wrap gap-3 mt-2'>
                                     <button
                                         onClick={handleScheduleClick}
-                                        className='flex-1 flex items-center justify-center gap-2 bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
+                                        className='flex-1 min-w-36 flex items-center justify-center gap-2 bg-orve-teal hover:bg-orve-darker-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
                                     >
                                         <Calendar className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                         Agendar cita
@@ -243,7 +243,7 @@ const PropertyForSale = () => {
                                     {!property.my_accepted_offer && !property.my_active_offer && !property.my_rejected_offer && (
                                         <button
                                             onClick={handleOfferClick}
-                                            className='flex-1 flex items-center justify-center gap-2 bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
+                                            className='flex-1 min-w-36 flex items-center justify-center gap-2 bg-orve-darker-teal hover:bg-orve-teal text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors'
                                         >
                                             <Star className='w-4 h-4 shrink-0' strokeWidth={1.5} />
                                             Hacer una oferta

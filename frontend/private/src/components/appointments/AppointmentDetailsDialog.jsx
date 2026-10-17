@@ -72,7 +72,7 @@ const AppointmentDetailsDialog = ({ appointment: apt }) => {
 
                 <div className='flex flex-col gap-3'>
                     <SectionTitle icon={Home}>Propiedad y cita</SectionTitle>
-                    <div className='grid grid-cols-2 gap-4'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                         <InfoRow label='Propiedad' value={apt.property?.title} />
                         <InfoRow label='ID de propiedad' value={apt.property?.public_id} />
                         <InfoRow label='Fecha' value={formatDate(date)} />

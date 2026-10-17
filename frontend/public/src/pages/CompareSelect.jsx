@@ -62,7 +62,7 @@ const CompareSelect = () => {
 
             <Navbar />
 
-            <div className='relative max-w-5xl mx-auto px-6 pt-24 pb-32'>
+            <div className='relative max-w-5xl mx-auto px-4 sm:px-6 pt-24 pb-32'>
 
                 {/* Header */}
                 <div className='flex items-center gap-3 mb-6'>
@@ -175,14 +175,14 @@ const CompareSelect = () => {
             </div>
 
             {/* Barra inferior fija */}
-            <div className='fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-orve-teal/10 px-6 py-4 flex items-center justify-between z-40'>
-                <p className='text-sm text-orve-teal/50'>
+            <div className='fixed bottom-0 inset-x-0 bg-white/90 backdrop-blur-md border-t border-orve-teal/10 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between gap-3 z-40'>
+                <p className='text-xs sm:text-sm text-orve-teal/50 min-w-0'>
                     {picked ? `Seleccionada: ${fmt(picked.price)}` : 'Ninguna propiedad seleccionada'}
                 </p>
                 <button
                     onClick={handleAdd}
                     disabled={!picked}
-                    className='flex items-center gap-2 px-6 py-2.5 rounded-xl bg-orve-darker-teal text-white text-sm font-semibold hover:bg-orve-teal transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
+                    className='flex items-center gap-2 px-4 sm:px-6 py-2.5 rounded-xl bg-orve-darker-teal text-white text-xs sm:text-sm font-semibold shrink-0 hover:bg-orve-teal transition-colors disabled:opacity-40 disabled:cursor-not-allowed'
                 >
                     <SlidersHorizontal className='w-4 h-4' />
                     Agregar a la comparación

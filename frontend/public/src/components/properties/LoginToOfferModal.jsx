@@ -50,7 +50,7 @@ const LoginToOfferModal = ({
                     <X className='w-5 h-5' />
                 </button>
 
-                <div className='flex flex-col items-center px-8 py-10 gap-5'>
+                <div className='flex flex-col items-center px-5 sm:px-8 py-8 sm:py-10 gap-5'>
                     {/* Icono candado */}
                     <div className='w-20 h-20 rounded-full bg-orve-teal/10 flex items-center justify-center'>
                         <Lock className='w-9 h-9 text-orve-teal' strokeWidth={1.5} />

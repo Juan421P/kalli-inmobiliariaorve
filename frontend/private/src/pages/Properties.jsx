@@ -117,14 +117,14 @@ const Properties = () => {
     }
 
     return (
-        <div className='flex h-screen overflow-hidden bg-white/50'>
+        <div className='flex flex-col lg:flex-row h-screen overflow-hidden bg-white/50'>
             <Sidebar
                 userName={user?.name}
                 userRole={user?.role === 'admin' ? 'Administrador' : 'Colaborador'}
                 userAvatar={user?.avatarUrl}
             />
 
-            <main className='flex-1 overflow-y-auto p-8'>
+            <main className='flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8'>
                 <header className='mb-7 select-none'>
                     <h1 className='text-2xl font-semibold text-orve-teal leading-tight'>Propiedades</h1>
                     <p className='text-sm text-orve-teal/70 mt-0.5'>
@@ -173,7 +173,7 @@ const Properties = () => {
                                             className='pl-9 bg-white/70'
                                         />
                                     </div>
-                                    <div className='flex items-center gap-2'>
+                                    <div className='flex flex-wrap items-center gap-2'>
                                         <FilterSelect
                                             value={filterType}
                                             onValueChange={setFilterType}

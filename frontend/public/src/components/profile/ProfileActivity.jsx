@@ -208,7 +208,7 @@ const ProfileActivity = () => {
 
             {/* Actividad reciente */}
             <section>
-                <div className='flex items-center justify-between mb-4'>
+                <div className='flex items-center justify-between gap-3 mb-4'>
                     <div>
                         <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2'>
                             <Clock className='w-4 h-4' />
@@ -241,7 +241,7 @@ const ProfileActivity = () => {
 
             {/* Propiedades favoritas */}
             <section>
-                <div className='flex items-center justify-between mb-4'>
+                <div className='flex items-center justify-between gap-3 mb-4'>
                     <h3 className='text-base font-bold text-orve-darker-teal flex items-center gap-2'>
                         <Heart className='w-4 h-4' />
                         Mis propiedades favoritas

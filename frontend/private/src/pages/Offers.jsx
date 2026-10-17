@@ -38,14 +38,14 @@ const Offers = () => {
     } = useOffers()
 
     return (
-        <div className='flex h-screen overflow-hidden bg-white/50'>
+        <div className='flex flex-col lg:flex-row h-screen overflow-hidden bg-white/50'>
             <Sidebar
                 userName={user?.name}
                 userRole={user?.role === 'admin' ? 'Administrador' : 'Colaborador'}
                 userAvatar={user?.avatarUrl}
             />
 
-            <main className='flex-1 overflow-y-auto p-8'>
+            <main className='flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8'>
                 <header className='mb-7 select-none'>
                     <h1 className='text-2xl font-semibold text-orve-teal leading-tight'>Ofertas</h1>
                     <p className='text-sm text-orve-teal/70 mt-0.5'>Revisa, confirma y regestiona las ofertas</p>
@@ -63,8 +63,8 @@ const Offers = () => {
                     {/* Tabla */}
                     <div className={panel}>
                         {/* Buscador + filtro */}
-                        <div className='flex items-center gap-3 mb-5'>
-                            <div className='relative flex-1 max-w-lg'>
+                        <div className='flex flex-wrap items-center gap-3 mb-5'>
+                            <div className='relative flex-1 min-w-48 max-w-lg'>
                                 <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-orve-teal/40' />
                                 <Input
                                     value={search}

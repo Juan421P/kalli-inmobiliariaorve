@@ -52,10 +52,10 @@ const AuthLayout = ({ children }) => (
         <Navbar light />
 
         {/* Contenido principal */}
-        <div className='min-h-screen flex items-center justify-between pt-[70px] px-14'>
+        <div className='min-h-screen flex flex-col lg:flex-row items-center justify-center lg:justify-between gap-6 pt-[86px] pb-8 lg:py-0 lg:pt-[70px] px-4 sm:px-8 lg:px-14'>
 
             {/* Columna izquierda: texto superpuesto sobre la imagen */}
-            <div className='flex flex-col gap-5 py-8' style={{ maxWidth: '380px' }}>
+            <div className='hidden lg:flex flex-col gap-5 py-8' style={{ maxWidth: '380px' }}>
 
                 <div className='flex flex-col' style={{ lineHeight: '1.18' }}>
                     <span className='text-[36px] font-bold text-gray-800'>Encuentra</span>
@@ -89,9 +89,9 @@ const AuthLayout = ({ children }) => (
             </div>
 
             {/* Tarjeta flotante del formulario */}
-            <div className='w-[600px] shrink-0 mr-5 -mt-6'>
+            <div className='w-full max-w-[600px] lg:w-[600px] lg:shrink-0 lg:mr-5 lg:-mt-6'>
                 <div
-                    className='bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/55 px-9 py-8 max-h-[calc(100vh-96px)] overflow-y-auto'
+                    className='bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/55 px-5 sm:px-9 py-6 sm:py-8 lg:max-h-[calc(100vh-96px)] lg:overflow-y-auto'
                     style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}
                 >
                     {children}

@@ -55,7 +55,7 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
             )}
 
             {/* Teléfono y Tipo de documento */}
-            <div className='grid grid-cols-2 gap-3'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 {/* Número de teléfono */}
                 <div className='flex flex-col gap-1.5'>
                     <label className='text-xs text-orve-teal/70 font-medium'>Número de teléfono</label>
@@ -116,7 +116,7 @@ const RegisterStep2 = ({ form, password, onSubmit, goBack, serverError }) => {
             </div>
 
             {/* Número de documento y Confirmar contraseña */}
-            <div className='grid grid-cols-2 gap-3'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 {/* Número de documento */}
                 <div className='flex flex-col gap-1.5'>
                     <label className='text-xs text-orve-teal/70 font-medium'>Número de documento</label>

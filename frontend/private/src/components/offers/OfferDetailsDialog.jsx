@@ -102,7 +102,7 @@ const OfferDetailsDialog = ({ offer: o, onCounter }) => {
 
                 <div className='flex flex-col gap-3'>
                     <SectionTitle icon={Home}>Propiedad y oferta</SectionTitle>
-                    <div className='grid grid-cols-2 gap-4'>
+                    <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
                         <InfoRow label='Propiedad' value={o.property?.title} />
                         <InfoRow label='ID de propiedad' value={o.property?.public_id} />
                         <InfoRow label='Oferta actual' value={formatCurrency(o.price)} />

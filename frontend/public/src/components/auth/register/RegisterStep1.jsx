@@ -30,7 +30,7 @@ const RegisterStep1 = ({ form, onSubmit }) => {
     return (
         <form onSubmit={onSubmit} className='flex flex-col gap-4'>
             {/* Fila: Nombre | Apellido */}
-            <div className='grid grid-cols-2 gap-3'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 {[
                     { name: 'name',     label: 'Nombre',   placeholder: 'Ingrese su nombre'   },
                     { name: 'lastname', label: 'Apellido', placeholder: 'Ingrese su apellido' },
@@ -64,7 +64,7 @@ const RegisterStep1 = ({ form, onSubmit }) => {
             </div>
 
             {/* Fila: Correo | Contraseña */}
-            <div className='grid grid-cols-2 gap-3'>
+            <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
                 {/* Correo */}
                 <div className='flex flex-col gap-1.5'>
                     <label className='text-xs text-gray-500 font-medium'>Correo electrónico</label>

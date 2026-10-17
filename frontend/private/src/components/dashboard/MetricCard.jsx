@@ -29,7 +29,7 @@ const MetricCard = ({ icon: Icon, title, value, trend, trendUp, to, className })
             </div>
         </>
     )
-    const base = cn('bg-orve-teal/15 backdrop-blur-sm rounded-2xl p-5 shadow-sm flex flex-col justify-between gap-3 select-none overflow-hidden isolate', to && 'cursor-pointer hover:bg-orve-teal/20 transition-colors', className)
+    const base = cn('bg-orve-teal/15 backdrop-blur-sm rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col justify-between gap-3 select-none overflow-hidden isolate', to && 'cursor-pointer hover:bg-orve-teal/20 transition-colors', className)
     return to ? <Link to={to} className={base}>{inner}</Link> : <div className={base}>{inner}</div>
 }
 export default MetricCard

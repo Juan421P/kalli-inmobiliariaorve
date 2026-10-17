@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Building2, Calendar, Briefcase, Users, User, ShieldUser, Clock, SlidersHorizontal, ChevronDown, Star, Tag, Layers, Zap, LogOut } from 'lucide-react'
+import { Home, Building2, Calendar, Briefcase, Users, User, ShieldUser, Clock, SlidersHorizontal, ChevronDown, Star, Tag, Layers, Zap, LogOut, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import coolAssDesignForTheBackground from '@/assets/cool-ass-design-for-the-background.png'
 import orveLogoWhite from '@/assets/orve-logo-white.svg'
@@ -131,8 +131,21 @@ const Sidebar = () => {
         }
     }
     const visibleSections = NAV_SECTIONS.filter((s) => s.roles.includes(role))
-    return (
-        <aside className='w-64 shrink-0 bg-orve-teal flex flex-col py-6 px-4 shadow-xl relative overflow-hidden'>
+    // el drawer queda abierto solo mientras la ruta sea la que lo abrió: al navegar se cierra solo
+    const [openPath, setOpenPath] = useState(null)
+    const { pathname } = useLocation()
+    const mobileOpen = openPath === pathname
+    const setMobileOpen = (next) => setOpenPath(next ? pathname : null)
+    // el drawer no debe dejar scrollear la página de atrás
+    useEffect(() => {
+        if (!mobileOpen) return
+        const prev = document.body.style.overflow
+        document.body.style.overflow = 'hidden'
+        return () => { document.body.style.overflow = prev }
+    }, [mobileOpen])
+    const panelCls = 'w-64 shrink-0 bg-orve-teal flex flex-col py-6 px-4 shadow-xl relative overflow-hidden'
+    const content = (
+        <>
             <div
                 className='absolute inset-0 opacity-[0.07] bg-cover bg-center pointer-events-none select-none'
                 style={{ backgroundImage: `url(${coolAssDesignForTheBackground})` }}
@@ -185,7 +198,50 @@ const Sidebar = () => {
                     <LogOut className='w-4 h-4' />
                 </button>
             </div>
-        </aside>
+        </>
+    )
+    return (
+        <>
+            {/* escritorio: sidebar fijo */}
+            <aside className={cn(panelCls, 'hidden lg:flex')}>{content}</aside>
+
+            {/* móvil/tablet: barra superior + drawer */}
+            <header className='lg:hidden shrink-0 h-14 bg-orve-teal flex items-center justify-between px-4 shadow-md z-30'>
+                <img src={orveLogoWhite} alt='ORVE' className='h-7 w-auto pointer-events-none select-none' />
+                <button
+                    type='button'
+                    onClick={() => setMobileOpen(true)}
+                    aria-label='Abrir menú'
+                    className='p-2 -mr-2 rounded-xl text-white/80 hover:text-white hover:bg-white/10 transition-colors cursor-pointer'
+                >
+                    <Menu className='w-6 h-6' />
+                </button>
+            </header>
+            <div
+                className={cn(
+                    'lg:hidden fixed inset-0 z-50 bg-black/50 transition-opacity duration-200',
+                    mobileOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                )}
+                onClick={() => setMobileOpen(false)}
+            />
+            <aside
+                className={cn(
+                    panelCls,
+                    'lg:hidden fixed inset-y-0 left-0 z-50 max-w-[85vw] transition-transform duration-200',
+                    mobileOpen ? 'translate-x-0' : '-translate-x-full'
+                )}
+            >
+                <button
+                    type='button'
+                    onClick={() => setMobileOpen(false)}
+                    aria-label='Cerrar menú'
+                    className='absolute top-4 right-3 z-10 p-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors cursor-pointer'
+                >
+                    <X className='w-5 h-5' />
+                </button>
+                {content}
+            </aside>
+        </>
     )
 }
 export default Sidebar
